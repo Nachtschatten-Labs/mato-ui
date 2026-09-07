@@ -1,0 +1,13 @@
+node_modules/
+.pnpm-store/
+dist/
+.output/
+.tanstack/
+.wrangler/
+coverage/
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+.DS_Store

@@ -1,0 +1,13 @@
+# Review lifecycle scripts before enabling them for the new application.
+ignoreScripts: true
+allowBuilds: {}
+strictDepBuilds: true
+
+# Wait at least 24 hours before accepting newly published dependency versions.
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+
+# Use the exact pnpm version declared in package.json.
+pmOnFail: error
+saveExact: true
