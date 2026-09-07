@@ -90,7 +90,8 @@ export function useClosePosition() {
         const connectedAddress = session.account.address.toString()
         void Promise.all([
           queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.tradePositions(connectedAddress),
+            queryKey:
+              tradingQueryKeys.tradePositionsForAuthority(connectedAddress),
           }),
           invalidateClosedPositionQueries({
             authority: connectedAddress,
@@ -162,7 +163,8 @@ export function useClosePosition() {
         const connectedAddress = session.account.address.toString()
         void Promise.all([
           queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.tradePositions(connectedAddress),
+            queryKey:
+              tradingQueryKeys.tradePositionsForAuthority(connectedAddress),
           }),
           invalidateClosedPositionQueries({
             authority: connectedAddress,

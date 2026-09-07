@@ -1,108 +1,65 @@
 // @vitest-environment jsdom
 
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { WalletConnectionButton } from './wallet-connection-button'
 
 const mocks = vi.hoisted(() => ({
   clearFeedback: vi.fn(),
-  connect: vi.fn(),
-  disconnect: vi.fn(),
-  reclaimRent: vi.fn(),
-  refreshBalance: vi.fn(),
-  reset: vi.fn(),
-  toastError: vi.fn(),
-  useWalletConnection: vi.fn(),
+  useReclaimRent: vi.fn(),
 }))
 
 vi.mock('@solana/react-hooks', () => ({
-  useWalletConnection: mocks.useWalletConnection,
-}))
-
-vi.mock('sonner', () => ({
-  toast: {
-    error: mocks.toastError,
-    success: vi.fn(),
-    warning: vi.fn(),
-  },
+  useWalletConnection: () => ({
+    connect: vi.fn(),
+    connected: false,
+    connectors: [],
+    currentConnector: null,
+    disconnect: vi.fn(),
+    isReady: true,
+    status: 'disconnected',
+    wallet: null,
+  }),
 }))
 
 vi.mock('../hooks/use-reclaim-rent', () => ({
-  useReclaimRent: () => ({
-    clearFeedback: mocks.clearFeedback,
-    closeableCount: 0,
-    error: null,
-    isReclaiming: false,
-    reclaimRent: mocks.reclaimRent,
-    reclaimedLamports: 0n,
-    reset: mocks.reset,
-    signature: null,
-    status: 'idle',
-  }),
+  useReclaimRent: mocks.useReclaimRent,
 }))
 
 vi.mock('../hooks/use-wallet-sol-balance', () => ({
   useWalletSolBalance: () => ({
-    lamports: 1_000_000n,
-    refresh: mocks.refreshBalance,
+    lamports: null,
+    refresh: vi.fn(),
   }),
 }))
 
+beforeEach(() => {
+  mocks.useReclaimRent.mockReturnValue({
+    clearFeedback: mocks.clearFeedback,
+    closeableCount: 0,
+    error: null,
+    isReclaiming: false,
+    reclaimRent: vi.fn(),
+    reclaimedLamports: 0n,
+    reset: vi.fn(),
+    signature: null,
+    status: 'idle',
+  })
+})
+
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
+
 describe('WalletConnectionButton', () => {
-  afterEach(cleanup)
+  it('checks rent eligibility for the selected market', () => {
+    const view = render(<WalletConnectionButton marketId={1} />)
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.useWalletConnection.mockReturnValue({
-      connect: mocks.connect,
-      connected: false,
-      connectors: [
-        {
-          id: 'wallet-standard:phantom',
-          name: 'Phantom',
-        },
-      ],
-      currentConnector: undefined,
-      disconnect: mocks.disconnect,
-      isReady: true,
-      status: 'disconnected',
-      wallet: undefined,
-    })
-  })
+    expect(mocks.useReclaimRent).toHaveBeenLastCalledWith(false, 1)
 
-  it('uses an interactive request when the user selects Phantom', async () => {
-    mocks.connect.mockResolvedValue({})
+    view.rerender(<WalletConnectionButton marketId={4} />)
 
-    render(<WalletConnectionButton />)
-    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
-    fireEvent.click(screen.getByRole('button', { name: /phantom/i }))
-
-    await waitFor(() => expect(mocks.connect).toHaveBeenCalledTimes(1))
-    expect(mocks.connect.mock.calls[0]).toEqual(['wallet-standard:phantom'])
-  })
-
-  it('shows an actionable Phantom error and handles the rejection', async () => {
-    mocks.connect.mockRejectedValue(new Error('Unexpected error'))
-
-    render(<WalletConnectionButton />)
-    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
-    fireEvent.click(screen.getByRole('button', { name: /phantom/i }))
-
-    await waitFor(() =>
-      expect(mocks.toastError).toHaveBeenCalledWith(
-        'Could not connect to Phantom',
-        expect.objectContaining({
-          description:
-            'Unlock Phantom, approve Mato, and try again. On mobile, open Mato inside Phantom.',
-        }),
-      ),
-    )
-    expect(screen.getByText('Wallet Standard')).toBeTruthy()
+    expect(mocks.useReclaimRent).toHaveBeenLastCalledWith(false, 4)
   })
 })

@@ -1,7 +1,11 @@
+import { isRpcRateLimitError } from '@/integrations/solana/rpc'
+
 const GENERIC_TRANSACTION_PLAN_MESSAGE =
   'The provided transaction plan failed to execute.'
 const STALE_MARKET_ACCOUNTS_MESSAGE =
   'Market timing changed while the transaction was awaiting wallet approval. Please try again.'
+const RPC_RATE_LIMIT_MESSAGE =
+  'The Solana RPC is temporarily rate-limited. Please wait a few seconds and try again.'
 const SOLANA_CUSTOM_INSTRUCTION_ERROR_CODE = 4_615_026
 const SOLANA_SECURE_CONTEXT_ERROR_CODE = 3_610_000
 const SOLANA_BROWSER_CRYPTO_ERROR_CODES = new Set([
@@ -67,31 +71,6 @@ function hasStructuredCustomProgramError(error: unknown, code: number) {
 
   return (
     outerCode === SOLANA_CUSTOM_INSTRUCTION_ERROR_CODE && programCode === code
-  )
-}
-
-function serializeError(value: unknown) {
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return ''
-  }
-}
-
-function isStaleMarketAccountError(...values: Array<unknown>) {
-  const detail = values
-    .map((value) => (typeof value === 'string' ? value : serializeError(value)))
-    .join(' ')
-
-  return (
-    values.some(
-      (value) =>
-        hasStructuredCustomProgramError(value, 6006) ||
-        hasStructuredCustomProgramError(value, 6007) ||
-        hasStructuredCustomProgramError(value, 6010),
-    ) ||
-    /"Custom"\s*:\s*(?:6006|6007|6010)/.test(detail) ||
-    /custom program error:\s*0x(?:1776|1777|177a)/i.test(detail)
   )
 }
 
@@ -173,6 +152,65 @@ function extractPlanHint(value: unknown): string | null {
   return hint.length > 0 ? hint : null
 }
 
+function serializeError(value: unknown) {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return ''
+  }
+}
+
+function serializeErrorDetails(values: Array<unknown>) {
+  return values
+    .map((value) => (typeof value === 'string' ? value : serializeError(value)))
+    .join(' ')
+}
+
+function hasCustomProgramError(
+  detail: string,
+  code: number,
+  hexCode: string,
+  name: string,
+) {
+  return (
+    new RegExp(`"Custom"\\s*:\\s*${code}`).test(detail) ||
+    new RegExp(`custom program error:\\s*0x${hexCode}`, 'i').test(detail) ||
+    new RegExp(name, 'i').test(detail)
+  )
+}
+
+function isStaleMarketAccountError(...values: Array<unknown>) {
+  const detail = serializeErrorDetails(values)
+
+  return (
+    values.some(
+      (value) =>
+        hasStructuredCustomProgramError(value, 6006) ||
+        hasStructuredCustomProgramError(value, 6007) ||
+        hasStructuredCustomProgramError(value, 6010),
+    ) ||
+    hasCustomProgramError(detail, 6006, '1776', 'WrongExitsAccount') ||
+    hasCustomProgramError(detail, 6007, '1777', 'WrongPricesAccount') ||
+    hasCustomProgramError(detail, 6010, '177a', 'BookNotUpToDate')
+  )
+}
+
+function getPositionControlErrorMessage(...values: Array<unknown>) {
+  const detail = serializeErrorDetails(values)
+
+  if (hasCustomProgramError(detail, 6031, '178f', 'AmountZero')) {
+    return 'There are no new swapped funds to withdraw yet.'
+  }
+  if (hasCustomProgramError(detail, 6029, '178d', 'PositionIsPaused')) {
+    return 'This position is already paused.'
+  }
+  if (hasCustomProgramError(detail, 6030, '178e', 'PositionIsNotPaused')) {
+    return 'This position is not paused.'
+  }
+
+  return null
+}
+
 export function formatTransactionError(error: unknown, fallback: string) {
   const transactionPlanResult = isRecord(error)
     ? (error.transactionPlanResult ??
@@ -181,6 +219,10 @@ export function formatTransactionError(error: unknown, fallback: string) {
 
   const failedPlan = findFirstFailedPlanResult(transactionPlanResult)
   const nestedError = failedPlan?.error ?? unwrapCause(error)
+
+  if (isRpcRateLimitError(nestedError) || isRpcRateLimitError(error)) {
+    return RPC_RATE_LIMIT_MESSAGE
+  }
 
   const knownSolanaMessage =
     extractKnownSolanaMessage(nestedError) ?? extractKnownSolanaMessage(error)
@@ -192,6 +234,13 @@ export function formatTransactionError(error: unknown, fallback: string) {
   if (isStaleMarketAccountError(message, nestedError, error)) {
     return STALE_MARKET_ACCOUNTS_MESSAGE
   }
+
+  const positionControlMessage = getPositionControlErrorMessage(
+    message,
+    nestedError,
+    error,
+  )
+  if (positionControlMessage) return positionControlMessage
 
   const logs = extractLogs(nestedError) ?? extractLogs(error)
   if (!logs || logs.length === 0) {

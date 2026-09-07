@@ -1,6 +1,6 @@
-# Mato UI — main
+# Mato UI — v1
 
-Original trading dashboard, chart history, order book, orders, active/closed positions, wallet balances, and rent accounts.
+Trading dashboard plus selectable markets, updated order book/positions, pause/resume and swapped-funds withdrawal controls, and the v1 program interface.
 
 Recovered application source with fresh build tooling and dependency lockfile.
 The old repository history and compromised configuration files are excluded.
@@ -15,5 +15,5 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, checks, and service configuratio
 See [RECOVERY.md](RECOVERY.md) for the recovery scope and limitations.
 
 Transactions are disabled by default. The restored program address is
-`CCAmAqvza37EWzou7LoYCaGKzdJsCu1CLPMp3Wvx3Bc5`; it is inherited from the reviewed snapshot and still needs
+`CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16`; it is inherited from the reviewed snapshot and still needs
 independent deployment verification before enabling transactions.

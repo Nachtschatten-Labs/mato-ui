@@ -1,7 +1,7 @@
 # Recovery record
 
-Source branch: `main` in `nightshade-labs/mato-ui`.
-Source commit: `7540e82a0b9ff2d93186cd0b427ad5a18c9c4ef4`.
+Source branch: `v1` in `nightshade-labs/mato-ui`.
+Source commit: `cf518f850a847a29b3ef12d38da36ec1ef4bbdc9`.
 
 ## Preserved
 

@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import {
+  SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR,
+  SolanaError,
+} from '@solana/kit'
 import { formatTransactionError } from './transaction-errors'
 
 describe('formatTransactionError', () => {
@@ -39,6 +43,18 @@ describe('formatTransactionError', () => {
     ).toBe('fallback')
   })
 
+  it('explains when the RPC provider is rate-limiting requests', () => {
+    const error = new SolanaError(SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR, {
+      headers: new Headers(),
+      message: '',
+      statusCode: 429,
+    })
+
+    expect(formatTransactionError(error, 'fallback')).toBe(
+      'The Solana RPC is temporarily rate-limited. Please wait a few seconds and try again.',
+    )
+  })
+
   it('adds a plan hint when the planner only returns structured metadata', () => {
     const error = {
       context: {
@@ -57,6 +73,39 @@ describe('formatTransactionError', () => {
 
     expect(formatTransactionError(error, 'fallback')).toBe(
       'fallback Details: SimulationFailure / 1001 / Instruction 0 failed',
+    )
+  })
+
+  it('asks for a retry when signing crossed a market account boundary', () => {
+    const error = new Error(
+      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6006}]}',
+    )
+
+    expect(formatTransactionError(error, 'fallback')).toBe(
+      'Market timing changed while the transaction was awaiting wallet approval. Please try again.',
+    )
+  })
+
+  it.each([6007, 6010])(
+    'asks for a retry when market state error %s is stale',
+    (code) => {
+      const error = new Error(
+        `Transaction failed during confirmation: {"InstructionError":[0,{"Custom":${code}}]}`,
+      )
+
+      expect(formatTransactionError(error, 'fallback')).toBe(
+        'Market timing changed while the transaction was awaiting wallet approval. Please try again.',
+      )
+    },
+  )
+
+  it('explains when no newly swapped funds are available', () => {
+    const error = new Error(
+      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6031}]}',
+    )
+
+    expect(formatTransactionError(error, 'fallback')).toBe(
+      'There are no new swapped funds to withdraw yet.',
     )
   })
 
@@ -110,17 +159,4 @@ describe('formatTransactionError', () => {
       'Market timing changed while the transaction was awaiting wallet approval. Please try again.',
     )
   })
-
-  it.each([6007, 6010])(
-    'explains stale market account error %s from confirmation',
-    (code) => {
-      const error = new Error(
-        `Transaction failed during confirmation: {"InstructionError":[0,{"Custom":${code}}]}`,
-      )
-
-      expect(formatTransactionError(error, 'fallback')).toBe(
-        'Market timing changed while the transaction was awaiting wallet approval. Please try again.',
-      )
-    },
-  )
 })

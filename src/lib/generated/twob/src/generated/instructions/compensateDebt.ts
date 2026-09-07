@@ -43,32 +43,28 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const AUTHORITY_CLOSE_POSITION_DISCRIMINATOR = new Uint8Array([
-  198, 43, 155, 228, 243, 10, 227, 45,
+export const COMPENSATE_DEBT_DISCRIMINATOR = new Uint8Array([
+  179, 164, 115, 50, 11, 123, 101, 15,
 ])
 
-export function getAuthorityClosePositionDiscriminatorBytes() {
+export function getCompensateDebtDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    AUTHORITY_CLOSE_POSITION_DISCRIMINATOR,
+    COMPENSATE_DEBT_DISCRIMINATOR,
   )
 }
 
-export type AuthorityClosePositionInstruction<
+export type CompensateDebtInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
-  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountSigner extends string | AccountMeta<string> = string,
   TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
-  TAccountAuthorityBaseTokenAccount extends string | AccountMeta<string> =
-    string,
-  TAccountAuthorityQuoteTokenAccount extends string | AccountMeta<string> =
-    string,
+  TAccountSignerBaseTokenAccount extends string | AccountMeta<string> = string,
+  TAccountSignerQuoteTokenAccount extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
-  TAccountTradePosition extends string | AccountMeta<string> = string,
+  TAccountLiquidityPosition extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
   TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountFutureExits extends string | AccountMeta<string> = string,
-  TAccountFuturePrices extends string | AccountMeta<string> = string,
   TAccountCurrentExits extends string | AccountMeta<string> = string,
   TAccountPreviousExits extends string | AccountMeta<string> = string,
   TAccountCurrentPrices extends string | AccountMeta<string> = string,
@@ -84,28 +80,28 @@ export type AuthorityClosePositionInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountAuthority extends string
-        ? WritableSignerAccount<TAccountAuthority> &
-            AccountSignerMeta<TAccountAuthority>
-        : TAccountAuthority,
+      TAccountSigner extends string
+        ? WritableSignerAccount<TAccountSigner> &
+            AccountSignerMeta<TAccountSigner>
+        : TAccountSigner,
       TAccountBaseMint extends string
         ? ReadonlyAccount<TAccountBaseMint>
         : TAccountBaseMint,
       TAccountQuoteMint extends string
         ? ReadonlyAccount<TAccountQuoteMint>
         : TAccountQuoteMint,
-      TAccountAuthorityBaseTokenAccount extends string
-        ? WritableAccount<TAccountAuthorityBaseTokenAccount>
-        : TAccountAuthorityBaseTokenAccount,
-      TAccountAuthorityQuoteTokenAccount extends string
-        ? WritableAccount<TAccountAuthorityQuoteTokenAccount>
-        : TAccountAuthorityQuoteTokenAccount,
+      TAccountSignerBaseTokenAccount extends string
+        ? WritableAccount<TAccountSignerBaseTokenAccount>
+        : TAccountSignerBaseTokenAccount,
+      TAccountSignerQuoteTokenAccount extends string
+        ? WritableAccount<TAccountSignerQuoteTokenAccount>
+        : TAccountSignerQuoteTokenAccount,
       TAccountMarket extends string
         ? WritableAccount<TAccountMarket>
         : TAccountMarket,
-      TAccountTradePosition extends string
-        ? WritableAccount<TAccountTradePosition>
-        : TAccountTradePosition,
+      TAccountLiquidityPosition extends string
+        ? WritableAccount<TAccountLiquidityPosition>
+        : TAccountLiquidityPosition,
       TAccountBaseVault extends string
         ? WritableAccount<TAccountBaseVault>
         : TAccountBaseVault,
@@ -115,12 +111,6 @@ export type AuthorityClosePositionInstruction<
       TAccountBookkeeping extends string
         ? WritableAccount<TAccountBookkeeping>
         : TAccountBookkeeping,
-      TAccountFutureExits extends string
-        ? WritableAccount<TAccountFutureExits>
-        : TAccountFutureExits,
-      TAccountFuturePrices extends string
-        ? WritableAccount<TAccountFuturePrices>
-        : TAccountFuturePrices,
       TAccountCurrentExits extends string
         ? ReadonlyAccount<TAccountCurrentExits>
         : TAccountCurrentExits,
@@ -149,58 +139,57 @@ export type AuthorityClosePositionInstruction<
     ]
   >
 
-export type AuthorityClosePositionInstructionData = {
+export type CompensateDebtInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
+  minAmountOutAtoms: bigint
 }
 
-export type AuthorityClosePositionInstructionDataArgs = {
+export type CompensateDebtInstructionDataArgs = {
   referenceIndex: number | bigint
+  minAmountOutAtoms: number | bigint
 }
 
-export function getAuthorityClosePositionInstructionDataEncoder(): FixedSizeEncoder<AuthorityClosePositionInstructionDataArgs> {
+export function getCompensateDebtInstructionDataEncoder(): FixedSizeEncoder<CompensateDebtInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
+      ['minAmountOutAtoms', getU64Encoder()],
     ]),
-    (value) => ({
-      ...value,
-      discriminator: AUTHORITY_CLOSE_POSITION_DISCRIMINATOR,
-    }),
+    (value) => ({ ...value, discriminator: COMPENSATE_DEBT_DISCRIMINATOR }),
   )
 }
 
-export function getAuthorityClosePositionInstructionDataDecoder(): FixedSizeDecoder<AuthorityClosePositionInstructionData> {
+export function getCompensateDebtInstructionDataDecoder(): FixedSizeDecoder<CompensateDebtInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
+    ['minAmountOutAtoms', getU64Decoder()],
   ])
 }
 
-export function getAuthorityClosePositionInstructionDataCodec(): FixedSizeCodec<
-  AuthorityClosePositionInstructionDataArgs,
-  AuthorityClosePositionInstructionData
+export function getCompensateDebtInstructionDataCodec(): FixedSizeCodec<
+  CompensateDebtInstructionDataArgs,
+  CompensateDebtInstructionData
 > {
   return combineCodec(
-    getAuthorityClosePositionInstructionDataEncoder(),
-    getAuthorityClosePositionInstructionDataDecoder(),
+    getCompensateDebtInstructionDataEncoder(),
+    getCompensateDebtInstructionDataDecoder(),
   )
 }
 
-export type AuthorityClosePositionAsyncInput<
-  TAccountAuthority extends string = string,
+export type CompensateDebtAsyncInput<
+  TAccountSigner extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
-  TAccountAuthorityBaseTokenAccount extends string = string,
-  TAccountAuthorityQuoteTokenAccount extends string = string,
+  TAccountSignerBaseTokenAccount extends string = string,
+  TAccountSignerQuoteTokenAccount extends string = string,
   TAccountMarket extends string = string,
-  TAccountTradePosition extends string = string,
+  TAccountLiquidityPosition extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
   TAccountCurrentExits extends string = string,
   TAccountPreviousExits extends string = string,
   TAccountCurrentPrices extends string = string,
@@ -210,18 +199,16 @@ export type AuthorityClosePositionAsyncInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  authority: TransactionSigner<TAccountAuthority>
+  signer: TransactionSigner<TAccountSigner>
   baseMint: Address<TAccountBaseMint>
   quoteMint: Address<TAccountQuoteMint>
-  authorityBaseTokenAccount?: Address<TAccountAuthorityBaseTokenAccount>
-  authorityQuoteTokenAccount?: Address<TAccountAuthorityQuoteTokenAccount>
+  signerBaseTokenAccount?: Address<TAccountSignerBaseTokenAccount>
+  signerQuoteTokenAccount?: Address<TAccountSignerQuoteTokenAccount>
   market: Address<TAccountMarket>
-  tradePosition: Address<TAccountTradePosition>
+  liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
   bookkeeping?: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  futurePrices: Address<TAccountFuturePrices>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -230,22 +217,21 @@ export type AuthorityClosePositionAsyncInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: AuthorityClosePositionInstructionDataArgs['referenceIndex']
+  referenceIndex: CompensateDebtInstructionDataArgs['referenceIndex']
+  minAmountOutAtoms: CompensateDebtInstructionDataArgs['minAmountOutAtoms']
 }
 
-export async function getAuthorityClosePositionInstructionAsync<
-  TAccountAuthority extends string,
+export async function getCompensateDebtInstructionAsync<
+  TAccountSigner extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
-  TAccountAuthorityBaseTokenAccount extends string,
-  TAccountAuthorityQuoteTokenAccount extends string,
+  TAccountSignerBaseTokenAccount extends string,
+  TAccountSignerQuoteTokenAccount extends string,
   TAccountMarket extends string,
-  TAccountTradePosition extends string,
+  TAccountLiquidityPosition extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
   TAccountCurrentExits extends string,
   TAccountPreviousExits extends string,
   TAccountCurrentPrices extends string,
@@ -256,19 +242,17 @@ export async function getAuthorityClosePositionInstructionAsync<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: AuthorityClosePositionAsyncInput<
-    TAccountAuthority,
+  input: CompensateDebtAsyncInput<
+    TAccountSigner,
     TAccountBaseMint,
     TAccountQuoteMint,
-    TAccountAuthorityBaseTokenAccount,
-    TAccountAuthorityQuoteTokenAccount,
+    TAccountSignerBaseTokenAccount,
+    TAccountSignerQuoteTokenAccount,
     TAccountMarket,
-    TAccountTradePosition,
+    TAccountLiquidityPosition,
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
@@ -280,20 +264,18 @@ export async function getAuthorityClosePositionInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  AuthorityClosePositionInstruction<
+  CompensateDebtInstruction<
     TProgramAddress,
-    TAccountAuthority,
+    TAccountSigner,
     TAccountBaseMint,
     TAccountQuoteMint,
-    TAccountAuthorityBaseTokenAccount,
-    TAccountAuthorityQuoteTokenAccount,
+    TAccountSignerBaseTokenAccount,
+    TAccountSignerQuoteTokenAccount,
     TAccountMarket,
-    TAccountTradePosition,
+    TAccountLiquidityPosition,
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
@@ -309,24 +291,25 @@ export async function getAuthorityClosePositionInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
+    signer: { value: input.signer ?? null, isWritable: true },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
-    authorityBaseTokenAccount: {
-      value: input.authorityBaseTokenAccount ?? null,
+    signerBaseTokenAccount: {
+      value: input.signerBaseTokenAccount ?? null,
       isWritable: true,
     },
-    authorityQuoteTokenAccount: {
-      value: input.authorityQuoteTokenAccount ?? null,
+    signerQuoteTokenAccount: {
+      value: input.signerQuoteTokenAccount ?? null,
       isWritable: true,
     },
     market: { value: input.market ?? null, isWritable: true },
-    tradePosition: { value: input.tradePosition ?? null, isWritable: true },
+    liquidityPosition: {
+      value: input.liquidityPosition ?? null,
+      isWritable: true,
+    },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
     currentExits: { value: input.currentExits ?? null, isWritable: false },
     previousExits: { value: input.previousExits ?? null, isWritable: false },
     currentPrices: { value: input.currentPrices ?? null, isWritable: true },
@@ -354,15 +337,15 @@ export async function getAuthorityClosePositionInstructionAsync<
   const args = { ...input }
 
   // Resolve default values.
-  if (!accounts.authorityBaseTokenAccount.value) {
-    accounts.authorityBaseTokenAccount.value = await getProgramDerivedAddress({
+  if (!accounts.signerBaseTokenAccount.value) {
+    accounts.signerBaseTokenAccount.value = await getProgramDerivedAddress({
       programAddress:
         'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
       seeds: [
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
+            'signer',
+            accounts.signer.value,
           ),
         ),
         getAddressEncoder().encode(
@@ -380,15 +363,15 @@ export async function getAuthorityClosePositionInstructionAsync<
       ],
     })
   }
-  if (!accounts.authorityQuoteTokenAccount.value) {
-    accounts.authorityQuoteTokenAccount.value = await getProgramDerivedAddress({
+  if (!accounts.signerQuoteTokenAccount.value) {
+    accounts.signerQuoteTokenAccount.value = await getProgramDerivedAddress({
       programAddress:
         'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>,
       seeds: [
         getAddressEncoder().encode(
           getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
+            'signer',
+            accounts.signer.value,
           ),
         ),
         getAddressEncoder().encode(
@@ -488,24 +471,19 @@ export async function getAuthorityClosePositionInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
   return Object.freeze({
     accounts: [
-      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('signer', accounts.signer),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('signerBaseTokenAccount', accounts.signerBaseTokenAccount),
       getAccountMeta(
-        'authorityBaseTokenAccount',
-        accounts.authorityBaseTokenAccount,
-      ),
-      getAccountMeta(
-        'authorityQuoteTokenAccount',
-        accounts.authorityQuoteTokenAccount,
+        'signerQuoteTokenAccount',
+        accounts.signerQuoteTokenAccount,
       ),
       getAccountMeta('market', accounts.market),
-      getAccountMeta('tradePosition', accounts.tradePosition),
+      getAccountMeta('liquidityPosition', accounts.liquidityPosition),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
       getAccountMeta('currentExits', accounts.currentExits),
       getAccountMeta('previousExits', accounts.previousExits),
       getAccountMeta('currentPrices', accounts.currentPrices),
@@ -515,24 +493,22 @@ export async function getAuthorityClosePositionInstructionAsync<
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
-    data: getAuthorityClosePositionInstructionDataEncoder().encode(
-      args as AuthorityClosePositionInstructionDataArgs,
+    data: getCompensateDebtInstructionDataEncoder().encode(
+      args as CompensateDebtInstructionDataArgs,
     ),
     programAddress,
-  } as AuthorityClosePositionInstruction<
+  } as CompensateDebtInstruction<
     TProgramAddress,
-    TAccountAuthority,
+    TAccountSigner,
     TAccountBaseMint,
     TAccountQuoteMint,
-    TAccountAuthorityBaseTokenAccount,
-    TAccountAuthorityQuoteTokenAccount,
+    TAccountSignerBaseTokenAccount,
+    TAccountSignerQuoteTokenAccount,
     TAccountMarket,
-    TAccountTradePosition,
+    TAccountLiquidityPosition,
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
@@ -544,19 +520,17 @@ export async function getAuthorityClosePositionInstructionAsync<
   >)
 }
 
-export type AuthorityClosePositionInput<
-  TAccountAuthority extends string = string,
+export type CompensateDebtInput<
+  TAccountSigner extends string = string,
   TAccountBaseMint extends string = string,
   TAccountQuoteMint extends string = string,
-  TAccountAuthorityBaseTokenAccount extends string = string,
-  TAccountAuthorityQuoteTokenAccount extends string = string,
+  TAccountSignerBaseTokenAccount extends string = string,
+  TAccountSignerQuoteTokenAccount extends string = string,
   TAccountMarket extends string = string,
-  TAccountTradePosition extends string = string,
+  TAccountLiquidityPosition extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
   TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
   TAccountCurrentExits extends string = string,
   TAccountPreviousExits extends string = string,
   TAccountCurrentPrices extends string = string,
@@ -566,18 +540,16 @@ export type AuthorityClosePositionInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  authority: TransactionSigner<TAccountAuthority>
+  signer: TransactionSigner<TAccountSigner>
   baseMint: Address<TAccountBaseMint>
   quoteMint: Address<TAccountQuoteMint>
-  authorityBaseTokenAccount: Address<TAccountAuthorityBaseTokenAccount>
-  authorityQuoteTokenAccount: Address<TAccountAuthorityQuoteTokenAccount>
+  signerBaseTokenAccount: Address<TAccountSignerBaseTokenAccount>
+  signerQuoteTokenAccount: Address<TAccountSignerQuoteTokenAccount>
   market: Address<TAccountMarket>
-  tradePosition: Address<TAccountTradePosition>
+  liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
   bookkeeping: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  futurePrices: Address<TAccountFuturePrices>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -586,22 +558,21 @@ export type AuthorityClosePositionInput<
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: AuthorityClosePositionInstructionDataArgs['referenceIndex']
+  referenceIndex: CompensateDebtInstructionDataArgs['referenceIndex']
+  minAmountOutAtoms: CompensateDebtInstructionDataArgs['minAmountOutAtoms']
 }
 
-export function getAuthorityClosePositionInstruction<
-  TAccountAuthority extends string,
+export function getCompensateDebtInstruction<
+  TAccountSigner extends string,
   TAccountBaseMint extends string,
   TAccountQuoteMint extends string,
-  TAccountAuthorityBaseTokenAccount extends string,
-  TAccountAuthorityQuoteTokenAccount extends string,
+  TAccountSignerBaseTokenAccount extends string,
+  TAccountSignerQuoteTokenAccount extends string,
   TAccountMarket extends string,
-  TAccountTradePosition extends string,
+  TAccountLiquidityPosition extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
   TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
   TAccountCurrentExits extends string,
   TAccountPreviousExits extends string,
   TAccountCurrentPrices extends string,
@@ -612,19 +583,17 @@ export function getAuthorityClosePositionInstruction<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: AuthorityClosePositionInput<
-    TAccountAuthority,
+  input: CompensateDebtInput<
+    TAccountSigner,
     TAccountBaseMint,
     TAccountQuoteMint,
-    TAccountAuthorityBaseTokenAccount,
-    TAccountAuthorityQuoteTokenAccount,
+    TAccountSignerBaseTokenAccount,
+    TAccountSignerQuoteTokenAccount,
     TAccountMarket,
-    TAccountTradePosition,
+    TAccountLiquidityPosition,
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
@@ -635,20 +604,18 @@ export function getAuthorityClosePositionInstruction<
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): AuthorityClosePositionInstruction<
+): CompensateDebtInstruction<
   TProgramAddress,
-  TAccountAuthority,
+  TAccountSigner,
   TAccountBaseMint,
   TAccountQuoteMint,
-  TAccountAuthorityBaseTokenAccount,
-  TAccountAuthorityQuoteTokenAccount,
+  TAccountSignerBaseTokenAccount,
+  TAccountSignerQuoteTokenAccount,
   TAccountMarket,
-  TAccountTradePosition,
+  TAccountLiquidityPosition,
   TAccountBaseVault,
   TAccountQuoteVault,
   TAccountBookkeeping,
-  TAccountFutureExits,
-  TAccountFuturePrices,
   TAccountCurrentExits,
   TAccountPreviousExits,
   TAccountCurrentPrices,
@@ -663,24 +630,25 @@ export function getAuthorityClosePositionInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
+    signer: { value: input.signer ?? null, isWritable: true },
     baseMint: { value: input.baseMint ?? null, isWritable: false },
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
-    authorityBaseTokenAccount: {
-      value: input.authorityBaseTokenAccount ?? null,
+    signerBaseTokenAccount: {
+      value: input.signerBaseTokenAccount ?? null,
       isWritable: true,
     },
-    authorityQuoteTokenAccount: {
-      value: input.authorityQuoteTokenAccount ?? null,
+    signerQuoteTokenAccount: {
+      value: input.signerQuoteTokenAccount ?? null,
       isWritable: true,
     },
     market: { value: input.market ?? null, isWritable: true },
-    tradePosition: { value: input.tradePosition ?? null, isWritable: true },
+    liquidityPosition: {
+      value: input.liquidityPosition ?? null,
+      isWritable: true,
+    },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
     currentExits: { value: input.currentExits ?? null, isWritable: false },
     previousExits: { value: input.previousExits ?? null, isWritable: false },
     currentPrices: { value: input.currentPrices ?? null, isWritable: true },
@@ -720,24 +688,19 @@ export function getAuthorityClosePositionInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
   return Object.freeze({
     accounts: [
-      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('signer', accounts.signer),
       getAccountMeta('baseMint', accounts.baseMint),
       getAccountMeta('quoteMint', accounts.quoteMint),
+      getAccountMeta('signerBaseTokenAccount', accounts.signerBaseTokenAccount),
       getAccountMeta(
-        'authorityBaseTokenAccount',
-        accounts.authorityBaseTokenAccount,
-      ),
-      getAccountMeta(
-        'authorityQuoteTokenAccount',
-        accounts.authorityQuoteTokenAccount,
+        'signerQuoteTokenAccount',
+        accounts.signerQuoteTokenAccount,
       ),
       getAccountMeta('market', accounts.market),
-      getAccountMeta('tradePosition', accounts.tradePosition),
+      getAccountMeta('liquidityPosition', accounts.liquidityPosition),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
       getAccountMeta('currentExits', accounts.currentExits),
       getAccountMeta('previousExits', accounts.previousExits),
       getAccountMeta('currentPrices', accounts.currentPrices),
@@ -747,24 +710,22 @@ export function getAuthorityClosePositionInstruction<
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
-    data: getAuthorityClosePositionInstructionDataEncoder().encode(
-      args as AuthorityClosePositionInstructionDataArgs,
+    data: getCompensateDebtInstructionDataEncoder().encode(
+      args as CompensateDebtInstructionDataArgs,
     ),
     programAddress,
-  } as AuthorityClosePositionInstruction<
+  } as CompensateDebtInstruction<
     TProgramAddress,
-    TAccountAuthority,
+    TAccountSigner,
     TAccountBaseMint,
     TAccountQuoteMint,
-    TAccountAuthorityBaseTokenAccount,
-    TAccountAuthorityQuoteTokenAccount,
+    TAccountSignerBaseTokenAccount,
+    TAccountSignerQuoteTokenAccount,
     TAccountMarket,
-    TAccountTradePosition,
+    TAccountLiquidityPosition,
     TAccountBaseVault,
     TAccountQuoteVault,
     TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
@@ -776,50 +737,48 @@ export function getAuthorityClosePositionInstruction<
   >)
 }
 
-export type ParsedAuthorityClosePositionInstruction<
+export type ParsedCompensateDebtInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>
   accounts: {
-    authority: TAccountMetas[0]
+    signer: TAccountMetas[0]
     baseMint: TAccountMetas[1]
     quoteMint: TAccountMetas[2]
-    authorityBaseTokenAccount: TAccountMetas[3]
-    authorityQuoteTokenAccount: TAccountMetas[4]
+    signerBaseTokenAccount: TAccountMetas[3]
+    signerQuoteTokenAccount: TAccountMetas[4]
     market: TAccountMetas[5]
-    tradePosition: TAccountMetas[6]
+    liquidityPosition: TAccountMetas[6]
     baseVault: TAccountMetas[7]
     quoteVault: TAccountMetas[8]
     bookkeeping: TAccountMetas[9]
-    futureExits: TAccountMetas[10]
-    futurePrices: TAccountMetas[11]
-    currentExits: TAccountMetas[12]
-    previousExits: TAccountMetas[13]
-    currentPrices: TAccountMetas[14]
-    previousPrices: TAccountMetas[15]
-    baseTokenProgram: TAccountMetas[16]
-    quoteTokenProgram: TAccountMetas[17]
-    associatedTokenProgram: TAccountMetas[18]
-    systemProgram: TAccountMetas[19]
+    currentExits: TAccountMetas[10]
+    previousExits: TAccountMetas[11]
+    currentPrices: TAccountMetas[12]
+    previousPrices: TAccountMetas[13]
+    baseTokenProgram: TAccountMetas[14]
+    quoteTokenProgram: TAccountMetas[15]
+    associatedTokenProgram: TAccountMetas[16]
+    systemProgram: TAccountMetas[17]
   }
-  data: AuthorityClosePositionInstructionData
+  data: CompensateDebtInstructionData
 }
 
-export function parseAuthorityClosePositionInstruction<
+export function parseCompensateDebtInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedAuthorityClosePositionInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
+): ParsedCompensateDebtInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 18) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 20,
+        expectedAccountMetas: 18,
       },
     )
   }
@@ -832,18 +791,16 @@ export function parseAuthorityClosePositionInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      authority: getNextAccount(),
+      signer: getNextAccount(),
       baseMint: getNextAccount(),
       quoteMint: getNextAccount(),
-      authorityBaseTokenAccount: getNextAccount(),
-      authorityQuoteTokenAccount: getNextAccount(),
+      signerBaseTokenAccount: getNextAccount(),
+      signerQuoteTokenAccount: getNextAccount(),
       market: getNextAccount(),
-      tradePosition: getNextAccount(),
+      liquidityPosition: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
       bookkeeping: getNextAccount(),
-      futureExits: getNextAccount(),
-      futurePrices: getNextAccount(),
       currentExits: getNextAccount(),
       previousExits: getNextAccount(),
       currentPrices: getNextAccount(),
@@ -853,8 +810,6 @@ export function parseAuthorityClosePositionInstruction<
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getAuthorityClosePositionInstructionDataDecoder().decode(
-      instruction.data,
-    ),
+    data: getCompensateDebtInstructionDataDecoder().decode(instruction.data),
   }
 }

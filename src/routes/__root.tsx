@@ -4,6 +4,7 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useRouterState,
 } from '@tanstack/react-router'
 
 import { SolanaProvider } from '../integrations/solana'
@@ -11,6 +12,10 @@ import { Navbar } from '../components/navbar'
 import { RiskDisclaimerDialog } from '../components/risk-disclaimer-dialog'
 import { Toaster } from '../components/ui/sonner'
 import { WalletConnectionButton } from '../features/trading/components/wallet-connection-button'
+import {
+  DEFAULT_MARKET_ID,
+  parseMarketSearch,
+} from '../features/trading/constants'
 
 import appCss from '../styles.css?url'
 
@@ -19,6 +24,10 @@ import type { QueryClient } from '@tanstack/react-query'
 interface MyRouterContext {
   queryClient: QueryClient
 }
+
+const PRODUCTION_SITE_URL = 'https://mato.markets'
+const siteUrl =
+  import.meta.env.VITE_SITE_URL?.replace(/\/$/, '') ?? PRODUCTION_SITE_URL
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
@@ -47,11 +56,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         property: 'og:image',
-        content: 'https://mato.markets/icon-512.png',
+        content: `${siteUrl}/icon-512.png`,
       },
       {
         property: 'og:url',
-        content: 'https://mato.markets',
+        content: siteUrl,
       },
       {
         property: 'og:type',
@@ -71,10 +80,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'twitter:image',
-        content: 'https://mato.markets/icon-512.png',
+        content: `${siteUrl}/icon-512.png`,
       },
+      ...(siteUrl === PRODUCTION_SITE_URL
+        ? []
+        : [{ name: 'robots', content: 'noindex, nofollow' }]),
     ],
     links: [
+      {
+        rel: 'canonical',
+        href: siteUrl,
+      },
       {
         rel: 'stylesheet',
         href: appCss,
@@ -108,10 +124,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootLayout() {
+  const location = useRouterState({ select: (state) => state.location })
+  const marketId =
+    location.pathname === '/'
+      ? parseMarketSearch(location.search).market
+      : DEFAULT_MARKET_ID
+
   return (
     <>
-      <Navbar>
-        <WalletConnectionButton />
+      <Navbar marketId={marketId}>
+        <WalletConnectionButton marketId={marketId} />
       </Navbar>
       {!transactionsEnabled() && (
         <div

@@ -43,44 +43,38 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CLOSE_EXITS_ACCOUNT_DISCRIMINATOR = new Uint8Array([
-  241, 198, 24, 114, 18, 89, 131, 244,
+export const UNPAUSE_MARKET_DISCRIMINATOR = new Uint8Array([
+  219, 203, 199, 170, 212, 45, 170, 80,
 ])
 
-export function getCloseExitsAccountDiscriminatorBytes() {
+export function getUnpauseMarketDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_EXITS_ACCOUNT_DISCRIMINATOR,
+    UNPAUSE_MARKET_DISCRIMINATOR,
   )
 }
 
-export type CloseExitsAccountInstruction<
+export type UnpauseMarketInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
-  TAccountSigner extends string | AccountMeta<string> = string,
-  TAccountOwner extends string | AccountMeta<string> = string,
-  TAccountExits extends string | AccountMeta<string> = string,
+  TAccountAuthority extends string | AccountMeta<string> = string,
+  TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountBookkeeping extends string | AccountMeta<string> = string,
   TAccountCurrentExits extends string | AccountMeta<string> = string,
   TAccountPreviousExits extends string | AccountMeta<string> = string,
   TAccountCurrentPrices extends string | AccountMeta<string> = string,
   TAccountPreviousPrices extends string | AccountMeta<string> = string,
-  TAccountSystemProgram extends string | AccountMeta<string> =
-    '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
-      TAccountSigner extends string
-        ? WritableSignerAccount<TAccountSigner> &
-            AccountSignerMeta<TAccountSigner>
-        : TAccountSigner,
-      TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountExits extends string
-        ? WritableAccount<TAccountExits>
-        : TAccountExits,
+      TAccountAuthority extends string
+        ? WritableSignerAccount<TAccountAuthority> &
+            AccountSignerMeta<TAccountAuthority>
+        : TAccountAuthority,
+      TAccountProgramConfig extends string
+        ? ReadonlyAccount<TAccountProgramConfig>
+        : TAccountProgramConfig,
       TAccountMarket extends string
         ? WritableAccount<TAccountMarket>
         : TAccountMarket,
@@ -99,113 +93,100 @@ export type CloseExitsAccountInstruction<
       TAccountPreviousPrices extends string
         ? WritableAccount<TAccountPreviousPrices>
         : TAccountPreviousPrices,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >
 
-export type CloseExitsAccountInstructionData = {
+export type UnpauseMarketInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
 }
 
-export type CloseExitsAccountInstructionDataArgs = {
+export type UnpauseMarketInstructionDataArgs = {
   referenceIndex: number | bigint
 }
 
-export function getCloseExitsAccountInstructionDataEncoder(): FixedSizeEncoder<CloseExitsAccountInstructionDataArgs> {
+export function getUnpauseMarketInstructionDataEncoder(): FixedSizeEncoder<UnpauseMarketInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: CLOSE_EXITS_ACCOUNT_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: UNPAUSE_MARKET_DISCRIMINATOR }),
   )
 }
 
-export function getCloseExitsAccountInstructionDataDecoder(): FixedSizeDecoder<CloseExitsAccountInstructionData> {
+export function getUnpauseMarketInstructionDataDecoder(): FixedSizeDecoder<UnpauseMarketInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
   ])
 }
 
-export function getCloseExitsAccountInstructionDataCodec(): FixedSizeCodec<
-  CloseExitsAccountInstructionDataArgs,
-  CloseExitsAccountInstructionData
+export function getUnpauseMarketInstructionDataCodec(): FixedSizeCodec<
+  UnpauseMarketInstructionDataArgs,
+  UnpauseMarketInstructionData
 > {
   return combineCodec(
-    getCloseExitsAccountInstructionDataEncoder(),
-    getCloseExitsAccountInstructionDataDecoder(),
+    getUnpauseMarketInstructionDataEncoder(),
+    getUnpauseMarketInstructionDataDecoder(),
   )
 }
 
-export type CloseExitsAccountAsyncInput<
-  TAccountSigner extends string = string,
-  TAccountOwner extends string = string,
-  TAccountExits extends string = string,
+export type UnpauseMarketAsyncInput<
+  TAccountAuthority extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountMarket extends string = string,
   TAccountBookkeeping extends string = string,
   TAccountCurrentExits extends string = string,
   TAccountPreviousExits extends string = string,
   TAccountCurrentPrices extends string = string,
   TAccountPreviousPrices extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
-  signer: TransactionSigner<TAccountSigner>
-  owner: Address<TAccountOwner>
-  exits: Address<TAccountExits>
+  authority: TransactionSigner<TAccountAuthority>
+  programConfig?: Address<TAccountProgramConfig>
   market: Address<TAccountMarket>
   bookkeeping?: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
   previousPrices: Address<TAccountPreviousPrices>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: CloseExitsAccountInstructionDataArgs['referenceIndex']
+  referenceIndex: UnpauseMarketInstructionDataArgs['referenceIndex']
 }
 
-export async function getCloseExitsAccountInstructionAsync<
-  TAccountSigner extends string,
-  TAccountOwner extends string,
-  TAccountExits extends string,
+export async function getUnpauseMarketInstructionAsync<
+  TAccountAuthority extends string,
+  TAccountProgramConfig extends string,
   TAccountMarket extends string,
   TAccountBookkeeping extends string,
   TAccountCurrentExits extends string,
   TAccountPreviousExits extends string,
   TAccountCurrentPrices extends string,
   TAccountPreviousPrices extends string,
-  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: CloseExitsAccountAsyncInput<
-    TAccountSigner,
-    TAccountOwner,
-    TAccountExits,
+  input: UnpauseMarketAsyncInput<
+    TAccountAuthority,
+    TAccountProgramConfig,
     TAccountMarket,
     TAccountBookkeeping,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
+    TAccountPreviousPrices
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  CloseExitsAccountInstruction<
+  UnpauseMarketInstruction<
     TProgramAddress,
-    TAccountSigner,
-    TAccountOwner,
-    TAccountExits,
+    TAccountAuthority,
+    TAccountProgramConfig,
     TAccountMarket,
     TAccountBookkeeping,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
+    TAccountPreviousPrices
   >
 > {
   // Program address.
@@ -213,16 +194,14 @@ export async function getCloseExitsAccountInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: true },
-    exits: { value: input.exits ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     currentExits: { value: input.currentExits ?? null, isWritable: false },
     previousExits: { value: input.previousExits ?? null, isWritable: false },
     currentPrices: { value: input.currentPrices ?? null, isWritable: true },
     previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   }
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -233,6 +212,18 @@ export async function getCloseExitsAccountInstructionAsync<
   const args = { ...input }
 
   // Resolve default values.
+  if (!accounts.programConfig.value) {
+    accounts.programConfig.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(
+          new Uint8Array([
+            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
+          ]),
+        ),
+      ],
+    })
+  }
   if (!accounts.bookkeeping.value) {
     accounts.bookkeeping.value = await getProgramDerivedAddress({
       programAddress,
@@ -251,123 +242,103 @@ export async function getCloseExitsAccountInstructionAsync<
       ],
     })
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
   return Object.freeze({
     accounts: [
-      getAccountMeta('signer', accounts.signer),
-      getAccountMeta('owner', accounts.owner),
-      getAccountMeta('exits', accounts.exits),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('market', accounts.market),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('currentExits', accounts.currentExits),
       getAccountMeta('previousExits', accounts.previousExits),
       getAccountMeta('currentPrices', accounts.currentPrices),
       getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
-    data: getCloseExitsAccountInstructionDataEncoder().encode(
-      args as CloseExitsAccountInstructionDataArgs,
+    data: getUnpauseMarketInstructionDataEncoder().encode(
+      args as UnpauseMarketInstructionDataArgs,
     ),
     programAddress,
-  } as CloseExitsAccountInstruction<
+  } as UnpauseMarketInstruction<
     TProgramAddress,
-    TAccountSigner,
-    TAccountOwner,
-    TAccountExits,
+    TAccountAuthority,
+    TAccountProgramConfig,
     TAccountMarket,
     TAccountBookkeeping,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
+    TAccountPreviousPrices
   >)
 }
 
-export type CloseExitsAccountInput<
-  TAccountSigner extends string = string,
-  TAccountOwner extends string = string,
-  TAccountExits extends string = string,
+export type UnpauseMarketInput<
+  TAccountAuthority extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountMarket extends string = string,
   TAccountBookkeeping extends string = string,
   TAccountCurrentExits extends string = string,
   TAccountPreviousExits extends string = string,
   TAccountCurrentPrices extends string = string,
   TAccountPreviousPrices extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
-  signer: TransactionSigner<TAccountSigner>
-  owner: Address<TAccountOwner>
-  exits: Address<TAccountExits>
+  authority: TransactionSigner<TAccountAuthority>
+  programConfig: Address<TAccountProgramConfig>
   market: Address<TAccountMarket>
   bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
   previousPrices: Address<TAccountPreviousPrices>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: CloseExitsAccountInstructionDataArgs['referenceIndex']
+  referenceIndex: UnpauseMarketInstructionDataArgs['referenceIndex']
 }
 
-export function getCloseExitsAccountInstruction<
-  TAccountSigner extends string,
-  TAccountOwner extends string,
-  TAccountExits extends string,
+export function getUnpauseMarketInstruction<
+  TAccountAuthority extends string,
+  TAccountProgramConfig extends string,
   TAccountMarket extends string,
   TAccountBookkeeping extends string,
   TAccountCurrentExits extends string,
   TAccountPreviousExits extends string,
   TAccountCurrentPrices extends string,
   TAccountPreviousPrices extends string,
-  TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: CloseExitsAccountInput<
-    TAccountSigner,
-    TAccountOwner,
-    TAccountExits,
+  input: UnpauseMarketInput<
+    TAccountAuthority,
+    TAccountProgramConfig,
     TAccountMarket,
     TAccountBookkeeping,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
+    TAccountPreviousPrices
   >,
   config?: { programAddress?: TProgramAddress },
-): CloseExitsAccountInstruction<
+): UnpauseMarketInstruction<
   TProgramAddress,
-  TAccountSigner,
-  TAccountOwner,
-  TAccountExits,
+  TAccountAuthority,
+  TAccountProgramConfig,
   TAccountMarket,
   TAccountBookkeeping,
   TAccountCurrentExits,
   TAccountPreviousExits,
   TAccountCurrentPrices,
-  TAccountPreviousPrices,
-  TAccountSystemProgram
+  TAccountPreviousPrices
 > {
   // Program address.
   const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
 
   // Original accounts.
   const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: true },
-    exits: { value: input.exits ?? null, isWritable: true },
+    authority: { value: input.authority ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     currentExits: { value: input.currentExits ?? null, isWritable: false },
     previousExits: { value: input.previousExits ?? null, isWritable: false },
     currentPrices: { value: input.currentPrices ?? null, isWritable: true },
     previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   }
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -377,79 +348,67 @@ export function getCloseExitsAccountInstruction<
   // Original args.
   const args = { ...input }
 
-  // Resolve default values.
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
-
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
   return Object.freeze({
     accounts: [
-      getAccountMeta('signer', accounts.signer),
-      getAccountMeta('owner', accounts.owner),
-      getAccountMeta('exits', accounts.exits),
+      getAccountMeta('authority', accounts.authority),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('market', accounts.market),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('currentExits', accounts.currentExits),
       getAccountMeta('previousExits', accounts.previousExits),
       getAccountMeta('currentPrices', accounts.currentPrices),
       getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('systemProgram', accounts.systemProgram),
     ],
-    data: getCloseExitsAccountInstructionDataEncoder().encode(
-      args as CloseExitsAccountInstructionDataArgs,
+    data: getUnpauseMarketInstructionDataEncoder().encode(
+      args as UnpauseMarketInstructionDataArgs,
     ),
     programAddress,
-  } as CloseExitsAccountInstruction<
+  } as UnpauseMarketInstruction<
     TProgramAddress,
-    TAccountSigner,
-    TAccountOwner,
-    TAccountExits,
+    TAccountAuthority,
+    TAccountProgramConfig,
     TAccountMarket,
     TAccountBookkeeping,
     TAccountCurrentExits,
     TAccountPreviousExits,
     TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
+    TAccountPreviousPrices
   >)
 }
 
-export type ParsedCloseExitsAccountInstruction<
+export type ParsedUnpauseMarketInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>
   accounts: {
-    signer: TAccountMetas[0]
-    owner: TAccountMetas[1]
-    exits: TAccountMetas[2]
-    market: TAccountMetas[3]
-    bookkeeping: TAccountMetas[4]
-    currentExits: TAccountMetas[5]
-    previousExits: TAccountMetas[6]
-    currentPrices: TAccountMetas[7]
-    previousPrices: TAccountMetas[8]
-    systemProgram: TAccountMetas[9]
+    authority: TAccountMetas[0]
+    programConfig: TAccountMetas[1]
+    market: TAccountMetas[2]
+    bookkeeping: TAccountMetas[3]
+    currentExits: TAccountMetas[4]
+    previousExits: TAccountMetas[5]
+    currentPrices: TAccountMetas[6]
+    previousPrices: TAccountMetas[7]
   }
-  data: CloseExitsAccountInstructionData
+  data: UnpauseMarketInstructionData
 }
 
-export function parseCloseExitsAccountInstruction<
+export function parseUnpauseMarketInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedCloseExitsAccountInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 10) {
+): ParsedUnpauseMarketInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 8) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 10,
+        expectedAccountMetas: 8,
       },
     )
   }
@@ -462,17 +421,15 @@ export function parseCloseExitsAccountInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      signer: getNextAccount(),
-      owner: getNextAccount(),
-      exits: getNextAccount(),
+      authority: getNextAccount(),
+      programConfig: getNextAccount(),
       market: getNextAccount(),
       bookkeeping: getNextAccount(),
       currentExits: getNextAccount(),
       previousExits: getNextAccount(),
       currentPrices: getNextAccount(),
       previousPrices: getNextAccount(),
-      systemProgram: getNextAccount(),
     },
-    data: getCloseExitsAccountInstructionDataDecoder().decode(instruction.data),
+    data: getUnpauseMarketInstructionDataDecoder().decode(instruction.data),
   }
 }
