@@ -1,0 +1,10 @@
+node_modules
+.pnpm-store
+dist
+.output
+.tanstack
+pnpm-lock.yaml
+src/routeTree.gen.ts
+src/lib/generated
+src/lib/idl
+recovery-manifest.json
