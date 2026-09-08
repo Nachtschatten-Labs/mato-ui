@@ -7,6 +7,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { sendClosePosition, sendClosePositions } from '../api/twob-client'
 import { formatTransactionError } from '../lib/transaction-errors'
+import { TransactionConfirmationUnknownError } from '../lib/transaction-confirmation'
 import { tradingQueryKeys } from '../query-keys'
 import type { Address } from '@solana/kit'
 import type { QueryClient } from '@tanstack/react-query'
@@ -14,7 +15,7 @@ import type { QueryClient } from '@tanstack/react-query'
 const CLOSED_POSITION_REFRESH_DELAYS_MS = [1_500, 5_000, 10_000]
 
 type ClosePositionStatus =
-  'idle' | 'building' | 'submitting' | 'success' | 'error'
+  'idle' | 'building' | 'submitting' | 'success' | 'unconfirmed' | 'error'
 
 function invalidateClosedPositionQueries({
   authority,
@@ -105,7 +106,10 @@ export function useClosePosition() {
         ])
         return true
       } catch (caughtError) {
-        setStatus('error')
+        const unconfirmed =
+          caughtError instanceof TransactionConfirmationUnknownError
+        setStatus(unconfirmed ? 'unconfirmed' : 'error')
+        if (unconfirmed) setSignature(caughtError.signature)
         setError(
           formatTransactionError(caughtError, 'Failed to close position.'),
         )
@@ -177,7 +181,10 @@ export function useClosePosition() {
         ])
         return true
       } catch (caughtError) {
-        setStatus('error')
+        const unconfirmed =
+          caughtError instanceof TransactionConfirmationUnknownError
+        setStatus(unconfirmed ? 'unconfirmed' : 'error')
+        if (unconfirmed) setSignature(caughtError.signature)
         setError(
           formatTransactionError(caughtError, 'Failed to close positions.'),
         )

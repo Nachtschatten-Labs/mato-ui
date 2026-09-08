@@ -1,12 +1,8 @@
 import { assertTransactionsEnabled } from '@/integrations/solana/transaction-policy'
 import {
-  SIGNATURE_STATUS_TIMEOUT_MS,
   WRAPPED_SOL_MINT,
-  confirmationMeetsCommitment,
   createWalletTransactionSigner,
-  deriveConfirmationStatus,
   detectTokenProgram,
-  normalizeSignature,
 } from '@solana/client'
 import {
   AccountRole,
@@ -31,6 +27,7 @@ import {
 import { encodeBase58 } from '../lib/base58'
 import { decodeBase64 } from '../lib/bytes'
 import { collectCloseableRentAccounts } from '../lib/rent'
+import { waitForConfirmedSignature } from '../lib/transaction-confirmation'
 import {
   fetchOwnedExitsAccounts,
   fetchOwnedPricesAccounts,
@@ -61,7 +58,6 @@ import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/
 
 const textEncoder = new TextEncoder()
 const BOOKKEEPING_DELAY_SLOTS = 20
-const SIGNATURE_POLL_INTERVAL_MS = 1_000
 const SYSTEM_PROGRAM_ADDRESS =
   '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
 
@@ -77,43 +73,6 @@ type GetProgramAccountsFilter = NonNullable<
 
 function seed(value: string) {
   return getBytesEncoder().encode(textEncoder.encode(value))
-}
-
-async function waitForConfirmedSignature(
-  rpcClient: TwobRpcClient,
-  signature: string,
-) {
-  const normalizedSignature = normalizeSignature(signature)
-  if (!normalizedSignature) {
-    throw new Error('Invalid transaction signature returned by wallet.')
-  }
-
-  const startTime = Date.now()
-
-  while (Date.now() - startTime < SIGNATURE_STATUS_TIMEOUT_MS) {
-    const response = await rpcClient
-      .getSignatureStatuses([normalizedSignature])
-      .send()
-    const status = response.value[0] ?? null
-
-    if (status?.err) {
-      throw new Error(
-        `Transaction failed during confirmation: ${JSON.stringify(status.err)}`,
-      )
-    }
-
-    if (
-      confirmationMeetsCommitment(deriveConfirmationStatus(status), 'confirmed')
-    ) {
-      return
-    }
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, SIGNATURE_POLL_INTERVAL_MS),
-    )
-  }
-
-  throw new Error('Transaction confirmation timed out.')
 }
 
 function buildCloseExitsAccountInstruction({

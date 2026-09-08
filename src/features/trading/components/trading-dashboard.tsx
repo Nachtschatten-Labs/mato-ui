@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { showTransactionError } from '../lib/transaction-toast'
 import {
   CHART_TIMEFRAMES,
   DEFAULT_MARKET_UPDATES_LIMIT,
@@ -517,11 +518,15 @@ export function TradingDashboard() {
   useEffect(() => {
     if (!submitOrder.error) return
 
-    toast.error('Order failed', {
-      description: submitOrder.error,
+    showTransactionError({
+      title: 'Order failed',
+      error: submitOrder.error,
+      status: submitOrder.status,
+      signature: submitOrder.signature,
+      endpoint,
       id: 'submit-order-error',
     })
-  }, [submitOrder.error])
+  }, [submitOrder.error, submitOrder.status, submitOrder.signature])
 
   useEffect(() => {
     const signature = closePosition.signature
@@ -550,11 +555,15 @@ export function TradingDashboard() {
   useEffect(() => {
     if (!closePosition.error) return
 
-    toast.error('Close failed', {
-      description: closePosition.error,
+    showTransactionError({
+      title: 'Close failed',
+      error: closePosition.error,
+      status: closePosition.status,
+      signature: closePosition.signature,
+      endpoint,
       id: 'close-position-error',
     })
-  }, [closePosition.error])
+  }, [closePosition.error, closePosition.status, closePosition.signature])
 
   useEffect(() => {
     const signature = reclaimRent.signature
@@ -582,11 +591,15 @@ export function TradingDashboard() {
   useEffect(() => {
     if (!reclaimRent.error) return
 
-    toast.error('Rent reclaim failed', {
-      description: reclaimRent.error,
+    showTransactionError({
+      title: 'Rent reclaim failed',
+      error: reclaimRent.error,
+      status: reclaimRent.status,
+      signature: reclaimRent.signature,
+      endpoint,
       id: 'reclaim-rent-error',
     })
-  }, [reclaimRent.error])
+  }, [reclaimRent.error, reclaimRent.status, reclaimRent.signature])
 
   const refreshBalances = async () => {
     await Promise.allSettled([

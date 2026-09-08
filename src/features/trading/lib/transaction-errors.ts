@@ -1,3 +1,6 @@
+import { decodeBase64 } from './bytes'
+import { TransactionConfirmationUnknownError } from './transaction-confirmation'
+
 const GENERIC_TRANSACTION_PLAN_MESSAGE =
   'The provided transaction plan failed to execute.'
 const STALE_MARKET_ACCOUNTS_MESSAGE =
@@ -49,6 +52,34 @@ function extractSolanaErrorCode(error: unknown): number | null {
 
 function extractKnownSolanaMessage(error: unknown): string | null {
   const code = extractSolanaErrorCode(error)
+  if (code === 8_100_002) {
+    let status =
+      isRecord(error) && isRecord(error.context)
+        ? readNumber(error.context.statusCode)
+        : null
+    if (status === null) {
+      const message = isRecord(error)
+        ? readString(error.message)
+        : readString(error)
+      const encoded = message?.match(
+        /decode -- 8100002 '([A-Za-z0-9+/=_-]+)'/,
+      )?.[1]
+      if (encoded) {
+        try {
+          status = Number(
+            new URLSearchParams(
+              new TextDecoder().decode(decodeBase64(encoded)),
+            ).get('statusCode'),
+          )
+        } catch {
+          // Leave malformed production error context unreadable.
+        }
+      }
+    }
+    return status === 429
+      ? 'Solana is temporarily rate-limiting requests. Wait a minute and check your positions and wallet activity before trying again.'
+      : 'The Solana connection was interrupted. Check your positions and wallet activity before trying again.'
+  }
   if (code === SOLANA_SECURE_CONTEXT_ERROR_CODE) {
     return SECURE_CONTEXT_MESSAGE
   }
@@ -174,6 +205,7 @@ function extractPlanHint(value: unknown): string | null {
 }
 
 export function formatTransactionError(error: unknown, fallback: string) {
+  if (error instanceof TransactionConfirmationUnknownError) return error.message
   const transactionPlanResult = isRecord(error)
     ? (error.transactionPlanResult ??
       (isRecord(error.context) ? error.context.transactionPlanResult : null))
