@@ -10,6 +10,8 @@ const READ_METHODS = new Set([
   'getVersion',
   'getSlot',
   'getBlockHeight',
+  // Solana's post-send confirmation uses epoch info to check blockhash expiration.
+  'getEpochInfo',
   'getSignatureStatuses',
   'getRecentPrioritizationFees',
   'getFeeForMessage',

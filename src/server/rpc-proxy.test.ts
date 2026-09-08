@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSolanaRpcFromTransport } from '@solana/kit'
 import target from '../../deployment-target.json'
 import { handleRpcProxy } from './rpc-proxy'
 import { sanitizeRpcResponse, validateRpcPayload } from './rpc-policy'
@@ -90,6 +91,47 @@ describe('RPC proxy boundary', () => {
         .status,
     ).toBe(200)
   })
+  it.each(['true', 'false'])(
+    'allows the SDK expiration check after submission with trading enabled=%s',
+    async (tradingEnabled) => {
+      vi.stubEnv('VITE_ENABLE_TRANSACTIONS', tradingEnabled)
+      vi.stubEnv('VITE_VERIFIED_PROGRAM_ID', target.programId)
+      const epochInfo = {
+        absoluteSlot: 100,
+        blockHeight: 90,
+        epoch: 0,
+        slotIndex: 100,
+        slotsInEpoch: 432_000,
+        transactionCount: 500,
+      }
+      const upstream = vi.fn(async (_url: string, init: RequestInit) => {
+        const payload = JSON.parse(init.body as string)
+        return Response.json({
+          jsonrpc: '2.0',
+          id: payload.id,
+          result: epochInfo,
+        })
+      })
+      vi.stubGlobal('fetch', upstream)
+      const rpc = createSolanaRpcFromTransport(async ({ payload }) => {
+        const response = await handleRpcProxy(request(payload), makeEnv())
+        expect(response.status).toBe(200)
+        return response.json()
+      })
+
+      // @solana/client checks blockhash expiration with getEpochInfo after sending.
+      const result = await rpc.getEpochInfo({ commitment: 'confirmed' }).send()
+
+      expect(result.blockHeight).toBe(90n)
+      expect(upstream).toHaveBeenCalledOnce()
+      expect(JSON.parse(upstream.mock.calls[0][1].body as string)).toEqual(
+        expect.objectContaining({
+          method: 'getEpochInfo',
+          params: [{ commitment: 'confirmed' }],
+        }),
+      )
+    },
+  )
   it('blocks cross-origin calls and exhausted quotas before upstream access', async () => {
     const upstream = vi.fn()
     vi.stubGlobal('fetch', upstream)
