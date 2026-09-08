@@ -69,9 +69,36 @@ Cloudflare selects the target during the Vite build; the generated
 `dist/server/wrangler.json` controls the following deployment.
 `pnpm deploy:dry-run` validates the most recent build without uploading it.
 
-The GitHub workflow checks both branches without deployment credentials. Publishing
-is currently manual. Review any existing Cloudflare Git integration before allowing
-it to publish; it must point at the recovered repository and correct branch.
+## Automatic production deployment
+
+The `Validate and deploy application` GitHub Actions workflow validates pull requests
+and pushes to `main` and `v1`. After a push to `main` (including a merged pull request),
+the production deployment job runs only if all validation, dry-run, and dependency
+audit checks pass. It builds the same commit for production, checks the bundle,
+publishes the `mato-ui` Worker at `https://mato.markets`, and checks `/healthz` with
+trading enabled. Pull requests and `v1` do not publish. Runs for the same branch are
+serialized without interrupting an active deployment.
+
+The workflow preserves the current production read API, market 1, and verified
+trading configuration in the deployment job's public `VITE_*` environment values.
+GitHub does not read your local `.env.production.local`; change the workflow when
+changing these production settings. The account and custom domain come from
+`wrangler.jsonc`. RPC secrets remain on the Cloudflare Worker and are not copied to
+GitHub or uploaded on each deployment.
+
+Before the first automatic deployment, add `CLOUDFLARE_API_TOKEN` under the
+repository's **Settings → Secrets and variables → Actions**, or as a secret in its
+`production` environment. Use a Cloudflare Workers deployment token scoped to the
+configured account and the `mato.markets` zone; do not use a global API key. The
+workflow makes this token available only to the publish step. Configure the
+`production` environment to allow `main` without required reviewers if deployments
+should complete without a manual approval. Leave any separate Cloudflare Git
+deployment integration disabled to avoid competing publishers.
+
+To retry a deployment after fixing a missing/expired token, rerun the failed job.
+To publish the latest `main` again, select **Actions → Validate and deploy application
+→ Run workflow → main**. Manual runs on other branches only validate. The local
+publishing commands above remain available for manual deployments.
 
 ## Verify a release
 

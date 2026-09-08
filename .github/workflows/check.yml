@@ -1,11 +1,15 @@
-name: Validate recovered application
+name: Validate and deploy application
 on:
   push:
     branches: [main, v1]
   pull_request:
     branches: [main, v1]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: application-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -25,3 +29,53 @@ jobs:
       - run: pnpm check
       - run: pnpm deploy:dry-run
       - run: pnpm audit --audit-level high
+  deploy:
+    name: Deploy production
+    needs: check
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://mato.markets
+    env:
+      CI: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+      VITE_READ_API_URL: https://read-api-production-f8ea.up.railway.app
+      VITE_MARKET_ID: '1'
+      VITE_ENABLE_TRANSACTIONS: 'true'
+      VITE_VERIFIED_PROGRAM_ID: CCAmAqvza37EWzou7LoYCaGKzdJsCu1CLPMp3Wvx3Bc5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+      - run: npm install --global pnpm@12.3.4 --ignore-scripts
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build production
+        run: pnpm build
+      - name: Check production bundle
+        run: pnpm security:bundle
+      - name: Publish to Cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo '::error::Add the CLOUDFLARE_API_TOKEN Actions secret before deploying.'
+            exit 1
+          fi
+          pnpm exec wrangler deploy
+      - name: Check production health
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 5 --max-time 20 \
+            https://mato.markets/healthz --output /tmp/mato-health.json
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const health = JSON.parse(readFileSync("/tmp/mato-health.json", "utf8"));
+            if (health.status !== "ok" || health.tradingEnabled !== true) {
+              throw new Error("Production health check did not report enabled trading.");
+            }
+            console.log("Production health check passed.");
+          '
