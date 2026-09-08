@@ -21,6 +21,48 @@
           "custom_domain": true,
         },
       ],
+      "ratelimits": [
+        {
+          "name": "RPC_RATE_LIMITER",
+          "namespace_id": "301009080",
+          "simple": {
+            "limit": 300,
+            "period": 60,
+          },
+        },
+        {
+          "name": "RPC_WS_LIMITER",
+          "namespace_id": "301009081",
+          "simple": {
+            "limit": 15,
+            "period": 60,
+          },
+        },
+      ],
+      "secrets": {
+        "required": ["SOLANA_RPC_URL", "SOLANA_WS_URL"],
+      },
     },
+  },
+  "ratelimits": [
+    {
+      "name": "RPC_RATE_LIMITER",
+      "namespace_id": "301009180",
+      "simple": {
+        "limit": 300,
+        "period": 60,
+      },
+    },
+    {
+      "name": "RPC_WS_LIMITER",
+      "namespace_id": "301009181",
+      "simple": {
+        "limit": 15,
+        "period": 60,
+      },
+    },
+  ],
+  "secrets": {
+    "required": [],
   },
 }

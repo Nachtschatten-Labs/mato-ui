@@ -8,3 +8,8 @@ src/routeTree.gen.ts
 src/lib/generated
 src/lib/idl
 recovery-manifest.json
+
+.cloudflare
+.wrangler
+worker-configuration.d.ts
+.dev.vars*

@@ -1,4 +1,8 @@
-export function secureResponse(response: Response, nonce?: string) {
+export function secureResponse(
+  response: Response,
+  nonce?: string,
+  requestUrl?: string,
+) {
   const headers = new Headers(response.headers)
   headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('X-Frame-Options', 'DENY')
@@ -13,7 +17,12 @@ export function secureResponse(response: Response, nonce?: string) {
     headers.set('X-Robots-Tag', 'noindex, nofollow')
   }
   if (nonce && import.meta.env.PROD) {
+    const websocketOrigin = requestUrl ? new URL(requestUrl) : undefined
+    if (websocketOrigin)
+      websocketOrigin.protocol =
+        websocketOrigin.protocol === 'http:' ? 'ws:' : 'wss:'
     const connections = [
+      websocketOrigin?.origin,
       import.meta.env.VITE_READ_API_URL,
       import.meta.env.VITE_SOLANA_RPC_URL,
       import.meta.env.VITE_SOLANA_WS_URL,

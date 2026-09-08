@@ -137,8 +137,9 @@ function visitDirectory(directory) {
         ].includes(node.text) &&
         !name.includes('.test.') &&
         name !== 'src/features/trading/api/market-repository.ts' &&
-        // Reviewed request handler; delegates to TanStack, no outbound requests.
-        name !== 'src/server.ts'
+        // Reviewed request handler and fixed-upstream RPC proxy.
+        name !== 'src/server.ts' &&
+        name !== 'src/server/rpc-proxy.ts'
       ) {
         flag(node, `network API outside reviewed data adapter: ${node.text}`)
       }
