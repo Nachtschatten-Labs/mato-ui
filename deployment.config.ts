@@ -8,14 +8,8 @@ export function deploymentEnvironment(mode: string, input: Env) {
     VITE_SITE_URL: target.siteUrl,
     VITE_DEPLOYMENT_MODE: production ? 'production' : 'preview',
     VITE_READ_API_URL: input.VITE_READ_API_URL?.trim() ?? '',
-    VITE_SOLANA_RPC_URL:
-      input.VITE_SOLANA_RPC_URL?.trim() || target.defaultRpcUrl,
-    VITE_SOLANA_WS_URL:
-      input.VITE_SOLANA_WS_URL?.trim() ||
-      (input.VITE_SOLANA_RPC_URL?.trim() || target.defaultRpcUrl).replace(
-        /^https:/,
-        'wss:',
-      ),
+    VITE_SOLANA_RPC_URL: target.siteUrl + '/rpc',
+    VITE_SOLANA_WS_URL: target.siteUrl.replace(/^https:/, 'wss:') + '/rpc/ws',
     VITE_MARKET_ID: input.VITE_MARKET_ID?.trim() || '1',
     VITE_ENABLE_TRANSACTIONS: production
       ? input.VITE_ENABLE_TRANSACTIONS || 'false'
@@ -23,6 +17,11 @@ export function deploymentEnvironment(mode: string, input: Env) {
     VITE_VERIFIED_PROGRAM_ID: production
       ? input.VITE_VERIFIED_PROGRAM_ID || ''
       : '',
+  }
+  if (input.VITE_SOLANA_RPC_URL || input.VITE_SOLANA_WS_URL) {
+    throw new Error(
+      'RPC endpoints must use server-only SOLANA_RPC_URL and SOLANA_WS_URL secrets, never VITE_ variables',
+    )
   }
   if (production && !env.VITE_READ_API_URL) {
     throw new Error(

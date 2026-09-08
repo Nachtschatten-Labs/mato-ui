@@ -33,7 +33,7 @@ describe('deployment configuration', () => {
         VITE_SOLANA_RPC_URL: 'http://rpc.example.com?secret=do-not-log',
         ...configured,
       }),
-    ).toThrow('VITE_SOLANA_RPC_URL requires https:')
+    ).toThrow('server-only SOLANA_RPC_URL')
   })
   it('requires a matching program before allowing trading', () => {
     expect(() =>
@@ -44,15 +44,18 @@ describe('deployment configuration', () => {
       }),
     ).toThrow('verified program ID')
   })
-  it('derives secure WebSockets and fixes the site URL to the branch target', () => {
+  it('keeps private RPC configuration out of the browser and fixes the site URL', () => {
     const result = deploymentEnvironment('production', {
       ...configured,
-      VITE_SOLANA_RPC_URL: 'https://rpc.example.com/?token=public',
+      SOLANA_RPC_URL: 'https://rpc.example.com/private-token',
+      SOLANA_WS_URL: 'wss://rpc.example.com/private-token',
       VITE_SITE_URL: 'https://wrong.example.com',
     })
     expect(result.VITE_SOLANA_WS_URL).toBe(
-      'wss://rpc.example.com/?token=public',
+      target.siteUrl.replace('https:', 'wss:') + '/rpc/ws',
     )
     expect(result.VITE_SITE_URL).toBe(target.siteUrl)
+    expect(result.VITE_SOLANA_RPC_URL).toBe(target.siteUrl + '/rpc')
+    expect(JSON.stringify(result)).not.toContain('private-token')
   })
 })

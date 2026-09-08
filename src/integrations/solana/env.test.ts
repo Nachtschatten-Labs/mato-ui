@@ -1,33 +1,32 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import {
   getBrowserSolanaRpcEndpoint,
   getBrowserSolanaWebsocketEndpoint,
 } from './env'
 
-describe('browser Solana environment', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+})
+it('uses the current browser origin, including previews, without provider secrets', () => {
+  vi.stubGlobal('window', {
+    location: { origin: 'https://preview.example.com' },
   })
-
-  it('uses the statically referenced Vite RPC endpoint', () => {
-    vi.stubEnv('VITE_SOLANA_RPC_URL', ' https://rpc.example.com ')
-
-    expect(getBrowserSolanaRpcEndpoint()).toBe('https://rpc.example.com')
-  })
-
-  it('uses the statically referenced Vite WebSocket endpoint', () => {
-    vi.stubEnv('VITE_SOLANA_WS_URL', ' wss://rpc.example.com ')
-
-    expect(
-      getBrowserSolanaWebsocketEndpoint('https://fallback.example.com'),
-    ).toBe('wss://rpc.example.com')
-  })
-
-  it('derives the WebSocket endpoint when none is configured', () => {
-    vi.stubEnv('VITE_SOLANA_WS_URL', '')
-
-    expect(getBrowserSolanaWebsocketEndpoint('https://rpc.example.com')).toBe(
-      'wss://rpc.example.com',
-    )
-  })
+  vi.stubEnv(
+    'VITE_SOLANA_RPC_URL',
+    'https://provider.example.com/private-token',
+  )
+  expect(getBrowserSolanaRpcEndpoint()).toBe('https://preview.example.com/rpc')
+  expect(getBrowserSolanaWebsocketEndpoint()).toBe(
+    'wss://preview.example.com/rpc/ws',
+  )
+})
+it('uses the canonical site for server rendering', () => {
+  vi.stubEnv('VITE_SITE_URL', 'https://site.example.com')
+  expect(getBrowserSolanaRpcEndpoint()).toBe('https://site.example.com/rpc')
+})
+it('uses insecure WebSockets only for the local HTTP runtime', () => {
+  expect(getBrowserSolanaWebsocketEndpoint('http://127.0.0.1:3017/rpc')).toBe(
+    'ws://127.0.0.1:3017/rpc/ws',
+  )
 })
