@@ -22,14 +22,28 @@ cp .env.production.example .env.production.local
 cp .env.production.example .env.preview.local
 pnpm check
 pnpm audit --audit-level high
+pnpm rpc:prepare
 pnpm cf:typegen
 ```
 
 The example uses public endpoints and disables every transaction path. Environment
 files are ignored. All `VITE_*` values are bundled for browsers: do not include
 private keys, wallet seeds, privileged tokens, or Cloudflare credentials.
-Public RPC endpoints can reject or rate-limit browser traffic; use a dedicated,
-browser-authorized RPC service before enabling trading.
+Put the provider endpoints in `SOLANA_RPC_URL` and `SOLANA_WS_URL`, without a
+`VITE_` prefix. `pnpm rpc:prepare` reads `.env.production.local` and writes ignored,
+owner-readable `.dev.vars.production` and `.cloudflare/rpc-secrets.json` files.
+The former is used by local production previews; the latter is uploaded as
+Cloudflare secrets. Never commit or share either file. Development/preview builds
+fall back to the branch's public RPC; optionally put server endpoints in ignored
+`.dev.vars` for local development.
+
+Browsers use same-origin `/rpc` and `/rpc/ws`. The Worker forwards to fixed secret
+endpoints, limits request/response sizes, strips provider errors and redirects,
+restricts methods and program scans, and rate-limits each IP. Limits are approximate
+and per Cloudflare location; they reduce quota abuse but are not authentication.
+Set provider spending limits separately. Production requires both RPC secrets.
+`pnpm security:bundle` checks compiled client and server code for configured RPC
+tokens. Builds reject legacy `VITE_SOLANA_RPC_URL` / `VITE_SOLANA_WS_URL` inputs.
 
 `pnpm check` builds a preview and always disables transactions, even if an
 environment file requests them. Production builds require a secure read API URL.
@@ -43,6 +57,7 @@ the intended cluster; URL validation alone does not verify the network.
 pnpm exec wrangler login
 pnpm deploy:preview
 # Check the URL printed by Wrangler, then publish the current branch:
+pnpm rpc:upload
 pnpm deploy:production
 ```
 
@@ -60,8 +75,8 @@ it to publish; it must point at the recovered repository and correct branch.
 
 ## Verify a release
 
-- `/healthz` must return HTTP 200 and `tradingEnabled: false` for this rollout.
-- Open each domain, confirm a current market price/chart and the read-only label.
+- `/healthz` must return HTTP 200 and the intended `tradingEnabled` setting.
+- Open each domain, confirm a current market price/chart and the intended trading controls.
 - On devnet, confirm the mainnet-reference banner and unavailable closed history.
 - Check browser errors, Worker errors, and response security headers.
 - Test wallet reads separately before enabling any signing operation.
@@ -71,9 +86,13 @@ security policy. Dynamic responses are not cached. Hashed assets are cached for 
 year. Preview and devnet HTML are excluded from indexing. Worker observability is
 enabled; `/healthz` checks application availability, not backend or RPC health.
 
-Transactions remain disabled pending independent verification of the on-chain
-program and its deployment, suitable RPC service, and wallet testing. A configured
-program ID is an operator acknowledgement, not proof of program integrity.
+To enable production trading, set `VITE_ENABLE_TRANSACTIONS=true` and
+`VITE_VERIFIED_PROGRAM_ID` to this branch's `deployment-target.json` program ID
+in `.env.production.local`, then rebuild and deploy. Previews always disable
+transactions. A configured program ID records operator acceptance of the deployed
+program and matching interface; it is not proof of program integrity. After a
+release the operator should connect a wallet and check an order's full lifecycle.
+No private wallet key is needed by this app or its Cloudflare Worker.
 
 ## Recovery
 

@@ -11,7 +11,7 @@
     "dev": "vite dev --host 127.0.0.1 --port 3000",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 3000",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm cf:typegen && tsc --noEmit",
     "test": "vitest run",
     "security:source": "node scripts/check-source.mjs",
     "format:check": "prettier --check .",
@@ -20,8 +20,11 @@
     "build:preview": "vite build --mode preview",
     "deploy:preview": "pnpm check && wrangler deploy",
     "deploy:dry-run": "wrangler deploy --dry-run",
-    "cf:typegen": "wrangler types --include-runtime false",
-    "deploy:production": "pnpm security:source && pnpm typecheck && pnpm test && pnpm build && wrangler deploy"
+    "cf:typegen": "wrangler types --env production",
+    "deploy:production": "pnpm security:source && pnpm typecheck && pnpm test && pnpm build && pnpm security:bundle && wrangler deploy",
+    "rpc:prepare": "node scripts/prepare-rpc.mjs",
+    "rpc:upload": "pnpm rpc:prepare && wrangler secret bulk .cloudflare/rpc-secrets.json --config wrangler.jsonc --env production",
+    "security:bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

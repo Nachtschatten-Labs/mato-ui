@@ -5,7 +5,8 @@
     "vite.config.ts",
     "vitest.config.ts",
     "deployment.config.ts",
-    "deployment.config.test.ts"
+    "deployment.config.test.ts",
+    "worker-configuration.d.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",
