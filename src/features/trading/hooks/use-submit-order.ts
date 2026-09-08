@@ -5,10 +5,17 @@ import { useSolanaClient, useWalletSession } from '@solana/react-hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { sendSubmitOrder } from '../api/twob-client'
 import { formatTransactionError } from '../lib/transaction-errors'
+import { TransactionConfirmationUnknownError } from '../lib/transaction-confirmation'
 import { tradingQueryKeys } from '../query-keys'
 
 type SubmitOrderStatus =
-  'idle' | 'building' | 'wrapping' | 'submitting' | 'success' | 'error'
+  | 'idle'
+  | 'building'
+  | 'wrapping'
+  | 'submitting'
+  | 'success'
+  | 'unconfirmed'
+  | 'error'
 
 export function useSubmitOrder() {
   const client = useSolanaClient()
@@ -84,7 +91,9 @@ export function useSubmitOrder() {
         ])
         return true
       } catch (error) {
-        setStatus('error')
+        const unconfirmed = error instanceof TransactionConfirmationUnknownError
+        setStatus(unconfirmed ? 'unconfirmed' : 'error')
+        if (unconfirmed) setSignature(error.signature)
         setError(formatTransactionError(error, 'Failed to submit order.'))
         return false
       }

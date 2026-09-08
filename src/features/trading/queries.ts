@@ -198,7 +198,8 @@ export const tradingQueries = {
 
         return fetchStreamingMarketState(client.runtime.rpc, marketAddress)
       },
-      refetchInterval: 1_000,
+      // Each refresh performs three RPC reads; leave quota for wallet actions.
+      refetchInterval: 5_000,
     }),
   endSlotSnapshot: ({
     client,

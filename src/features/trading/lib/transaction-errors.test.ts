@@ -1,7 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import { formatTransactionError } from './transaction-errors'
+import { TransactionConfirmationUnknownError } from './transaction-confirmation'
 
 describe('formatTransactionError', () => {
+  it('explains the production 429 error reported when closing a position', () => {
+    const error = new Error(
+      "Solana error #8100002; Decode this error by running `npx @solana/errors decode -- 8100002 'X19jb2RlPTgxMDAwMDImaGVhZGVycz0lNUJvYmplY3QlMjBIZWFkZXJzJTVEJm1lc3NhZ2U9JnN0YXR1c0NvZGU9NDI5'`",
+    )
+    expect(formatTransactionError(error, 'fallback')).toBe(
+      'Solana is temporarily rate-limiting requests. Wait a minute and check your positions and wallet activity before trying again.',
+    )
+  })
+
+  it('explains a structured rate limit inside a transaction plan', () => {
+    expect(
+      formatTransactionError(
+        {
+          context: {
+            transactionPlanResult: {
+              kind: 'single',
+              status: 'failed',
+              error: { context: { __code: 8100002, statusCode: 429 } },
+            },
+          },
+        },
+        'fallback',
+      ),
+    ).toContain('rate-limiting')
+  })
+
+  it('preserves the unconfirmed message instead of exposing its connection error cause', () => {
+    const error = new TransactionConfirmationUnknownError(
+      'signature',
+      new Error('Failed to fetch'),
+    )
+    expect(formatTransactionError(error, 'fallback')).toBe(error.message)
+  })
   it('prefers the nested failed transaction error over the generic planner error', () => {
     const error = {
       context: {

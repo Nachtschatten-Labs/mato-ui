@@ -15,6 +15,7 @@ import {
   sendReclaimRent,
 } from '../api/twob-client'
 import { formatTransactionError } from '../lib/transaction-errors'
+import { TransactionConfirmationUnknownError } from '../lib/transaction-confirmation'
 import { collectCloseableRentAccounts } from '../lib/rent'
 import { tradingQueryKeys } from '../query-keys'
 import { tradingQueries } from '../queries'
@@ -22,7 +23,7 @@ import { useMarketAddress } from './use-market-address'
 import { fetchMarket } from '@/lib/generated/twob/src/generated/accounts'
 
 type ReclaimRentStatus =
-  'idle' | 'building' | 'submitting' | 'success' | 'error'
+  'idle' | 'building' | 'submitting' | 'success' | 'unconfirmed' | 'error'
 
 const RENT_RUNTIME_QUERY_KEY = 'rent-runtime-context'
 
@@ -182,7 +183,10 @@ export function useReclaimRent(enabled: boolean) {
       ])
       return true
     } catch (caughtError) {
-      setStatus('error')
+      const unconfirmed =
+        caughtError instanceof TransactionConfirmationUnknownError
+      setStatus(unconfirmed ? 'unconfirmed' : 'error')
+      if (unconfirmed) setSignature(caughtError.signature)
       setError(formatTransactionError(caughtError, 'Failed to reclaim rent.'))
       return false
     }

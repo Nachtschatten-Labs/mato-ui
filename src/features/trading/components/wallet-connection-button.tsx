@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useWalletConnection } from '@solana/react-hooks'
 import { toast } from 'sonner'
+import { showTransactionError } from '../lib/transaction-toast'
 import {
   AlertTriangle,
   Check,
@@ -93,11 +94,15 @@ export function WalletConnectionButton() {
   useEffect(() => {
     if (!reclaimRent.error) return
 
-    toast.error('Rent reclaim failed', {
-      description: reclaimRent.error,
+    showTransactionError({
+      title: 'Rent reclaim failed',
+      error: reclaimRent.error,
+      status: reclaimRent.status,
+      signature: reclaimRent.signature,
+      endpoint,
       id: 'reclaim-rent-error',
     })
-  }, [reclaimRent.error])
+  }, [reclaimRent.error, reclaimRent.status, reclaimRent.signature])
 
   if (!isReady) {
     return (
