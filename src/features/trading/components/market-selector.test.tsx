@@ -13,7 +13,10 @@ describe('MarketSelector', () => {
     const selector = screen.getByRole('combobox', { name: 'Market' })
     const options = screen.getAllByRole('option')
 
-    expect((selector as HTMLSelectElement).value).toBe('2')
+    expect(selector).toBeInstanceOf(HTMLSelectElement)
+    if (!(selector instanceof HTMLSelectElement))
+      throw new Error('Expected market select')
+    expect(selector.value).toBe('2')
     expect(options.map((option) => option.textContent)).toEqual([
       'SOL/USDC · Market #1',
       'MATO/USDC · Market #2',
