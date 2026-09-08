@@ -25,7 +25,7 @@ interface MyRouterContext {
   queryClient: QueryClient
 }
 
-const PRODUCTION_SITE_URL = 'https://mato.markets'
+const PRODUCTION_SITE_URL = 'https://devnet.mato.markets'
 const siteUrl =
   import.meta.env.VITE_SITE_URL?.replace(/\/$/, '') ?? PRODUCTION_SITE_URL
 
@@ -143,6 +143,13 @@ function RootLayout() {
           Read-only mode · Trading is disabled
         </div>
       )}
+      <div
+        role="note"
+        className="border-b border-white/10 px-4 py-2 text-center text-sm text-muted-foreground"
+      >
+        Devnet wallet and positions · Charts show mainnet SOL/USDC reference
+        data
+      </div>
       <Outlet />
       {transactionsEnabled() && <RiskDisclaimerDialog />}
     </>

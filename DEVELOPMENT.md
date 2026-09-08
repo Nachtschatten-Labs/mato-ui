@@ -18,11 +18,11 @@ between `main` and `v1`, then run `pnpm install --frozen-lockfile` and restart i
 pnpm security:source
 pnpm typecheck
 pnpm test
-pnpm build
+pnpm build:preview
 pnpm audit
 ```
 
-`pnpm check` runs the source check, type check, tests, and build. Generated route
+`pnpm check` runs the source check, type check, tests, and preview build. Generated route
 types are tracked so type checking also works before starting the server.
 `pnpm format:check` checks formatting; `pnpm format` applies it.
 
@@ -46,7 +46,7 @@ Test with a fresh devnet wallet before any production use.
 
 The UI retains its original live-data integrations. Missing backend settings
 produce empty/error states; mock prices are not presented as real market data.
-Backend services and production deployment are separate from restoring this UI.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the production service mapping and deployment steps.
 
 ## Dependency and tooling policy
 

@@ -3,7 +3,9 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "vite.config.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "deployment.config.ts",
+    "deployment.config.test.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",

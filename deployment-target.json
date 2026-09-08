@@ -1,0 +1,7 @@
+{
+  "branch": "v1",
+  "siteUrl": "https://devnet.mato.markets",
+  "cluster": "devnet",
+  "programId": "CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16",
+  "defaultRpcUrl": "https://api.devnet.solana.com"
+}

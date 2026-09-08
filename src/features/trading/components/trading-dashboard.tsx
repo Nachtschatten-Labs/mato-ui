@@ -63,7 +63,6 @@ import { MarketPriceChart } from './market-price-chart'
 import { OrderEntryCard } from './order-entry-card'
 import { OrderBookTable } from './order-book-table'
 import { ActivePositionCard } from './active-position-card'
-import { ClosedPositionsList } from './closed-positions-list'
 import { HighPriceImpactDialog } from './high-price-impact-dialog'
 import { PositionPagination } from './position-pagination'
 import { ReclaimRentBanner } from './reclaim-rent-banner'
@@ -1171,19 +1170,8 @@ export function TradingDashboard({
                 ) : (
                   <EmptyState copy="Your active positions will appear here once an order is live." />
                 )
-              ) : address ? (
-                <ClosedPositionsList
-                  key={marketId}
-                  baseDecimals={baseDecimals}
-                  baseTicker={baseTicker}
-                  marketId={marketId}
-                  positionAuthority={address}
-                  priceHistoryAvailable={marketId === REFERENCE_PRICE_MARKET_ID}
-                  quoteDecimals={quoteDecimals}
-                  quoteTicker={quoteTicker}
-                />
               ) : (
-                <EmptyState copy="Connect a wallet to load your closed positions." />
+                <EmptyState copy="Devnet closed-position history is unavailable. The connected data service contains mainnet history only." />
               )}
             </div>
           </div>

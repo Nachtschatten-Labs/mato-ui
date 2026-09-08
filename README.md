@@ -17,3 +17,5 @@ See [RECOVERY.md](RECOVERY.md) for the recovery scope and limitations.
 Transactions are disabled by default. The restored program address is
 `CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16`; it is inherited from the reviewed snapshot and still needs
 independent deployment verification before enabling transactions.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for Cloudflare configuration and publishing.
