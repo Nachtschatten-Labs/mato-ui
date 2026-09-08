@@ -136,7 +136,9 @@ function visitDirectory(directory) {
           'sendBeacon',
         ].includes(node.text) &&
         !name.includes('.test.') &&
-        name !== 'src/features/trading/api/market-repository.ts'
+        name !== 'src/features/trading/api/market-repository.ts' &&
+        // Reviewed request handler; delegates to TanStack, no outbound requests.
+        name !== 'src/server.ts'
       ) {
         flag(node, `network API outside reviewed data adapter: ${node.text}`)
       }

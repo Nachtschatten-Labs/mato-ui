@@ -1,0 +1,7 @@
+{
+  "branch": "main",
+  "siteUrl": "https://mato.markets",
+  "cluster": "mainnet-beta",
+  "programId": "CCAmAqvza37EWzou7LoYCaGKzdJsCu1CLPMp3Wvx3Bc5",
+  "defaultRpcUrl": "https://api.mainnet-beta.solana.com"
+}
