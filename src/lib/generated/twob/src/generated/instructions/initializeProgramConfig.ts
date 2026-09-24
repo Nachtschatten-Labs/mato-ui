@@ -53,7 +53,7 @@ export function getInitializeProgramConfigDiscriminatorBytes(): ReadonlyUint8Arr
 export type InitializeProgramConfigInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountAuthority extends string | AccountMeta<string> =
-    '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC',
+    '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
@@ -181,7 +181,7 @@ export async function getInitializeProgramConfigInstructionAsync<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC' as Address<'6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC'>
+      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
   }
   if (!accounts.programConfig.value) {
     accounts.programConfig.value = await findProgramConfigPda({
@@ -273,7 +273,7 @@ export function getInitializeProgramConfigInstruction<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC' as Address<'6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC'>
+      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =

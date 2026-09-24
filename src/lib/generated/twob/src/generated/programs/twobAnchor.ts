@@ -221,7 +221,7 @@ import {
 } from '../pdas'
 
 export const TWOB_ANCHOR_PROGRAM_ADDRESS =
-  'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16' as Address<'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16'>
+  'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX' as Address<'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX'>
 
 export enum TwobAnchorAccount {
   Bookkeeping,
@@ -850,7 +850,7 @@ export function identifyTwobAnchorInstruction(
 }
 
 export type ParsedTwobAnchorInstruction<
-  TProgram extends string = 'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16',
+  TProgram extends string = 'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX',
 > =
   | ({
       instructionType: TwobAnchorInstruction.AcceptDedicatedMakerAuthority

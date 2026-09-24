@@ -3,6 +3,7 @@ import {
   alignEndSlot,
   deriveAssociatedTokenAddress,
   deriveMarketAddress,
+  deriveProgramConfigAddress,
   deriveTemporaryWithdrawTokenAddress,
   fetchMarketTradePositions,
   fetchTradePositions,
@@ -15,9 +16,12 @@ import {
 } from './twob-client'
 import type { TwobRpcClient } from './twob-client'
 import type { Address } from '@solana/kit'
-import { getAddressDecoder } from '@solana/kit'
+import { createNoopSigner, getAddressDecoder } from '@solana/kit'
 import { ARRAY_LENGTH, END_SLOT_INTERVAL } from '../constants'
 import { getTradePositionEncoder } from '@/lib/generated/twob/src/generated/accounts'
+import { getInitializeProgramConfigInstructionAsync } from '@/lib/generated/twob/src/generated/instructions'
+import { findMarketPda } from '@/lib/generated/twob/src/generated/pdas'
+import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/programs'
 import { Side } from '@/lib/generated/twob/src/generated/types'
 
 const BASE_MINT = 'So11111111111111111111111111111111111111112' as Address
@@ -28,7 +32,9 @@ const LEGACY_TOKEN_PROGRAM =
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address
 const TOKEN_2022_PROGRAM =
   'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address
-const MARKET_ADDRESS = '5qtZReDA5y8K7nq6FX9qKqYwmG1gWkRWdkWZnuUGTaQx' as Address
+const MARKET_ADDRESS = '32MAZ37ysSgJYgPeB9Qj3dMtkD7AyuMBrDjKxN37RNfj' as Address
+const PROGRAM_CONFIG_ADDRESS =
+  '9zQGyHTCCg3fLS2AcWQ1F76QN8NThAcWbadjpMyLyyef' as Address
 
 type ProgramAccountsConfig = NonNullable<
   Parameters<TwobRpcClient['getProgramAccounts']>[1]
@@ -83,6 +89,24 @@ function createProgramAccountsRpc(
 }
 
 describe('twob v1 client helpers', () => {
+  it('uses the deployed devnet program and its configuration PDA', async () => {
+    expect(TWOB_ANCHOR_PROGRAM_ADDRESS).toBe(
+      'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX',
+    )
+    await expect(deriveProgramConfigAddress()).resolves.toBe(
+      PROGRAM_CONFIG_ADDRESS,
+    )
+    const instruction = await getInitializeProgramConfigInstructionAsync({
+      payer: createNoopSigner(BASE_RECEIVER),
+      authorityTransferDelaySlots: 100,
+    })
+    expect(instruction.programAddress).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+    expect(instruction.accounts[0].address).toBe(
+      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
+    )
+    expect(instruction.accounts[2].address).toBe(PROGRAM_CONFIG_ADDRESS)
+  })
+
   it('derives a market PDA from the ordered mint pair and a u32 id', async () => {
     await expect(
       deriveMarketAddress({
@@ -91,6 +115,9 @@ describe('twob v1 client helpers', () => {
         id: 1,
       }),
     ).resolves.toBe(MARKET_ADDRESS)
+    await expect(
+      findMarketPda({ baseMint: BASE_MINT, quoteMint: QUOTE_MINT, id: 1 }),
+    ).resolves.toEqual([MARKET_ADDRESS, 253])
     await expect(
       deriveMarketAddress({
         baseMint: QUOTE_MINT,

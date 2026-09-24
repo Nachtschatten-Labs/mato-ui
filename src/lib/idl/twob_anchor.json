@@ -1,5 +1,5 @@
 {
-  "address": "CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16",
+  "address": "CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX",
   "metadata": {
     "name": "twob_anchor",
     "version": "1.0.0",
@@ -2904,7 +2904,7 @@
           ],
           "writable": true,
           "signer": true,
-          "address": "6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC"
+          "address": "8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN"
         },
         {
           "name": "payer",

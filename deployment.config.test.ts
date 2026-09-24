@@ -1,9 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { deploymentEnvironment } from './deployment.config'
 import target from './deployment-target.json'
+import { TWOB_ANCHOR_PROGRAM_ADDRESS } from './src/lib/generated/twob/src/generated/programs'
 
 const configured = { VITE_READ_API_URL: 'https://read.example.com' }
 describe('deployment configuration', () => {
+  it('uses the same program for server RPC scans and the generated client', () => {
+    expect(target.programId).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+  })
+  it('allows production trading with the verified dedicated-market program', () => {
+    const result = deploymentEnvironment('production', {
+      ...configured,
+      VITE_ENABLE_TRANSACTIONS: 'true',
+      VITE_VERIFIED_PROGRAM_ID: TWOB_ANCHOR_PROGRAM_ADDRESS,
+    })
+    expect(result.VITE_ENABLE_TRANSACTIONS).toBe('true')
+    expect(result.VITE_VERIFIED_PROGRAM_ID).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+  })
+  it('rejects the previous program when enabling production trading', () => {
+    expect(() =>
+      deploymentEnvironment('production', {
+        ...configured,
+        VITE_ENABLE_TRANSACTIONS: 'true',
+        VITE_VERIFIED_PROGRAM_ID:
+          'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16',
+      }),
+    ).toThrow('verified program ID')
+  })
   it('fails closed when production has no read API', () => {
     expect(() => deploymentEnvironment('production', {})).toThrow(
       'requires VITE_READ_API_URL',

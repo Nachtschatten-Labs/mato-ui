@@ -28,10 +28,12 @@ types are tracked so type checking also works before starting the server.
 
 ## Updating the v1 program client
 
-The checked-in IDL comes from `twob-anchor`'s `v1` branch at `94824f8`
-(2026-09-24). It was checked against a fresh IDL build. The source artifact uses
-the test bootstrap authority; a devnet build differs in the authority accepted
-by `initialize_program_config`. The trading UI does not initialize that account.
+The checked-in IDL is the devnet artifact from `twob-anchor`'s
+`codex/fresh-devnet-deployment`, based on `v1@94824f8` (2026-09-24).
+It uses program ID `CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX` and the devnet
+bootstrap authority. The UI does not initialize ProgramConfig. The deployment's
+binary, configuration, four dedicated markets, vaults, and mint settings were
+verified with read-only devnet RPC calls; see [DEVNET.md](DEVNET.md).
 
 After building the IDL for the intended program revision and authority feature:
 
@@ -53,28 +55,54 @@ contain 30 entries, with a fixed seven-slot end interval. These two constants ar
 not present in Anchor's IDL, so keep `ARRAY_LENGTH` and `END_SLOT_INTERVAL` in
 `src/features/trading/constants.ts` aligned with the program when updating it.
 
-The separate read API keeps its existing numeric market routes. Its indexer must
-decode the new event layouts (market addresses and `u128` flows) and map each
-address to the corresponding API market ID. Updating the UI's IDL does not
-update that service or migrate old on-chain accounts.
+The read API is the existing mainnet service. Every devnet market uses its
+numeric market `1` (SOL/USDC) price, candle, and 24-hour-change routes as an
+explicitly labeled reference. Never use that price to estimate MATO, SB or SF
+execution or decode devnet positions: trading estimates use selected-market
+on-chain flows only. Missing or zero flows show unavailable estimates.
+Closed-position history is unsupported until a devnet history backend exists.
 
 ## Configure services
 
-Copy `.env.example` to `.env.local` and supply the read API and RPC endpoints you
-control. Each branch has its own intended cluster and generated program client.
-Restart the development server after changing environment values.
+Copy `.env.example` to `.env.local` for the public mainnet reference-data API
+configuration. For a dedicated devnet RPC, create an ignored `.dev.vars` file:
+
+```dotenv
+SOLANA_RPC_URL=https://your-devnet-provider-endpoint
+SOLANA_WS_URL=wss://your-devnet-provider-endpoint
+```
+
+These values are server-only Worker bindings. Without them, local development
+uses the public devnet endpoint, which may reject or rate-limit Worker traffic.
+Restart `pnpm dev` after changing environment values.
 
 All `VITE_*` variables are public and can appear in browser code. Never put wallet
 seeds, private keys, privileged API tokens, or deployment credentials in them.
-Use browser-safe RPC credentials with appropriate restrictions.
+Keep provider credentials in `SOLANA_RPC_URL` and `SOLANA_WS_URL` only.
 
-Transactions are blocked by default, including orders, position closure, rent
-reclamation, and the additional v1 position controls. Before enabling them,
-independently confirm the cluster, program address, deployed program/IDL, and
-read API ownership. Then set both `VITE_ENABLE_TRANSACTIONS=true` and
-`VITE_VERIFIED_PROGRAM_ID` to the program address you verified. A matching value
-only records that configuration decision; the UI cannot prove the program is safe.
+`pnpm dev` and preview builds always block transactions, including orders,
+position closure, rent reclamation, and the additional v1 position controls.
+To test transactions locally, use a production build of the devnet UI. Before
+enabling them, independently confirm the cluster, program address, deployed program/IDL, and
+read API ownership. In `.env.production.local`, set both
+`VITE_ENABLE_TRANSACTIONS=true` and `VITE_VERIFIED_PROGRAM_ID` to the program
+address you verified, along with the server-only devnet HTTP/WebSocket endpoints.
+A matching value only records that configuration decision; the UI cannot prove
+the program is safe.
 Test with a fresh devnet wallet before any production use.
+
+Stop `pnpm dev`, then run:
+
+```sh
+pnpm rpc:prepare
+pnpm build
+pnpm preview
+```
+
+This serves the production build locally at `http://127.0.0.1:3000`; it does not
+deploy anything. `rpc:prepare` writes the ignored `.dev.vars.production` bindings
+used by this local production preview. Repeat it after changing the endpoints
+in `.env.production.local`. `pnpm dev` uses the separate `.dev.vars` file above.
 
 The UI retains its original live-data integrations. Missing backend settings
 produce empty/error states; mock prices are not presented as real market data.

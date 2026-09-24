@@ -57,7 +57,6 @@ import { useReclaimRent } from '../hooks/use-reclaim-rent'
 import {
   buildTradingDashboardViewModel,
   formatDashboardPrice,
-  selectReferenceMarketPricing,
 } from '../view-models/trading-dashboard'
 import { MarketPriceChart } from './market-price-chart'
 import { OrderEntryCard, formatDuration } from './order-entry-card'
@@ -94,6 +93,7 @@ const CHART_DISPLAY_MODES = [
   { icon: ChartLine, label: 'Line', mode: 'line' },
 ] as const
 const REFERENCE_PRICE_MARKET_ID: MarketId = 1
+const REFERENCE_PRICE_MARKET = getMarketDefinition(REFERENCE_PRICE_MARKET_ID)
 const REFERENCE_CHART_LABEL = 'SOL/USDC · Mainnet reference'
 const MARKET_PANEL_TABS = [
   { icon: ChartCandlestick, label: 'Chart', tab: 'chart' },
@@ -326,30 +326,25 @@ export function TradingDashboard({
     [activePositions, currentSlot],
   )
   const dashboardViewModel = useMemo(() => {
-    const referencePricing = selectReferenceMarketPricing({
-      chartCandles: marketChartHistory.candles,
-      crosshairData,
-      isReferenceMarket: marketId === REFERENCE_PRICE_MARKET_ID,
-      marketPrice: marketPriceQuery.data ?? undefined,
-      marketUpdates: marketUpdates.events,
-      priceChangeHistory: marketPriceChange24hQuery.data ?? [],
-    })
-
     return buildTradingDashboardViewModel({
       amountAtoms,
       amountUiValue,
       baseDecimals,
       baseTicker,
-      chartCandles: referencePricing.chartCandles,
-      crosshairData: referencePricing.crosshairData,
       durationSeconds,
-      marketPrice: referencePricing.marketPrice,
-      marketUpdates: referencePricing.marketUpdates,
-      priceChangeHistory: referencePricing.priceChangeHistory,
       quoteDecimals,
       quoteTicker,
+      referencePricing: {
+        baseDecimals: REFERENCE_PRICE_MARKET.baseDecimals,
+        chartCandles: marketChartHistory.candles,
+        crosshairData,
+        marketPrice: marketPriceQuery.data ?? undefined,
+        marketUpdates: marketUpdates.events,
+        priceChangeHistory: marketPriceChange24hQuery.data ?? [],
+        quoteDecimals: REFERENCE_PRICE_MARKET.quoteDecimals,
+      },
       side,
-      streamingState: streamingStateQuery.data ?? null,
+      streamingState: isMarketReady ? onChainMarket : null,
       tradePositions: activePositions,
     })
   }, [
@@ -364,11 +359,11 @@ export function TradingDashboard({
     marketPriceQuery.data,
     marketPriceChange24hQuery.data,
     marketUpdates.events,
-    marketId,
+    isMarketReady,
+    onChainMarket,
     quoteDecimals,
     quoteTicker,
     side,
-    streamingStateQuery.data,
   ])
   const {
     displayPrice,
@@ -833,20 +828,20 @@ export function TradingDashboard({
                       marketId={marketId}
                       onMarketChange={onMarketChange}
                     />
-                    <span
-                      className="text-sm tabular-nums"
-                      title={
-                        marketId === REFERENCE_PRICE_MARKET_ID
-                          ? 'Mainnet SOL/USDC reference price'
-                          : 'Indicative devnet market price'
-                      }
-                    >
-                      {formatDashboardPrice(displayPrice)}
-                    </span>
-                    <PriceChangeBadge
-                      display={priceChange24hDisplay}
-                      value={priceChange24hPercent}
-                    />
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground">
+                        {REFERENCE_CHART_LABEL}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm tabular-nums">
+                          {formatDashboardPrice(displayPrice)}
+                        </span>
+                        <PriceChangeBadge
+                          display={priceChange24hDisplay}
+                          value={priceChange24hPercent}
+                        />
+                      </div>
+                    </div>
                   </div>
                   {marketPanelTab === 'chart' && (
                     <ChartRangeSelector

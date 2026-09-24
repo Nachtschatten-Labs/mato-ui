@@ -23,7 +23,7 @@ export async function findBookkeepingPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = 'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16' as Address<'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16'>,
+    programAddress = 'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX' as Address<'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX'>,
   } = config
   return await getProgramDerivedAddress({
     programAddress,

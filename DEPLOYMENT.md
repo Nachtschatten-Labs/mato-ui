@@ -9,9 +9,10 @@ The account is `a47cdd329426d3fe463b84d562f36f45` (thomas.gehrmann@nachtschatten
 | v1     | mato-ui-devnet | https://devnet.mato.markets | Solana devnet       |
 
 Both branches use `https://read-api-production-f8ea.up.railway.app` for mainnet
-market data. The v1 dashboard labels its SOL/USDC reference chart, retains devnet
-wallet/position queries, and does not present mainnet closed-position history as
-devnet history. No devnet history backend is configured.
+market data. Every v1 market shows mainnet SOL/USDC as a labeled reference chart.
+Wallet positions and execution estimates use the selected devnet market on
+`CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX`. Closed-position history is
+unsupported; no mainnet history is used as devnet history. See [DEVNET.md](DEVNET.md).
 
 ## Configure and validate
 

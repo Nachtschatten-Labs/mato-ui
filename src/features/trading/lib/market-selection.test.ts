@@ -5,8 +5,29 @@ import {
   getMarketDefinition,
   parseMarketSearch,
 } from '../constants'
+import { findMarketAddress } from './pdas'
 
 describe('market selection', () => {
+  // Dedicated-market accounts verified on devnet at slot 503470456.
+  it.each([
+    [1, 'F41sZg6i75dd8BC3ZbAqCkYGFtHRo3H1fD6anm4H8AsW'],
+    [2, 'BywYSLZGJC1HCC6V6mAEnsd4mNVtk2apKVqUFauEZQNo'],
+    [3, 'Dddab66eZDak7CrS9tk9prqWryyqUknwrkgKq1ZHz8wy'],
+    [4, 'AAgPKkH1c8YjL9Poyp7a3k1XKCgx4qVVUS3igehXDDLm'],
+  ] as const)(
+    'derives the verified devnet address for market %i',
+    async (id, expected) => {
+      const market = getMarketDefinition(id)
+      expect(
+        await findMarketAddress({
+          baseMint: market.baseMint,
+          quoteMint: market.quoteMint,
+          id,
+        }),
+      ).toBe(expected)
+    },
+  )
+
   it('contains the four verified devnet markets', () => {
     expect(MARKET_DEFINITIONS).toEqual([
       expect.objectContaining({

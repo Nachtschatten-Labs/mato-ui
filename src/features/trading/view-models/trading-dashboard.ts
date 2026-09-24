@@ -34,28 +34,13 @@ export interface DashboardMarketPrice {
 }
 
 export interface ReferenceMarketPricingInputs {
+  baseDecimals: number
   chartCandles: Array<TradingViewAggregatedCandle>
   crosshairData: DashboardChartFocus | null
   marketPrice?: DashboardMarketPrice
   marketUpdates: Array<MarketUpdateEvent>
   priceChangeHistory: Array<TradingViewAggregatedCandle>
-}
-
-export function selectReferenceMarketPricing({
-  isReferenceMarket,
-  ...pricing
-}: ReferenceMarketPricingInputs & {
-  isReferenceMarket: boolean
-}): ReferenceMarketPricingInputs {
-  if (isReferenceMarket) return pricing
-
-  return {
-    chartCandles: [],
-    crosshairData: null,
-    marketPrice: undefined,
-    marketUpdates: [],
-    priceChangeHistory: [],
-  }
+  quoteDecimals: number
 }
 
 export interface TradingMarketIdentity {
@@ -150,14 +135,10 @@ export function buildTradingDashboardViewModel({
   amountUiValue,
   baseDecimals,
   baseTicker,
-  chartCandles,
-  crosshairData,
   durationSeconds,
-  marketPrice,
-  marketUpdates,
-  priceChangeHistory,
   quoteDecimals,
   quoteTicker,
+  referencePricing,
   side,
   streamingState,
   tradePositions,
@@ -166,18 +147,21 @@ export function buildTradingDashboardViewModel({
   amountUiValue: number | null
   baseDecimals: number
   baseTicker: string
-  chartCandles: Array<TradingViewAggregatedCandle>
-  crosshairData: DashboardChartFocus | null
   durationSeconds: number
-  marketPrice?: DashboardMarketPrice
-  marketUpdates: Array<MarketUpdateEvent>
-  priceChangeHistory: Array<TradingViewAggregatedCandle>
   quoteDecimals: number
   quoteTicker: string
+  referencePricing: ReferenceMarketPricingInputs
   side: OrderSide
   streamingState: StreamingMarketState | null | undefined
   tradePositions: Array<TradePositionRecord>
 }) {
+  const {
+    chartCandles,
+    crosshairData,
+    marketPrice,
+    marketUpdates,
+    priceChangeHistory,
+  } = referencePricing
   const latestChartCandle = chartCandles.at(-1) ?? null
   const recentTickPrices = marketUpdates
     .slice(0, 2)
@@ -185,8 +169,8 @@ export function buildTradingDashboardViewModel({
       marketPriceFromFlows(
         event.base_flow,
         event.quote_flow,
-        baseDecimals,
-        quoteDecimals,
+        referencePricing.baseDecimals,
+        referencePricing.quoteDecimals,
       ),
     )
     .filter((value): value is number => value !== null)
@@ -203,11 +187,7 @@ export function buildTradingDashboardViewModel({
     : null
 
   const displayPrice =
-    marketPrice?.price ??
-    latestTickPrice ??
-    onChainIndicativePrice ??
-    latestChartCandle?.close ??
-    null
+    marketPrice?.price ?? latestTickPrice ?? latestChartCandle?.close ?? null
 
   const priceDelta =
     latestTickPrice !== null && previousTickPrice !== null
@@ -233,8 +213,8 @@ export function buildTradingDashboardViewModel({
 
   const marketStats = computeMarketStats(
     marketUpdates,
-    baseDecimals,
-    quoteDecimals,
+    referencePricing.baseDecimals,
+    referencePricing.quoteDecimals,
   )
 
   const priceImpactPercent = (() => {
@@ -270,17 +250,22 @@ export function buildTradingDashboardViewModel({
         : -priceImpactPercent
 
   const executionPrice = (() => {
-    if (displayPrice === null || displayPrice <= 0) return null
-    if (signedPriceImpactPercent === null) return displayPrice
+    if (onChainIndicativePrice === null || onChainIndicativePrice <= 0)
+      return null
+    if (signedPriceImpactPercent === null) return onChainIndicativePrice
 
-    const nextPrice = displayPrice * (1 + signedPriceImpactPercent / 100)
+    const nextPrice =
+      onChainIndicativePrice * (1 + signedPriceImpactPercent / 100)
     if (!Number.isFinite(nextPrice) || nextPrice <= 0) return null
     return nextPrice
   })()
 
   const estimatedConversionText = (() => {
-    if (amountUiValue === null || !executionPrice || executionPrice <= 0) {
+    if (amountUiValue === null) {
       return `0 ${side === 'buy' ? baseTicker : quoteTicker}`
+    }
+    if (!executionPrice || executionPrice <= 0) {
+      return `— ${side === 'buy' ? baseTicker : quoteTicker}`
     }
 
     if (side === 'buy') {
@@ -316,7 +301,7 @@ export function buildTradingDashboardViewModel({
     priceChange24hPercent,
     priceImpactDisplay:
       priceImpactPercent === null
-        ? '0%'
+        ? '—'
         : `${priceImpactPercent < 0.001 ? '<0.001' : priceImpactPercent.toFixed(3)}%`,
     priceImpactPercent,
     signedPriceImpactPercent,
