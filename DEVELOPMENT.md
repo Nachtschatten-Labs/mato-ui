@@ -80,16 +80,22 @@ All `VITE_*` variables are public and can appear in browser code. Never put wall
 seeds, private keys, privileged API tokens, or deployment credentials in them.
 Keep provider credentials in `SOLANA_RPC_URL` and `SOLANA_WS_URL` only.
 
-`pnpm dev` and preview builds always block transactions, including orders,
-position closure, rent reclamation, and the additional v1 position controls.
-To test transactions locally, use a production build of the devnet UI. Before
-enabling them, independently confirm the cluster, program address, deployed program/IDL, and
-read API ownership. In `.env.production.local`, set both
-`VITE_ENABLE_TRANSACTIONS=true` and `VITE_VERIFIED_PROGRAM_ID` to the program
-address you verified, along with the server-only devnet HTTP/WebSocket endpoints.
-A matching value only records that configuration decision; the UI cannot prove
-the program is safe.
-Test with a fresh devnet wallet before any production use.
+To enable devnet trading with hot reload, set these values in `.env.local` and
+restart `pnpm dev`:
+
+```dotenv
+VITE_ENABLE_TRANSACTIONS=true
+VITE_VERIFIED_PROGRAM_ID=CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX
+```
+
+Local development requires an explicit opt-in, the devnet deployment target,
+and a matching program ID. This enables orders, position closure, rent
+reclamation, and the additional v1 position controls. Preview builds
+(`pnpm build:preview`) always stay read-only. Closed-position history remains
+unsupported.
+
+To test a production build locally, put the same two settings and the server-only
+devnet HTTP/WebSocket endpoints in `.env.production.local`.
 
 Stop `pnpm dev`, then run:
 
@@ -101,8 +107,9 @@ pnpm preview
 
 This serves the production build locally at `http://127.0.0.1:3000`; it does not
 deploy anything. `rpc:prepare` writes the ignored `.dev.vars.production` bindings
-used by this local production preview. Repeat it after changing the endpoints
-in `.env.production.local`. `pnpm dev` uses the separate `.dev.vars` file above.
+used by this local production preview. Repeat preparation and the build after
+changing the endpoints in `.env.production.local`. `pnpm dev` uses the separate
+`.dev.vars` file above.
 
 The UI retains its original live-data integrations. Missing backend settings
 produce empty/error states; mock prices are not presented as real market data.

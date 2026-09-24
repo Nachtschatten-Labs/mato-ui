@@ -8,7 +8,11 @@ import { deploymentEnvironment } from './deployment.config.ts'
 export default defineConfig(({ mode, command }) => {
   const deploying = command === 'build'
   const env = deploymentEnvironment(
-    deploying ? mode : 'preview',
+    deploying
+      ? mode === 'production'
+        ? 'production'
+        : 'preview'
+      : 'development',
     loadEnv(mode, process.cwd(), 'VITE_'),
   )
   // The Cloudflare target is selected at build time, never from a stale deploy flag.

@@ -4,17 +4,24 @@ type Env = Record<string, string | undefined>
 
 export function deploymentEnvironment(mode: string, input: Env) {
   const production = mode === 'production'
+  const development = mode === 'development'
+  const configurableTrading =
+    production || (development && target.cluster === 'devnet')
   const env: Record<string, string> = {
     VITE_SITE_URL: target.siteUrl,
-    VITE_DEPLOYMENT_MODE: production ? 'production' : 'preview',
+    VITE_DEPLOYMENT_MODE: production
+      ? 'production'
+      : development
+        ? 'development'
+        : 'preview',
     VITE_READ_API_URL: input.VITE_READ_API_URL?.trim() ?? '',
     VITE_SOLANA_RPC_URL: target.siteUrl + '/rpc',
     VITE_SOLANA_WS_URL: target.siteUrl.replace(/^https:/, 'wss:') + '/rpc/ws',
     VITE_MARKET_ID: input.VITE_MARKET_ID?.trim() || '1',
-    VITE_ENABLE_TRANSACTIONS: production
+    VITE_ENABLE_TRANSACTIONS: configurableTrading
       ? input.VITE_ENABLE_TRANSACTIONS || 'false'
       : 'false',
-    VITE_VERIFIED_PROGRAM_ID: production
+    VITE_VERIFIED_PROGRAM_ID: configurableTrading
       ? input.VITE_VERIFIED_PROGRAM_ID || ''
       : '',
   }

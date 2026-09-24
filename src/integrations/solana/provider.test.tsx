@@ -1,7 +1,19 @@
 // @vitest-environment jsdom
 
-import { act, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  getWalletStandardConnectors,
+  watchWalletStandardConnectors,
+} from '@solana/client'
+import {
+  address,
+  blockhash,
+  compileTransaction,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+} from '@solana/kit'
 import { SolanaProvider } from './provider'
 import type { WalletConnector } from '@solana/client'
 
@@ -93,11 +105,81 @@ function createConnector(name: string): WalletConnector {
 }
 
 describe('SolanaProvider', () => {
+  afterEach(cleanup)
+
   beforeEach(() => {
     mocks.clients.length = 0
     mocks.initialConnectors.length = 0
     mocks.watcher = null
     vi.clearAllMocks()
+  })
+
+  it('targets devnet for initially discovered and newly registered wallets that list mainnet first', async () => {
+    const { createWalletStandardConnector } =
+      await vi.importActual<typeof import('@solana/client')>('@solana/client')
+    const walletAddress = address('11111111111111111111111111111111')
+    const account = {
+      address: walletAddress,
+      publicKey: new Uint8Array(32),
+      chains: ['solana:mainnet-beta', 'solana:devnet'] as const,
+      features: ['solana:signAndSendTransaction'] as const,
+    }
+    const signAndSend = vi
+      .fn()
+      .mockResolvedValue([{ signature: new Uint8Array(64) }])
+    const wallet = {
+      version: '1.0.0',
+      name: 'Multi-chain wallet',
+      icon: 'data:image/svg+xml;base64,',
+      accounts: [account],
+      chains: account.chains,
+      features: {
+        'standard:connect': {
+          version: '1.0.0',
+          connect: vi.fn().mockResolvedValue({ accounts: [account] }),
+        },
+        'solana:signAndSendTransaction': {
+          version: '1.0.0',
+          supportedTransactionVersions: ['legacy', 0],
+          signAndSendTransaction: signAndSend,
+        },
+      },
+    } as const
+    const transaction = compileTransaction(
+      setTransactionMessageLifetimeUsingBlockhash(
+        {
+          blockhash: blockhash('11111111111111111111111111111111'),
+          lastValidBlockHeight: 1n,
+        },
+        setTransactionMessageFeePayer(
+          walletAddress,
+          createTransactionMessage({ version: 0 }),
+        ),
+      ),
+    )
+
+    render(<SolanaProvider>child</SolanaProvider>)
+    await waitFor(() => expect(mocks.watcher).toBeTruthy())
+
+    const discoveries = [
+      vi.mocked(getWalletStandardConnectors).mock.calls[0][0],
+      vi.mocked(watchWalletStandardConnectors).mock.calls[0][1],
+    ]
+    for (const options of discoveries) {
+      const session = await createWalletStandardConnector(
+        wallet,
+        options?.overrides?.(wallet),
+      ).connect()
+      await session.sendTransaction!(
+        transaction as unknown as Parameters<
+          NonNullable<typeof session.sendTransaction>
+        >[0],
+      )
+      expect(signAndSend).toHaveBeenLastCalledWith(
+        expect.objectContaining({ chain: 'solana:devnet' }),
+      )
+    }
+    expect(signAndSend).toHaveBeenCalledTimes(2)
   })
 
   it('refreshes the client registry when wallets register after mount', async () => {

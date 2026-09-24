@@ -1,3 +1,5 @@
+import target from '../../../../deployment-target.json'
+
 export function shortenAddress(
   value: string | null | undefined,
   start = 4,
@@ -55,39 +57,16 @@ export function formatPrice(value: number) {
   return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')
 }
 
+// The RPC facade hostname does not identify the underlying Solana cluster.
 export function formatExplorerTransactionUrl(
   signature: string,
-  endpoint: string,
+  _endpoint: string,
 ) {
-  const cluster = endpoint.includes('mainnet')
-    ? 'mainnet-beta'
-    : endpoint.includes('testnet')
-      ? 'testnet'
-      : endpoint.includes('localhost') || endpoint.includes('127.0.0.1')
-        ? 'custom'
-        : 'devnet'
-
-  if (cluster === 'custom') {
-    return `https://explorer.solana.com/tx/${encodeURIComponent(signature)}?cluster=custom`
-  }
-
-  return `https://explorer.solana.com/tx/${encodeURIComponent(signature)}?cluster=${encodeURIComponent(cluster)}`
+  return `https://explorer.solana.com/tx/${encodeURIComponent(signature)}?cluster=${encodeURIComponent(target.cluster)}`
 }
 
-export function formatExplorerAddressUrl(address: string, endpoint: string) {
-  const cluster = endpoint.includes('mainnet')
-    ? 'mainnet-beta'
-    : endpoint.includes('testnet')
-      ? 'testnet'
-      : endpoint.includes('localhost') || endpoint.includes('127.0.0.1')
-        ? 'custom'
-        : 'devnet'
-
-  if (cluster === 'custom') {
-    return `https://explorer.solana.com/address/${encodeURIComponent(address)}?cluster=custom`
-  }
-
-  return `https://explorer.solana.com/address/${encodeURIComponent(address)}?cluster=${encodeURIComponent(cluster)}`
+export function formatExplorerAddressUrl(address: string, _endpoint: string) {
+  return `https://explorer.solana.com/address/${encodeURIComponent(address)}?cluster=${encodeURIComponent(target.cluster)}`
 }
 
 export function formatCrosshairTimeLabel(value: number | string | null) {

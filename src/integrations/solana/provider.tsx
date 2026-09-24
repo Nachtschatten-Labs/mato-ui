@@ -10,16 +10,21 @@ import {
   getBrowserSolanaWebsocketEndpoint,
 } from './env'
 import { createSolanaRpcWithRateLimitRetry } from './rpc'
+import target from '../../../deployment-target.json'
 import type { SolanaClient, WalletConnector } from '@solana/client'
 
 const endpoint = getBrowserSolanaRpcEndpoint()
 const websocketEndpoint = getBrowserSolanaWebsocketEndpoint(endpoint)
 const browserRpc = createSolanaRpcWithRateLimitRetry(endpoint)
+const walletDiscoveryOptions = {
+  // The app's RPC origin does not identify its Solana cluster to wallets.
+  overrides: () => ({ defaultChain: `solana:${target.cluster}` as const }),
+}
 
 function getInitialWalletConnectors() {
   if (typeof window === 'undefined') return []
 
-  return getWalletStandardConnectors()
+  return getWalletStandardConnectors(walletDiscoveryOptions)
 }
 
 function haveSameConnectors(
@@ -85,7 +90,7 @@ export function SolanaProvider({ children }: { children: React.ReactNode }) {
         previousClient.destroy()
         return nextClient
       })
-    })
+    }, walletDiscoveryOptions)
 
     return () => {
       unwatch()

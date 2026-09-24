@@ -21,7 +21,8 @@ execution estimates and wallet positions use only the selected devnet market.
 Closed-position history is not supported. See [DEVNET.md](DEVNET.md) for verified
 market addresses and deployment details.
 
-Transactions are disabled in local development and preview builds. Production
-trading requires the matching program ID in the environment configuration.
+Local devnet trading requires `VITE_ENABLE_TRANSACTIONS=true` and the matching
+`VITE_VERIFIED_PROGRAM_ID` in `.env.local`. Production builds use the same
+settings in `.env.production.local`. Preview builds remain read-only.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for Cloudflare configuration and publishing.

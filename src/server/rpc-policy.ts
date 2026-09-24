@@ -9,6 +9,8 @@ const READ_METHODS = new Set([
   'getGenesisHash',
   'getVersion',
   'getSlot',
+  // Used by the client's blockhash-expiry check during confirmation.
+  'getEpochInfo',
   'getBlockHeight',
   'getSignatureStatuses',
   'getRecentPrioritizationFees',

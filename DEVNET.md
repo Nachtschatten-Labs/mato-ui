@@ -51,13 +51,15 @@ from the selected devnet market. Closed-position history remains unsupported.
 
 Copy `.env.example` to `.env.local` and configure dedicated devnet HTTP/WebSocket
 endpoints in `.dev.vars` for local chart and account reads; see
-[DEVELOPMENT.md](DEVELOPMENT.md). Local development and preview builds stay
-read-only. For a production build of the
-devnet UI, set `VITE_ENABLE_TRANSACTIONS=true` and
+[DEVELOPMENT.md](DEVELOPMENT.md). To enable local devnet trading with `pnpm dev`,
+set `VITE_ENABLE_TRANSACTIONS=true` and
 `VITE_VERIFIED_PROGRAM_ID=CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX` in
+`.env.local`. Preview builds remain read-only. For a production build of the
+devnet UI, set the same values in
 `.env.production.local`, with devnet HTTP/WebSocket RPC endpoints. Run
-`pnpm rpc:prepare` after changing those server-only endpoints. Publishing and
-updating Cloudflare secrets are separate steps described in `DEPLOYMENT.md`.
+`pnpm rpc:prepare` and rebuild after changing those server-only endpoints.
+Publishing and updating Cloudflare secrets are separate steps described in
+`DEPLOYMENT.md`.
 
 The dedicated provider was verified through the local Worker: HTTP calls
 confirmed devnet, read all four markets under the new program, and scanned its
