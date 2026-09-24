@@ -161,6 +161,17 @@ export const CHART_TIMEFRAMES = [
 ] as const
 
 export type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]['label']
+
+export const CHART_RANGES = [
+  { label: '1H', timeframe: '1m', visibleBars: 60 },
+  { label: '1D', timeframe: '5m', visibleBars: 288 },
+  { label: '1W', timeframe: '1h', visibleBars: 168 },
+] as const satisfies ReadonlyArray<{
+  label: string
+  timeframe: ChartTimeframe
+  visibleBars: number
+}>
+
 export type OrderSide = 'buy' | 'sell'
 export type MarketPanelTab = 'chart' | 'trades' | 'order-book'
 export type PositionPanelTab = 'active' | 'closed'

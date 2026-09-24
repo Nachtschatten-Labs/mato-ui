@@ -115,31 +115,36 @@ export function ActivePositionCard({
   const canTogglePause = metrics.isPaused || !hasReachedEnd
 
   return (
-    <Card className="border-white/10 bg-black/15">
-      <CardContent className="space-y-4 p-5">
+    <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
+      <CardContent className="space-y-4 p-4 sm:p-5">
         <button
           aria-controls={detailsId}
           aria-expanded={expanded}
-          className="w-full text-left"
+          className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           onClick={() => setExpanded((previous) => !previous)}
           type="button"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-start gap-1.5">
-                <Badge variant={isBuy ? 'positive' : 'negative'}>
+                <Badge
+                  className="rounded-full"
+                  variant={isBuy ? 'positive' : 'negative'}
+                >
                   {metrics.sideLabel}
                 </Badge>
                 {metrics.isPaused ? (
-                  <Badge variant="muted">Paused</Badge>
+                  <Badge className="rounded-full" variant="muted">
+                    Paused
+                  </Badge>
                 ) : null}
               </div>
               <div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Waves className="size-4" />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Waves className="size-3.5" />
                   <span>{metrics.flowLabel}</span>
                 </div>
-                <p className="mt-1 text-lg font-semibold">
+                <p className="mt-1 text-base font-medium tabular-nums">
                   {formatAtoms(metrics.amountAtoms, metrics.depositedDecimals)}{' '}
                   {metrics.depositedToken}
                 </p>
@@ -148,15 +153,13 @@ export function ActivePositionCard({
 
             <div className="flex items-center gap-3 text-right">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                  Remaining
-                </p>
-                <p className="font-medium">
+                <p className="text-xs text-muted-foreground">Remaining</p>
+                <p className="mt-1 text-sm font-medium tabular-nums">
                   {metrics.remainingPercent.toFixed(1)}%
                 </p>
               </div>
               <ChevronDown
-                className={`size-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                className={`size-4 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`}
               />
             </div>
           </div>
@@ -165,14 +168,14 @@ export function ActivePositionCard({
         <Progress
           animated={!metrics.isPaused}
           ariaLabel={`${metrics.sideLabel} position progress`}
-          className="h-2.5 bg-white/8"
-          indicatorClassName="bg-[linear-gradient(90deg,var(--color-accent-strong),var(--color-accent-strong-soft))]"
+          className="h-1 bg-white/6"
+          indicatorClassName={isBuy ? 'bg-positive' : 'bg-negative'}
           value={metrics.progressPercent}
         />
 
         {expanded ? (
-          <div className="grid gap-3" id={detailsId}>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-2" id={detailsId}>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <MetricCard
                 label="Deposited"
                 value={`${formatAtoms(metrics.amountAtoms, metrics.depositedDecimals)} ${metrics.depositedToken}`}
@@ -201,24 +204,23 @@ export function ActivePositionCard({
                     : `${formatAtoms(metrics.claimableSwappedAtoms, metrics.swappedDecimals)} ${metrics.swappedToken}`
                 }
               />
+              <MetricCard
+                icon={<ArrowUpRight className="size-3.5" />}
+                label="Average price"
+                value={
+                  metrics.averagePrice === null
+                    ? '—'
+                    : `${formatPrice(metrics.averagePrice)} ${quoteTicker}/${baseTicker}`
+                }
+              />
             </div>
-
-            <MetricCard
-              icon={<ArrowUpRight className="size-4" />}
-              label="Average Price"
-              value={
-                metrics.averagePrice === null
-                  ? '—'
-                  : `${formatPrice(metrics.averagePrice)} ${quoteTicker}/${baseTicker}`
-              }
-            />
           </div>
         ) : null}
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             aria-busy={isPausing || isResuming}
-            className="rounded-xl"
+            className="h-8 flex-1 rounded-full border-white/8 bg-transparent px-3 text-xs hover:bg-white/5 sm:flex-none"
             disabled={isControlDisabled || !canTogglePause}
             onClick={() => onPauseToggle(position.address)}
             variant="outline"
@@ -238,7 +240,7 @@ export function ActivePositionCard({
           </Button>
           <Button
             aria-busy={isWithdrawing}
-            className="rounded-xl"
+            className="h-8 flex-1 rounded-full border-white/8 bg-transparent px-3 text-xs hover:bg-white/5 sm:flex-none"
             disabled={isControlDisabled || !canWithdraw}
             onClick={() => onWithdraw(position.address)}
             variant="outline"
@@ -247,9 +249,11 @@ export function ActivePositionCard({
             {isWithdrawing ? 'Withdrawing...' : 'Withdraw swapped'}
           </Button>
           <Button
-            className="rounded-xl bg-destructive/85 text-white hover:bg-destructive sm:col-span-2"
+            aria-busy={isClosing}
+            className="h-8 w-full rounded-full border-white/8 bg-transparent px-3 text-xs text-muted-foreground hover:border-negative/30 hover:bg-negative/5 hover:text-negative sm:ml-auto sm:w-auto"
             disabled={isCloseDisabled}
             onClick={() => onClose(position.address)}
+            variant="outline"
           >
             {isClosing ? 'Closing position...' : 'Close position'}
           </Button>
@@ -269,12 +273,14 @@ function MetricCard({
   value: string
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-3">
-      <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="min-w-0 rounded-lg bg-white/[0.025] px-3 py-2.5">
+      <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
         {icon}
         <span>{label}</span>
       </div>
-      <div className="font-medium text-foreground">{value}</div>
+      <div className="break-words text-sm font-medium tabular-nums text-foreground">
+        {value}
+      </div>
     </div>
   )
 }

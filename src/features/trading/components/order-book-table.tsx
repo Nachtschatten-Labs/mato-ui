@@ -175,19 +175,26 @@ export function OrderBookTable({
         directionFilter={directionFilter}
         onDirectionFilterChange={setDirectionFilter}
       />
-      <div className="max-w-full overflow-hidden rounded-[1.5rem] border border-white/8 bg-black/20">
+      <div className="max-w-full overflow-hidden rounded-lg border border-white/6 bg-white/[0.01]">
         <div className="max-h-[420px] w-full overflow-x-auto overflow-y-auto overscroll-contain">
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-[color:var(--color-page-bg)]/95 text-xs uppercase tracking-[0.18em] text-muted-foreground backdrop-blur">
+            <thead className="sticky top-0 z-10 bg-elevated/95 text-xs text-muted-foreground backdrop-blur">
               <tr>
                 {ORDER_BOOK_COLUMNS.map((column) => (
                   <th
-                    className="border-b border-white/8 px-4 py-3 font-medium"
+                    className="border-b border-white/6 px-4 py-3 font-normal"
                     key={column.label}
+                    aria-sort={
+                      column.sortKey && sort.key === column.sortKey
+                        ? sort.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : undefined
+                    }
                   >
                     {column.sortKey ? (
                       <button
-                        className="flex items-center gap-1.5 whitespace-nowrap transition-colors hover:text-foreground"
+                        className="flex items-center gap-1.5 whitespace-nowrap rounded-sm transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring/50"
                         onClick={() => handleSort(column.sortKey)}
                         type="button"
                       >
@@ -207,11 +214,12 @@ export function OrderBookTable({
             <tbody>
               {rows.map((row) => (
                 <tr
-                  className="border-b border-white/6 last:border-0"
+                  className="border-b border-white/6 transition-colors last:border-0 hover:bg-white/[0.025]"
                   key={row.position.address}
                 >
                   <td className="px-4 py-3">
                     <Badge
+                      className="rounded-full"
                       variant={
                         row.direction === 'Buy' ? 'positive' : 'negative'
                       }
@@ -234,11 +242,11 @@ export function OrderBookTable({
                       <ExternalLink className="size-3" />
                     </a>
                   </td>
-                  <td className="px-4 py-3 font-medium">
+                  <td className="px-4 py-3 font-medium tabular-nums">
                     {formatAtoms(row.amountAtoms, row.amountDecimals)}{' '}
                     {row.amountToken}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3 tabular-nums text-muted-foreground">
                     {formatAtoms(row.flowAtomsPerSlot, row.amountDecimals)}{' '}
                     {row.amountToken}/slot
                   </td>
@@ -270,11 +278,16 @@ function DirectionFilterControls({
       {DIRECTION_FILTERS.map((filter) => (
         <Button
           aria-pressed={directionFilter === filter.value}
-          className="rounded-full"
+          className={cn(
+            'rounded-full border-white/6 px-3',
+            directionFilter === filter.value
+              ? 'bg-white/8 text-foreground hover:bg-white/10'
+              : 'bg-transparent text-muted-foreground hover:bg-white/5',
+          )}
           key={filter.value}
           onClick={() => onDirectionFilterChange(filter.value)}
           size="xs"
-          variant={directionFilter === filter.value ? 'default' : 'outline'}
+          variant="outline"
         >
           {filter.label}
         </Button>
@@ -333,7 +346,7 @@ function SortIcon({
 
 function OrderBookState({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-[420px] items-center justify-center rounded-[1.5rem] border border-white/8 bg-white/5 px-6 text-center text-sm text-muted-foreground">
+    <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-white/6 bg-white/[0.01] px-6 text-center text-sm text-muted-foreground">
       {children}
     </div>
   )

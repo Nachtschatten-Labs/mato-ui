@@ -9,33 +9,18 @@ export function Navbar({
   marketId: MarketId
 }) {
   return (
-    <nav className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-white/8 bg-[color:var(--color-page-bg)]/80 px-4 backdrop-blur-xl sm:px-6">
-      <div className="flex items-center gap-6">
-        <Link
-          className="flex items-center gap-2.5"
-          search={{ market: marketId }}
-          to="/"
-        >
-          <span className="text-xl" role="img" aria-label="Mato logo">
-            🍅
-          </span>
-          <span className="text-base font-semibold tracking-tight">mato</span>
-        </Link>
-
-        <div className="hidden items-center gap-1 sm:flex">
-          <Link
-            to="/"
-            search={{ market: marketId }}
-            className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            activeProps={{
-              className:
-                'rounded-lg px-3 py-1.5 text-sm text-foreground bg-white/5 transition-colors',
-            }}
-          >
-            Trade
-          </Link>
-        </div>
-      </div>
+    <nav
+      aria-label="Main navigation"
+      className="relative z-50 mx-auto flex h-20 w-full max-w-[1400px] items-center justify-between px-4 sm:px-6"
+    >
+      <Link
+        aria-label="Mato home"
+        className="rounded-sm text-[21px] font-medium tracking-[-0.05em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        search={{ market: marketId }}
+        to="/"
+      >
+        mato
+      </Link>
 
       <div className="flex items-center gap-3">{children}</div>
     </nav>

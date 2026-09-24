@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchMarketCandles } from '../api/market-repository'
-import { CHART_TIMEFRAMES } from '../constants'
+import {
+  CHART_HISTORY_REQUEST_BUFFER_BARS,
+  CHART_RANGES,
+  CHART_TIMEFRAMES,
+} from '../constants'
 import { mergeLivePriceIntoCandles } from '../lib/market'
 import type { CandleInterval, MarketCandle } from '../api/market-repository'
 import type { ChartTimeframe } from '../constants'
@@ -12,12 +16,6 @@ interface UseMarketChartHistoryOptions {
   latestPrice?: MarketPriceSnapshot | null
   marketId: number
   timeframe: ChartTimeframe
-}
-
-const MIN_INITIAL_CANDLE_COUNT_BY_TIMEFRAME: Partial<
-  Record<ChartTimeframe, number>
-> = {
-  '1h': 48,
 }
 
 const DEFAULT_INITIAL_CANDLE_COUNT = 160
@@ -91,6 +89,12 @@ export function useMarketChartHistory({
     [timeframe],
   )
   const interval = useMemo(() => mapTimeframeToInterval(timeframe), [timeframe])
+  const minimumCandleCount = useMemo(
+    () =>
+      CHART_RANGES.find((range) => range.timeframe === timeframe)
+        ?.visibleBars ?? DEFAULT_INITIAL_CANDLE_COUNT,
+    [timeframe],
+  )
 
   useEffect(() => {
     candlesRef.current = candles
@@ -119,9 +123,10 @@ export function useMarketChartHistory({
   useEffect(() => {
     requestEpochRef.current += 1
     const requestEpoch = requestEpochRef.current
-    const initialCount =
-      MIN_INITIAL_CANDLE_COUNT_BY_TIMEFRAME[timeframe] ??
-      DEFAULT_INITIAL_CANDLE_COUNT
+    const initialCount = Math.max(
+      DEFAULT_INITIAL_CANDLE_COUNT,
+      minimumCandleCount + CHART_HISTORY_REQUEST_BUFFER_BARS,
+    )
     const now = Date.now()
     setCandles([])
     oldestLoadedCandleTimeRef.current = null
@@ -177,7 +182,7 @@ export function useMarketChartHistory({
     return () => {
       cancelled = true
     }
-  }, [chartIntervalMs, interval, marketId, timeframe])
+  }, [chartIntervalMs, interval, marketId, minimumCandleCount])
 
   const loadOlderHistory = useCallback(
     async ({ visibleBarCount }: OlderChartHistoryRequest) => {
@@ -258,12 +263,6 @@ export function useMarketChartHistory({
   )
 
   useEffect(() => {
-    const minimumCandleCount =
-      MIN_INITIAL_CANDLE_COUNT_BY_TIMEFRAME[timeframe] ?? 0
-
-    if (minimumCandleCount <= 0) {
-      return
-    }
     if (candles.length >= minimumCandleCount) {
       return
     }
@@ -283,7 +282,7 @@ export function useMarketChartHistory({
     hasMoreHistory,
     isLoadingMoreHistory,
     loadOlderHistory,
-    timeframe,
+    minimumCandleCount,
   ])
 
   return {

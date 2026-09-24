@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -6,54 +6,54 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --page-bg: #07111f;
-  --elevated: #0f1a2c;
-  --background: oklch(0.16 0.03 248);
-  --foreground: oklch(0.95 0.01 92);
-  --card: oklch(0.22 0.03 248 / 0.92);
-  --card-foreground: oklch(0.95 0.01 92);
-  --popover: oklch(0.22 0.03 248 / 0.96);
-  --popover-foreground: oklch(0.95 0.01 92);
-  --primary: #d4243a;
-  --primary-foreground: oklch(0.98 0.01 90);
-  --secondary: oklch(0.28 0.03 244);
-  --secondary-foreground: oklch(0.94 0.01 92);
-  --muted: oklch(0.25 0.02 245);
-  --muted-foreground: oklch(0.77 0.02 86);
-  --accent: oklch(0.82 0.11 80);
-  --accent-foreground: oklch(0.18 0.02 250);
-  --destructive: oklch(0.62 0.21 22);
-  --destructive-foreground: oklch(0.98 0.01 90);
-  --border: oklch(0.35 0.03 246);
-  --input: oklch(0.25 0.03 246);
-  --ring: #d4243a;
-  --chart-1: #d4243a;
-  --chart-2: oklch(0.82 0.11 80);
-  --chart-3: oklch(0.62 0.14 240);
-  --chart-4: oklch(0.72 0.18 28);
-  --chart-5: oklch(0.56 0.17 18);
-  --radius: 0.9rem;
-  --sidebar: oklch(0.2 0.03 248);
-  --sidebar-foreground: oklch(0.94 0.01 92);
-  --sidebar-primary: #d4243a;
-  --sidebar-primary-foreground: oklch(0.98 0.01 90);
-  --sidebar-accent: oklch(0.25 0.03 246);
-  --sidebar-accent-foreground: oklch(0.94 0.01 92);
-  --sidebar-border: oklch(0.35 0.03 246);
-  --sidebar-ring: #d4243a;
-  --color-accent-strong: #d4243a;
-  --color-accent-strong-soft: #f0586a;
-  --color-accent-warm: #f6c465;
-  --color-positive: #1fd79a;
-  --color-positive-foreground: #a7f3d0;
-  --color-negative: var(--color-accent-strong);
-  --color-negative-foreground: #fecdd3;
-  --color-warning: var(--color-accent-warm);
-  --color-warning-foreground: #fef3c7;
+  --page-bg: #101010;
+  --elevated: #1c1c1c;
+  --background: #101010;
+  --foreground: #faf8f5;
+  --card: #141414;
+  --card-foreground: #faf8f5;
+  --popover: #191919;
+  --popover-foreground: #faf8f5;
+  --primary: #e8e6e2;
+  --primary-foreground: #151515;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #faf8f5;
+  --muted: #1c1c1c;
+  --muted-foreground: #969896;
+  --accent: #292522;
+  --accent-foreground: #faf8f5;
+  --destructive: #e47a78;
+  --destructive-foreground: #fff2f1;
+  --border: #303030;
+  --input: #0e0e0e;
+  --ring: #cf8654;
+  --chart-1: #cf8654;
+  --chart-2: #a7c797;
+  --chart-3: #999fb1;
+  --chart-4: #c9a17c;
+  --chart-5: #e47a78;
+  --radius: 0.75rem;
+  --sidebar: #141414;
+  --sidebar-foreground: #faf8f5;
+  --sidebar-primary: #e8e6e2;
+  --sidebar-primary-foreground: #151515;
+  --sidebar-accent: #1c1c1c;
+  --sidebar-accent-foreground: #faf8f5;
+  --sidebar-border: #303030;
+  --sidebar-ring: #cf8654;
+  --color-accent-strong: #cf8654;
+  --color-accent-strong-soft: #e0a77f;
+  --color-accent-warm: #cf8654;
+  --color-positive: #9fc891;
+  --color-positive-foreground: #bedbb5;
+  --color-negative: #e47a78;
+  --color-negative-foreground: #f1b2af;
+  --color-warning: #d5a56d;
+  --color-warning-foreground: #e6c49a;
 }
 
 @theme inline {
-  --font-sans: 'Hanken Grotesk', sans-serif;
+  --font-sans: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -119,16 +119,11 @@
     font-family: var(--font-sans);
     background:
       radial-gradient(
-        circle at top left,
-        rgba(212, 36, 58, 0.13),
-        transparent 26rem
+        ellipse at 85% 10%,
+        rgba(121, 73, 40, 0.12),
+        transparent 40rem
       ),
-      radial-gradient(
-        circle at 82% 0%,
-        rgba(212, 36, 58, 0.08),
-        transparent 22rem
-      ),
-      linear-gradient(180deg, #0c1628 0%, #07111f 100%);
+      #101010;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
