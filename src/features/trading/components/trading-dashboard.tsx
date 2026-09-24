@@ -66,6 +66,7 @@ import { HighPriceImpactDialog } from './high-price-impact-dialog'
 import { PositionPagination } from './position-pagination'
 import { ReclaimRentBanner } from './reclaim-rent-banner'
 import { MarketSelector } from './market-selector'
+import { useMarketOverview } from '../hooks/use-market-overview'
 import type { ReactNode } from 'react'
 import type {
   ChartCrosshairData,
@@ -135,6 +136,8 @@ export function TradingDashboard({
   )
 
   const [side, setSide] = useState<OrderSide>('buy')
+  const [marketSelectorOpen, setMarketSelectorOpen] = useState(false)
+  const marketOverview = useMarketOverview(marketSelectorOpen)
   const [amountInput, setAmountInput] = useState('')
   const [durationSeconds, setDurationSeconds] = useState(30 * 60)
   const [positionPanelTab, setPositionPanelTab] =
@@ -827,6 +830,11 @@ export function TradingDashboard({
                       disabled={isMarketChangeDisabled}
                       marketId={marketId}
                       onMarketChange={onMarketChange}
+                      onOpenChange={setMarketSelectorOpen}
+                      stats={marketOverview.data}
+                      isLoading={marketOverview.isLoading}
+                      hasError={marketOverview.isError}
+                      onRetry={() => void marketOverview.refetch()}
                     />
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground">

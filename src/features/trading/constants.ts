@@ -3,9 +3,12 @@ import type { Address } from '@solana/kit'
 const SUPPORTED_MARKET_IDS = [1, 2, 3, 4] as const
 
 export type MarketId = (typeof SUPPORTED_MARKET_IDS)[number]
+export type MarketCategory = 'crypto' | 'equities'
 
 export interface MarketDefinition {
   readonly id: MarketId
+  readonly name: string
+  readonly category: MarketCategory
   readonly baseSymbol: string
   readonly quoteSymbol: string
   readonly baseMint: Address
@@ -22,6 +25,8 @@ const DEVNET_USDC_MINT =
 export const MARKET_DEFINITIONS = [
   {
     id: 1,
+    name: 'Solana',
+    category: 'crypto',
     baseSymbol: 'SOL',
     quoteSymbol: 'USDC',
     baseMint: 'So11111111111111111111111111111111111111112' as Address,
@@ -33,6 +38,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 2,
+    name: 'Mato',
+    category: 'equities',
     baseSymbol: 'MATO',
     quoteSymbol: 'USDC',
     baseMint: '69zmVXSzZptwJo5cy5LfUxmrdE1mRkeRnnEqtYNrKBMc' as Address,
@@ -44,6 +51,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 3,
+    name: 'Solana Beach',
+    category: 'equities',
     baseSymbol: 'SB',
     quoteSymbol: 'USDC',
     baseMint: '5UodwdrKuvMkpYZqEAoeo5AbeX4fPzSeENEojJLZNUQR' as Address,
@@ -55,6 +64,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 4,
+    name: 'Staking Facilities',
+    category: 'equities',
     baseSymbol: 'SF',
     quoteSymbol: 'USDC',
     baseMint: 'HxMsRrwZdg6fBVcZ5aqP3x18KVpmNG81kSncrCD7k13N' as Address,
