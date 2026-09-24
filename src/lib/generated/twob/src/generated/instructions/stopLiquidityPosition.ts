@@ -43,11 +43,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const STOP_LIQUIDITY_POSITION_DISCRIMINATOR = new Uint8Array([
-  235, 140, 4, 132, 40, 50, 92, 60,
-])
+export const STOP_LIQUIDITY_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([235, 140, 4, 132, 40, 50, 92, 60])
 
-export function getStopLiquidityPositionDiscriminatorBytes() {
+export function getStopLiquidityPositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     STOP_LIQUIDITY_POSITION_DISCRIMINATOR,
   )
@@ -207,7 +206,7 @@ export type StopLiquidityPositionAsyncInput<
   liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -434,24 +433,6 @@ export async function getStopLiquidityPositionInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'quoteMint',
             accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
           ),
         ),
       ],

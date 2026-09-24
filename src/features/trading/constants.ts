@@ -113,7 +113,9 @@ export function parseMarketSearch(value: unknown): { market: MarketId } {
   return { market: parseSupportedMarketId(candidate) ?? DEFAULT_MARKET_ID }
 }
 
-export const ARRAY_LENGTH = 20
+// Must match twob-anchor v1's constants.rs (these are not emitted in the IDL).
+export const ARRAY_LENGTH = 30
+export const END_SLOT_INTERVAL = 7
 export const SLOT_DURATION_MS = 400
 export const SLOT_DURATION_SECONDS = SLOT_DURATION_MS / 1000
 export const NATIVE_SOL_DECIMALS = 9
@@ -128,7 +130,7 @@ export const CHART_HISTORY_REQUEST_DEBOUNCE_MS = 450
 export const CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX = 480
 export const CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS = 10
 export const CLOSED_POSITION_BATCH_GAP_SLOTS = 900
-// A v1 close uses 23 account metas; two self-custodied positions fit the wire limit.
+// A v1 close uses 24 account metas; two self-custodied positions fit the wire limit.
 export const MAX_BATCH_CLOSE_POSITIONS_PER_TRANSACTION = 2
 export const MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION = 10
 export const POSITION_PAGE_SIZE = 10

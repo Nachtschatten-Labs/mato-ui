@@ -43,11 +43,10 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const LIQUIDITY_POSITION_DISCRIMINATOR = new Uint8Array([
-  153, 56, 106, 34, 55, 42, 113, 176,
-])
+export const LIQUIDITY_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([153, 56, 106, 34, 55, 42, 113, 176])
 
-export function getLiquidityPositionDiscriminatorBytes() {
+export function getLiquidityPositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     LIQUIDITY_POSITION_DISCRIMINATOR,
   )
@@ -57,6 +56,8 @@ export type LiquidityPosition = {
   discriminator: ReadonlyUint8Array
   /** Creator of this position who can close it */
   authority: Address
+  /** Corresponding market address */
+  market: Address
   /** Base balance at last update slot with bookkeeping precision */
   baseBalance: bigint
   /** Quote balance at last update slot with bookkeeping precision */
@@ -68,9 +69,9 @@ export type LiquidityPosition = {
   /** Snapshot of slots without trades in this market when this order was created */
   slotsWithoutTradeSnapshot: number
   /** Base flow, no extra flow precision needed, since flow are set manually */
-  baseFlowU64: bigint
+  baseFlowAtoms: bigint
   /** Quote flow, no extra flow precision needed, since flow are set manually */
-  quoteFlowU64: bigint
+  quoteFlowAtoms: bigint
   /** Base debt, can arise if position is not liquidated in time */
   baseDebt: bigint
   /** Quote debt, can arise if position is not liquidated in time */
@@ -83,6 +84,8 @@ export type LiquidityPosition = {
 export type LiquidityPositionArgs = {
   /** Creator of this position who can close it */
   authority: Address
+  /** Corresponding market address */
+  market: Address
   /** Base balance at last update slot with bookkeeping precision */
   baseBalance: number | bigint
   /** Quote balance at last update slot with bookkeeping precision */
@@ -94,9 +97,9 @@ export type LiquidityPositionArgs = {
   /** Snapshot of slots without trades in this market when this order was created */
   slotsWithoutTradeSnapshot: number
   /** Base flow, no extra flow precision needed, since flow are set manually */
-  baseFlowU64: number | bigint
+  baseFlowAtoms: number | bigint
   /** Quote flow, no extra flow precision needed, since flow are set manually */
-  quoteFlowU64: number | bigint
+  quoteFlowAtoms: number | bigint
   /** Base debt, can arise if position is not liquidated in time */
   baseDebt: number | bigint
   /** Quote debt, can arise if position is not liquidated in time */
@@ -112,13 +115,14 @@ export function getLiquidityPositionEncoder(): FixedSizeEncoder<LiquidityPositio
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['authority', getAddressEncoder()],
+      ['market', getAddressEncoder()],
       ['baseBalance', getU128Encoder()],
       ['quoteBalance', getU128Encoder()],
       ['basePerQuoteSnapshot', getU128Encoder()],
       ['quotePerBaseSnapshot', getU128Encoder()],
       ['slotsWithoutTradeSnapshot', getU32Encoder()],
-      ['baseFlowU64', getU64Encoder()],
-      ['quoteFlowU64', getU64Encoder()],
+      ['baseFlowAtoms', getU64Encoder()],
+      ['quoteFlowAtoms', getU64Encoder()],
       ['baseDebt', getU64Encoder()],
       ['quoteDebt', getU64Encoder()],
       ['lastUpdateSlot', getU64Encoder()],
@@ -133,13 +137,14 @@ export function getLiquidityPositionDecoder(): FixedSizeDecoder<LiquidityPositio
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['authority', getAddressDecoder()],
+    ['market', getAddressDecoder()],
     ['baseBalance', getU128Decoder()],
     ['quoteBalance', getU128Decoder()],
     ['basePerQuoteSnapshot', getU128Decoder()],
     ['quotePerBaseSnapshot', getU128Decoder()],
     ['slotsWithoutTradeSnapshot', getU32Decoder()],
-    ['baseFlowU64', getU64Decoder()],
-    ['quoteFlowU64', getU64Decoder()],
+    ['baseFlowAtoms', getU64Decoder()],
+    ['quoteFlowAtoms', getU64Decoder()],
     ['baseDebt', getU64Decoder()],
     ['quoteDebt', getU64Decoder()],
     ['lastUpdateSlot', getU64Decoder()],
@@ -222,5 +227,5 @@ export async function fetchAllMaybeLiquidityPosition(
 }
 
 export function getLiquidityPositionSize(): number {
-  return 149
+  return 181
 }

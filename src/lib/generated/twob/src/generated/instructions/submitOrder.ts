@@ -44,13 +44,18 @@ import {
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
+import {
+  findFutureExitsPda,
+  findFuturePricesPda,
+  findTradePositionPda,
+} from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const SUBMIT_ORDER_DISCRIMINATOR = new Uint8Array([
+export const SUBMIT_ORDER_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   230, 150, 200, 53, 92, 208, 109, 108,
 ])
 
-export function getSubmitOrderDiscriminatorBytes() {
+export function getSubmitOrderDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(SUBMIT_ORDER_DISCRIMINATOR)
 }
 
@@ -234,7 +239,7 @@ export type SubmitOrderAsyncInput<
   market: Address<TAccountMarket>
   tradePosition?: Address<TAccountTradePosition>
   vault?: Address<TAccountVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -388,31 +393,20 @@ export async function getSubmitOrderInstructionAsync<
     })
   }
   if (!accounts.tradePosition.value) {
-    accounts.tradePosition.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            116, 114, 97, 100, 101, 95, 112, 111, 115, 105, 116, 105, 111, 110,
-          ]),
+    accounts.tradePosition.value = await findTradePositionPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
+        authority: getAddressFromResolvedInstructionAccount(
+          'authority',
+          accounts.authority.value,
         ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
-          ),
-        ),
-        getU32Encoder().encode(
-          getNonNullResolvedInstructionInput('id', args.id),
-        ),
-      ],
-    })
+        id: getNonNullResolvedInstructionInput('id', args.id),
+      },
+      { programAddress },
+    )
   }
   if (!accounts.vault.value) {
     accounts.vault.value = await getProgramDerivedAddress({
@@ -437,57 +431,35 @@ export async function getSubmitOrderInstructionAsync<
       ],
     })
   }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.futureExits.value) {
-    accounts.futureExits.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([101, 120, 105, 116, 115])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
+    accounts.futureExits.value = await findFutureExitsPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getU64Encoder().encode(
-          getNonNullResolvedInstructionInput('futureIndex', args.futureIndex),
+        futureIndex: getNonNullResolvedInstructionInput(
+          'futureIndex',
+          args.futureIndex,
         ),
-      ],
-    })
+      },
+      { programAddress },
+    )
   }
   if (!accounts.futurePrices.value) {
-    accounts.futurePrices.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([112, 114, 105, 99, 101, 115])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
+    accounts.futurePrices.value = await findFuturePricesPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getU64Encoder().encode(
-          getNonNullResolvedInstructionInput('futureIndex', args.futureIndex),
+        futureIndex: getNonNullResolvedInstructionInput(
+          'futureIndex',
+          args.futureIndex,
         ),
-      ],
-    })
+      },
+      { programAddress },
+    )
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =

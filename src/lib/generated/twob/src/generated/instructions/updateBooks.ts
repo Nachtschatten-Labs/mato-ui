@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -38,16 +36,15 @@ import {
 } from '@solana/kit'
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UPDATE_BOOKS_DISCRIMINATOR = new Uint8Array([
+export const UPDATE_BOOKS_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   186, 132, 107, 163, 37, 130, 212, 113,
 ])
 
-export function getUpdateBooksDiscriminatorBytes() {
+export function getUpdateBooksDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(UPDATE_BOOKS_DISCRIMINATOR)
 }
 
@@ -134,138 +131,6 @@ export function getUpdateBooksInstructionDataCodec(): FixedSizeCodec<
     getUpdateBooksInstructionDataEncoder(),
     getUpdateBooksInstructionDataDecoder(),
   )
-}
-
-export type UpdateBooksAsyncInput<
-  TAccountSigner extends string = string,
-  TAccountMarket extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountReferenceExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountReferencePrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountSystemProgram extends string = string,
-> = {
-  signer: TransactionSigner<TAccountSigner>
-  market: Address<TAccountMarket>
-  bookkeeping?: Address<TAccountBookkeeping>
-  referenceExits: Address<TAccountReferenceExits>
-  previousExits: Address<TAccountPreviousExits>
-  referencePrices: Address<TAccountReferencePrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: UpdateBooksInstructionDataArgs['referenceIndex']
-  slot: UpdateBooksInstructionDataArgs['slot']
-}
-
-export async function getUpdateBooksInstructionAsync<
-  TAccountSigner extends string,
-  TAccountMarket extends string,
-  TAccountBookkeeping extends string,
-  TAccountReferenceExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountReferencePrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: UpdateBooksAsyncInput<
-    TAccountSigner,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountReferenceExits,
-    TAccountPreviousExits,
-    TAccountReferencePrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  UpdateBooksInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountReferenceExits,
-    TAccountPreviousExits,
-    TAccountReferencePrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
-    market: { value: input.market ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    referenceExits: { value: input.referenceExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    referencePrices: { value: input.referencePrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('signer', accounts.signer),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('referenceExits', accounts.referenceExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('referencePrices', accounts.referencePrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-    ],
-    data: getUpdateBooksInstructionDataEncoder().encode(
-      args as UpdateBooksInstructionDataArgs,
-    ),
-    programAddress,
-  } as UpdateBooksInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountReferenceExits,
-    TAccountPreviousExits,
-    TAccountReferencePrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >)
 }
 
 export type UpdateBooksInput<

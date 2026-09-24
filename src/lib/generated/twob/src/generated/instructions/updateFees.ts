@@ -12,7 +12,6 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU8Decoder,
@@ -41,11 +40,11 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UPDATE_FEES_DISCRIMINATOR = new Uint8Array([
+export const UPDATE_FEES_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   225, 27, 13, 6, 69, 84, 172, 191,
 ])
 
-export function getUpdateFeesDiscriminatorBytes() {
+export function getUpdateFeesDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(UPDATE_FEES_DISCRIMINATOR)
 }
 
@@ -111,88 +110,6 @@ export function getUpdateFeesInstructionDataCodec(): FixedSizeCodec<
     getUpdateFeesInstructionDataEncoder(),
     getUpdateFeesInstructionDataDecoder(),
   )
-}
-
-export type UpdateFeesAsyncInput<
-  TAccountAuthority extends string = string,
-  TAccountProgramConfig extends string = string,
-  TAccountMarket extends string = string,
-> = {
-  authority: TransactionSigner<TAccountAuthority>
-  programConfig?: Address<TAccountProgramConfig>
-  market: Address<TAccountMarket>
-  tradingFee: UpdateFeesInstructionDataArgs['tradingFee']
-  unhealthyLiquidityFee: UpdateFeesInstructionDataArgs['unhealthyLiquidityFee']
-}
-
-export async function getUpdateFeesInstructionAsync<
-  TAccountAuthority extends string,
-  TAccountProgramConfig extends string,
-  TAccountMarket extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: UpdateFeesAsyncInput<
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  UpdateFeesInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
-    programConfig: { value: input.programConfig ?? null, isWritable: false },
-    market: { value: input.market ?? null, isWritable: true },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('authority', accounts.authority),
-      getAccountMeta('programConfig', accounts.programConfig),
-      getAccountMeta('market', accounts.market),
-    ],
-    data: getUpdateFeesInstructionDataEncoder().encode(
-      args as UpdateFeesInstructionDataArgs,
-    ),
-    programAddress,
-  } as UpdateFeesInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket
-  >)
 }
 
 export type UpdateFeesInput<

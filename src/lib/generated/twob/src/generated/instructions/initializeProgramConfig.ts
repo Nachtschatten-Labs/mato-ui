@@ -12,7 +12,6 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU32Decoder,
@@ -39,13 +38,13 @@ import {
   getAccountMetaFactory,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
+import { findProgramConfigPda } from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const INITIALIZE_PROGRAM_CONFIG_DISCRIMINATOR = new Uint8Array([
-  6, 131, 61, 237, 40, 110, 83, 124,
-])
+export const INITIALIZE_PROGRAM_CONFIG_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([6, 131, 61, 237, 40, 110, 83, 124])
 
-export function getInitializeProgramConfigDiscriminatorBytes() {
+export function getInitializeProgramConfigDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     INITIALIZE_PROGRAM_CONFIG_DISCRIMINATOR,
   )
@@ -54,7 +53,7 @@ export function getInitializeProgramConfigDiscriminatorBytes() {
 export type InitializeProgramConfigInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountAuthority extends string | AccountMeta<string> =
-    '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
+    '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC',
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
@@ -182,18 +181,11 @@ export async function getInitializeProgramConfigInstructionAsync<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
+      '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC' as Address<'6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC'>
   }
   if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
+    accounts.programConfig.value = await findProgramConfigPda({
       programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
     })
   }
   if (!accounts.systemProgram.value) {
@@ -281,7 +273,7 @@ export function getInitializeProgramConfigInstruction<
   // Resolve default values.
   if (!accounts.authority.value) {
     accounts.authority.value =
-      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
+      '6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC' as Address<'6iVqPUXH48n6ufwQVkWBtcgkXaEvmhjirnaZAosEaiHC'>
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =

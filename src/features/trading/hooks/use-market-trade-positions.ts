@@ -5,7 +5,6 @@ import type { Address } from '@solana/kit'
 
 export function useMarketTradePositions(
   marketAddress: Address | undefined,
-  marketId: number,
   enabled = true,
 ) {
   const client = useSolanaClient()
@@ -14,7 +13,6 @@ export function useMarketTradePositions(
     ...tradingQueries.marketTradePositions({
       client,
       marketAddress,
-      marketId,
     }),
     enabled: enabled && Boolean(marketAddress),
     refetchInterval: 5_000,

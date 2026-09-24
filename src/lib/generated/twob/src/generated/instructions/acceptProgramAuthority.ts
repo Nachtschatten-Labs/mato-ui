@@ -12,7 +12,6 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -38,11 +37,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const ACCEPT_PROGRAM_AUTHORITY_DISCRIMINATOR = new Uint8Array([
-  224, 193, 101, 195, 243, 34, 10, 108,
-])
+export const ACCEPT_PROGRAM_AUTHORITY_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([224, 193, 101, 195, 243, 34, 10, 108])
 
-export function getAcceptProgramAuthorityDiscriminatorBytes() {
+export function getAcceptProgramAuthorityDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     ACCEPT_PROGRAM_AUTHORITY_DISCRIMINATOR,
   )
@@ -98,76 +96,6 @@ export function getAcceptProgramAuthorityInstructionDataCodec(): FixedSizeCodec<
     getAcceptProgramAuthorityInstructionDataEncoder(),
     getAcceptProgramAuthorityInstructionDataDecoder(),
   )
-}
-
-export type AcceptProgramAuthorityAsyncInput<
-  TAccountPendingAuthority extends string = string,
-  TAccountProgramConfig extends string = string,
-> = {
-  pendingAuthority: TransactionSigner<TAccountPendingAuthority>
-  programConfig?: Address<TAccountProgramConfig>
-}
-
-export async function getAcceptProgramAuthorityInstructionAsync<
-  TAccountPendingAuthority extends string,
-  TAccountProgramConfig extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: AcceptProgramAuthorityAsyncInput<
-    TAccountPendingAuthority,
-    TAccountProgramConfig
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  AcceptProgramAuthorityInstruction<
-    TProgramAddress,
-    TAccountPendingAuthority,
-    TAccountProgramConfig
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    pendingAuthority: {
-      value: input.pendingAuthority ?? null,
-      isWritable: true,
-    },
-    programConfig: { value: input.programConfig ?? null, isWritable: true },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('pendingAuthority', accounts.pendingAuthority),
-      getAccountMeta('programConfig', accounts.programConfig),
-    ],
-    data: getAcceptProgramAuthorityInstructionDataEncoder().encode({}),
-    programAddress,
-  } as AcceptProgramAuthorityInstruction<
-    TProgramAddress,
-    TAccountPendingAuthority,
-    TAccountProgramConfig
-  >)
 }
 
 export type AcceptProgramAuthorityInput<

@@ -41,11 +41,11 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const WITHDRAW_FEES_DISCRIMINATOR = new Uint8Array([
+export const WITHDRAW_FEES_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   198, 212, 171, 109, 144, 215, 174, 89,
 ])
 
-export function getWithdrawFeesDiscriminatorBytes() {
+export function getWithdrawFeesDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     WITHDRAW_FEES_DISCRIMINATOR,
   )
@@ -162,7 +162,7 @@ export type WithdrawFeesAsyncInput<
   TAccountSystemProgram extends string = string,
 > = {
   authority: TransactionSigner<TAccountAuthority>
-  programConfig?: Address<TAccountProgramConfig>
+  programConfig: Address<TAccountProgramConfig>
   baseMint: Address<TAccountBaseMint>
   quoteMint: Address<TAccountQuoteMint>
   market: Address<TAccountMarket>
@@ -266,18 +266,6 @@ export async function getWithdrawFeesInstructionAsync<
   >
 
   // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
       programAddress:

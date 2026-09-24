@@ -4,8 +4,15 @@ function normalizeKeyPart(value: bigint | number | string | null | undefined) {
 }
 
 export const tradingQueryKeys = {
-  marketAddress: (marketId: number) =>
-    ['trading', 'market-address', marketId] as const,
+  marketAddress: ({
+    baseMint,
+    quoteMint,
+    id,
+  }: {
+    baseMint: string
+    quoteMint: string
+    id: number
+  }) => ['trading', 'market-address', baseMint, quoteMint, id] as const,
   marketConfig: (marketId: number) =>
     ['trading', 'market-config', marketId] as const,
   marketUpdates: (marketId: number, limit: number) =>
@@ -27,12 +34,15 @@ export const tradingQueryKeys = {
     ['trading', 'market-price', marketId] as const,
   marketPriceChange24h: (marketId: number) =>
     ['trading', 'market-price-change-24h', marketId] as const,
-  tradePositions: (authority: string | null | undefined, marketId: number) =>
+  tradePositions: (
+    authority: string | null | undefined,
+    marketAddress: string | undefined,
+  ) =>
     [
       'trading',
       'trade-positions',
       normalizeKeyPart(authority),
-      marketId,
+      normalizeKeyPart(marketAddress),
     ] as const,
   tradePositionsForAuthority: (authority: string | null | undefined) =>
     ['trading', 'trade-positions', normalizeKeyPart(authority)] as const,

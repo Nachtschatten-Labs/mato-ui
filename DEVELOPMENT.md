@@ -26,6 +26,38 @@ pnpm audit
 types are tracked so type checking also works before starting the server.
 `pnpm format:check` checks formatting; `pnpm format` applies it.
 
+## Updating the v1 program client
+
+The checked-in IDL comes from `twob-anchor`'s `v1` branch at `94824f8`
+(2026-09-24). It was checked against a fresh IDL build. The source artifact uses
+the test bootstrap authority; a devnet build differs in the authority accepted
+by `initialize_program_config`. The trading UI does not initialize that account.
+
+After building the IDL for the intended program revision and authority feature:
+
+```sh
+cp ../twob-anchor/target/idl/twob_anchor.json src/lib/idl/twob_anchor.json
+pnpm generate:twob
+pnpm check
+```
+
+`generate:twob` uses pinned Codama tools and replaces only
+`src/lib/generated/twob/src/generated`. Generated events live in `events/` and
+include their Anchor discriminators. The small `kit-compat.ts` adapter supplies
+the client-extension type used by the renderer while retaining Solana Kit 6.5.
+
+Market PDAs use the ordered base mint, quote mint, and a four-byte market ID.
+The selected market definitions supply all three; on-chain position queries and
+controls use the resulting address, not the numeric ID alone. Interval accounts
+contain 30 entries, with a fixed seven-slot end interval. These two constants are
+not present in Anchor's IDL, so keep `ARRAY_LENGTH` and `END_SLOT_INTERVAL` in
+`src/features/trading/constants.ts` aligned with the program when updating it.
+
+The separate read API keeps its existing numeric market routes. Its indexer must
+decode the new event layouts (market addresses and `u128` flows) and map each
+address to the corresponding API market ID. Updating the UI's IDL does not
+update that service or migrate old on-chain accounts.
+
 ## Configure services
 
 Copy `.env.example` to `.env.local` and supply the read API and RPC endpoints you

@@ -43,11 +43,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const PUBLIC_CLOSE_TRADE_POSITION_DISCRIMINATOR = new Uint8Array([
-  84, 88, 98, 249, 38, 129, 179, 30,
-])
+export const PUBLIC_CLOSE_TRADE_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([84, 88, 98, 249, 38, 129, 179, 30])
 
-export function getPublicCloseTradePositionDiscriminatorBytes() {
+export function getPublicCloseTradePositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     PUBLIC_CLOSE_TRADE_POSITION_DISCRIMINATOR,
   )
@@ -56,6 +55,7 @@ export function getPublicCloseTradePositionDiscriminatorBytes() {
 export type PublicCloseTradePositionInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountSigner extends string | AccountMeta<string> = string,
+  TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountBaseReceiver extends string | AccountMeta<string> = string,
   TAccountQuoteReceiver extends string | AccountMeta<string> = string,
@@ -91,6 +91,9 @@ export type PublicCloseTradePositionInstruction<
         ? WritableSignerAccount<TAccountSigner> &
             AccountSignerMeta<TAccountSigner>
         : TAccountSigner,
+      TAccountProgramConfig extends string
+        ? ReadonlyAccount<TAccountProgramConfig>
+        : TAccountProgramConfig,
       TAccountPayer extends string
         ? WritableAccount<TAccountPayer>
         : TAccountPayer,
@@ -202,6 +205,7 @@ export function getPublicCloseTradePositionInstructionDataCodec(): FixedSizeCode
 
 export type PublicCloseTradePositionAsyncInput<
   TAccountSigner extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountPayer extends string = string,
   TAccountBaseReceiver extends string = string,
   TAccountQuoteReceiver extends string = string,
@@ -226,6 +230,7 @@ export type PublicCloseTradePositionAsyncInput<
   TAccountSystemProgram extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
+  programConfig: Address<TAccountProgramConfig>
   payer: Address<TAccountPayer>
   baseReceiver: Address<TAccountBaseReceiver>
   quoteReceiver: Address<TAccountQuoteReceiver>
@@ -237,7 +242,7 @@ export type PublicCloseTradePositionAsyncInput<
   tradePosition: Address<TAccountTradePosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   futureExits: Address<TAccountFutureExits>
   futurePrices: Address<TAccountFuturePrices>
   currentExits: Address<TAccountCurrentExits>
@@ -253,6 +258,7 @@ export type PublicCloseTradePositionAsyncInput<
 
 export async function getPublicCloseTradePositionInstructionAsync<
   TAccountSigner extends string,
+  TAccountProgramConfig extends string,
   TAccountPayer extends string,
   TAccountBaseReceiver extends string,
   TAccountQuoteReceiver extends string,
@@ -279,6 +285,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
 >(
   input: PublicCloseTradePositionAsyncInput<
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountPayer,
     TAccountBaseReceiver,
     TAccountQuoteReceiver,
@@ -307,6 +314,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
   PublicCloseTradePositionInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountPayer,
     TAccountBaseReceiver,
     TAccountQuoteReceiver,
@@ -337,6 +345,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     baseReceiver: { value: input.baseReceiver ?? null, isWritable: true },
     quoteReceiver: { value: input.quoteReceiver ?? null, isWritable: true },
@@ -436,24 +445,6 @@ export async function getPublicCloseTradePositionInstructionAsync<
       ],
     })
   }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>
@@ -467,6 +458,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta('signer', accounts.signer),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('baseReceiver', accounts.baseReceiver),
       getAccountMeta('quoteReceiver', accounts.quoteReceiver),
@@ -503,6 +495,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
   } as PublicCloseTradePositionInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountPayer,
     TAccountBaseReceiver,
     TAccountQuoteReceiver,
@@ -530,6 +523,7 @@ export async function getPublicCloseTradePositionInstructionAsync<
 
 export type PublicCloseTradePositionInput<
   TAccountSigner extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountPayer extends string = string,
   TAccountBaseReceiver extends string = string,
   TAccountQuoteReceiver extends string = string,
@@ -554,6 +548,7 @@ export type PublicCloseTradePositionInput<
   TAccountSystemProgram extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
+  programConfig: Address<TAccountProgramConfig>
   payer: Address<TAccountPayer>
   baseReceiver: Address<TAccountBaseReceiver>
   quoteReceiver: Address<TAccountQuoteReceiver>
@@ -581,6 +576,7 @@ export type PublicCloseTradePositionInput<
 
 export function getPublicCloseTradePositionInstruction<
   TAccountSigner extends string,
+  TAccountProgramConfig extends string,
   TAccountPayer extends string,
   TAccountBaseReceiver extends string,
   TAccountQuoteReceiver extends string,
@@ -607,6 +603,7 @@ export function getPublicCloseTradePositionInstruction<
 >(
   input: PublicCloseTradePositionInput<
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountPayer,
     TAccountBaseReceiver,
     TAccountQuoteReceiver,
@@ -634,6 +631,7 @@ export function getPublicCloseTradePositionInstruction<
 ): PublicCloseTradePositionInstruction<
   TProgramAddress,
   TAccountSigner,
+  TAccountProgramConfig,
   TAccountPayer,
   TAccountBaseReceiver,
   TAccountQuoteReceiver,
@@ -663,6 +661,7 @@ export function getPublicCloseTradePositionInstruction<
   // Original accounts.
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
     baseReceiver: { value: input.baseReceiver ?? null, isWritable: true },
     quoteReceiver: { value: input.quoteReceiver ?? null, isWritable: true },
@@ -723,6 +722,7 @@ export function getPublicCloseTradePositionInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('signer', accounts.signer),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('payer', accounts.payer),
       getAccountMeta('baseReceiver', accounts.baseReceiver),
       getAccountMeta('quoteReceiver', accounts.quoteReceiver),
@@ -759,6 +759,7 @@ export function getPublicCloseTradePositionInstruction<
   } as PublicCloseTradePositionInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountPayer,
     TAccountBaseReceiver,
     TAccountQuoteReceiver,
@@ -791,28 +792,29 @@ export type ParsedPublicCloseTradePositionInstruction<
   programAddress: Address<TProgram>
   accounts: {
     signer: TAccountMetas[0]
-    payer: TAccountMetas[1]
-    baseReceiver: TAccountMetas[2]
-    quoteReceiver: TAccountMetas[3]
-    baseMint: TAccountMetas[4]
-    quoteMint: TAccountMetas[5]
-    receiverBaseTokenAccount: TAccountMetas[6]
-    receiverQuoteTokenAccount: TAccountMetas[7]
-    market: TAccountMetas[8]
-    tradePosition: TAccountMetas[9]
-    baseVault: TAccountMetas[10]
-    quoteVault: TAccountMetas[11]
-    bookkeeping: TAccountMetas[12]
-    futureExits: TAccountMetas[13]
-    futurePrices: TAccountMetas[14]
-    currentExits: TAccountMetas[15]
-    previousExits: TAccountMetas[16]
-    currentPrices: TAccountMetas[17]
-    previousPrices: TAccountMetas[18]
-    baseTokenProgram: TAccountMetas[19]
-    quoteTokenProgram: TAccountMetas[20]
-    associatedTokenProgram: TAccountMetas[21]
-    systemProgram: TAccountMetas[22]
+    programConfig: TAccountMetas[1]
+    payer: TAccountMetas[2]
+    baseReceiver: TAccountMetas[3]
+    quoteReceiver: TAccountMetas[4]
+    baseMint: TAccountMetas[5]
+    quoteMint: TAccountMetas[6]
+    receiverBaseTokenAccount: TAccountMetas[7]
+    receiverQuoteTokenAccount: TAccountMetas[8]
+    market: TAccountMetas[9]
+    tradePosition: TAccountMetas[10]
+    baseVault: TAccountMetas[11]
+    quoteVault: TAccountMetas[12]
+    bookkeeping: TAccountMetas[13]
+    futureExits: TAccountMetas[14]
+    futurePrices: TAccountMetas[15]
+    currentExits: TAccountMetas[16]
+    previousExits: TAccountMetas[17]
+    currentPrices: TAccountMetas[18]
+    previousPrices: TAccountMetas[19]
+    baseTokenProgram: TAccountMetas[20]
+    quoteTokenProgram: TAccountMetas[21]
+    associatedTokenProgram: TAccountMetas[22]
+    systemProgram: TAccountMetas[23]
   }
   data: PublicCloseTradePositionInstructionData
 }
@@ -825,12 +827,12 @@ export function parsePublicCloseTradePositionInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPublicCloseTradePositionInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 23) {
+  if (instruction.accounts.length < 24) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 23,
+        expectedAccountMetas: 24,
       },
     )
   }
@@ -844,6 +846,7 @@ export function parsePublicCloseTradePositionInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       signer: getNextAccount(),
+      programConfig: getNextAccount(),
       payer: getNextAccount(),
       baseReceiver: getNextAccount(),
       quoteReceiver: getNextAccount(),

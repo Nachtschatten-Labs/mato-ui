@@ -45,22 +45,19 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const EXITS_DISCRIMINATOR = new Uint8Array([
+export const EXITS_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   240, 175, 85, 167, 2, 200, 2, 180,
 ])
 
-export function getExitsDiscriminatorBytes() {
+export function getExitsDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(EXITS_DISCRIMINATOR)
 }
 
 export type Exits = {
   discriminator: ReadonlyUint8Array
-  /**
-   * Market this account belongs to, kept first so it can be read without deserializing
-   * the whole account
-   */
+  /** Market this account belongs to */
   market: Address
-  /** Reference interval this account covers, kept next to `market` for the same reason */
+  /** Reference interval this account covers */
   index: bigint
   /** Address which funded this account, used to determine where the rent goes if account is closed */
   payer: Address
@@ -74,12 +71,9 @@ export type Exits = {
 }
 
 export type ExitsArgs = {
-  /**
-   * Market this account belongs to, kept first so it can be read without deserializing
-   * the whole account
-   */
+  /** Market this account belongs to */
   market: Address
-  /** Reference interval this account covers, kept next to `market` for the same reason */
+  /** Reference interval this account covers */
   index: number | bigint
   /** Address which funded this account, used to determine where the rent goes if account is closed */
   payer: Address
@@ -100,8 +94,8 @@ export function getExitsEncoder(): FixedSizeEncoder<ExitsArgs> {
       ['market', getAddressEncoder()],
       ['index', getU64Encoder()],
       ['payer', getAddressEncoder()],
-      ['baseExits', getArrayEncoder(getU128Encoder(), { size: 20 })],
-      ['quoteExits', getArrayEncoder(getU128Encoder(), { size: 20 })],
+      ['baseExits', getArrayEncoder(getU128Encoder(), { size: 30 })],
+      ['quoteExits', getArrayEncoder(getU128Encoder(), { size: 30 })],
       ['openPositions', getU32Encoder()],
       ['bump', getU8Encoder()],
     ]),
@@ -116,8 +110,8 @@ export function getExitsDecoder(): FixedSizeDecoder<Exits> {
     ['market', getAddressDecoder()],
     ['index', getU64Decoder()],
     ['payer', getAddressDecoder()],
-    ['baseExits', getArrayDecoder(getU128Decoder(), { size: 20 })],
-    ['quoteExits', getArrayDecoder(getU128Decoder(), { size: 20 })],
+    ['baseExits', getArrayDecoder(getU128Decoder(), { size: 30 })],
+    ['quoteExits', getArrayDecoder(getU128Decoder(), { size: 30 })],
     ['openPositions', getU32Decoder()],
     ['bump', getU8Decoder()],
   ])
@@ -182,5 +176,5 @@ export async function fetchAllMaybeExits(
 }
 
 export function getExitsSize(): number {
-  return 725
+  return 1045
 }

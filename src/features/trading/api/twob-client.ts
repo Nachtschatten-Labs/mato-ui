@@ -16,7 +16,6 @@ import {
   getBase58Decoder,
   getBytesEncoder,
   getProgramDerivedAddress,
-  getU32Encoder,
   getU64Encoder,
   isTransactionMessageWithSingleSendingSigner,
   pipe,
@@ -27,9 +26,11 @@ import {
 } from '@solana/kit'
 import {
   ARRAY_LENGTH,
+  END_SLOT_INTERVAL,
   MAX_BATCH_CLOSE_POSITIONS_PER_TRANSACTION,
 } from '../constants'
 import { encodeBase58 } from '../lib/base58'
+import { findMarketAddress } from '../lib/pdas'
 import { decodeBase64 } from '../lib/bytes'
 import { collectCloseableRentAccountPairs } from '../lib/rent'
 import {
@@ -62,8 +63,8 @@ import {
 } from '@/lib/generated/twob/src/generated/accounts'
 import {
   getAuthorityCloseTradePositionInstructionAsync,
-  getCloseExitsAndPricesAccountInstructionAsync,
-  getPauseTradePositionInstructionAsync,
+  getCloseExitsAndPricesAccountInstruction,
+  getPauseTradePositionInstruction,
   getSubmitOrderInstructionAsync,
   getUnpauseTradePositionInstructionAsync,
   getWithdrawSwappedInstructionAsync,
@@ -72,7 +73,7 @@ import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/
 
 const textEncoder = new TextEncoder()
 const BOOKKEEPING_DELAY_SLOTS = 20
-const TRADE_POSITION_MARKET_ID_OFFSET = 268n
+const TRADE_POSITION_MARKET_OFFSET = 40n
 const SIGNATURE_POLL_INTERVAL_MS = 1_000
 const ASSOCIATED_TOKEN_PROGRAM_ADDRESS =
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address
@@ -129,10 +130,12 @@ async function waitForConfirmedSignature(
   throw new Error('Transaction confirmation timed out.')
 }
 
-export async function deriveMarketAddress(marketId: number) {
+export const deriveMarketAddress = findMarketAddress
+
+export async function deriveProgramConfigAddress() {
   const [address] = await getProgramDerivedAddress({
     programAddress: TWOB_ANCHOR_PROGRAM_ADDRESS,
-    seeds: [seed('market'), getU32Encoder().encode(marketId)],
+    seeds: [seed('program_config')],
   })
   return address
 }
@@ -308,7 +311,7 @@ export async function fetchStreamingMarketState(
     bookkeepingLastUpdateSlot: Number(bookkeepingAccount.data.lastUpdateSlot),
     bookkeepingQuotePerBase: bookkeepingAccount.data.quotePerBase,
     currentSlot: Number(currentSlot),
-    endSlotInterval: Number(marketAccount.data.endSlotInterval),
+    endSlotInterval: END_SLOT_INTERVAL,
     isPaused: marketAccount.data.isPaused !== 0,
     marketBaseFlow: marketAccount.data.baseFlow,
     marketId: marketAccount.data.id,
@@ -319,16 +322,14 @@ export async function fetchStreamingMarketState(
   }
 }
 
-function getTradePositionMarketIdFilter(
-  marketId: number,
+function getTradePositionMarketFilter(
+  marketAddress: Address,
 ): GetProgramAccountsFilter {
   return {
     memcmp: {
-      bytes: encodeBase58(
-        Uint8Array.from(getU32Encoder().encode(marketId)),
-      ) as never,
+      bytes: marketAddress as never,
       encoding: 'base58',
-      offset: TRADE_POSITION_MARKET_ID_OFFSET,
+      offset: TRADE_POSITION_MARKET_OFFSET,
     },
   }
 }
@@ -336,7 +337,7 @@ function getTradePositionMarketIdFilter(
 export async function fetchTradePositions(
   rpcClient: TwobRpcClient,
   authority: string,
-  marketId: number,
+  marketAddress: Address,
 ): Promise<Array<TradePositionRecord>> {
   const positions = await fetchTradePositionAccounts(rpcClient, [
     {
@@ -346,9 +347,9 @@ export async function fetchTradePositions(
         offset: 8n,
       },
     },
-    getTradePositionMarketIdFilter(marketId),
+    getTradePositionMarketFilter(marketAddress),
   ])
-  return positions.filter((position) => position.data.marketId === marketId)
+  return positions.filter((position) => position.data.market === marketAddress)
 }
 
 async function fetchTradePositionAccounts(
@@ -394,12 +395,12 @@ async function fetchTradePositionAccounts(
 
 export async function fetchMarketTradePositions(
   rpcClient: TwobRpcClient,
-  marketId: number,
+  marketAddress: Address,
 ): Promise<Array<TradePositionRecord>> {
   const positions = await fetchTradePositionAccounts(rpcClient, [
-    getTradePositionMarketIdFilter(marketId),
+    getTradePositionMarketFilter(marketAddress),
   ])
-  return positions.filter((position) => position.data.marketId === marketId)
+  return positions.filter((position) => position.data.market === marketAddress)
 }
 
 export async function fetchEndSlotBookkeepingSnapshot({
@@ -568,7 +569,7 @@ export async function sendSubmitOrder({
   const referenceIndex = getApprovalSafeReferenceIndex(
     currentSlot,
     bookkeepingAccount.data.lastUpdateSlot,
-    marketAccount.data.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
   const previousIndex = getPreviousIndex(referenceIndex)
   const positionStartSlot = Math.max(
@@ -578,12 +579,9 @@ export async function sendSubmitOrder({
   const endSlot = alignEndSlot(
     positionStartSlot,
     durationSlots,
-    marketAccount.data.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
-  const futureIndex = getFutureIndex(
-    endSlot,
-    marketAccount.data.endSlotInterval,
-  )
+  const futureIndex = getFutureIndex(endSlot, END_SLOT_INTERVAL)
 
   const [currentExits, previousExits, currentPrices, previousPrices] =
     await Promise.all([
@@ -597,6 +595,7 @@ export async function sendSubmitOrder({
     amount,
     authority: walletSigner,
     baseReceiver: session.account.address,
+    bookkeeping: bookkeepingAddress,
     currentExits,
     currentPrices,
     duration: durationSlots,
@@ -703,7 +702,7 @@ async function getPositionControlContext({
   const tradePosition = tradePositionAccount.data
   const walletAddress = session.account.address.toString()
 
-  if (tradePosition.marketId !== marketAccount.data.id) {
+  if (tradePosition.market !== marketAddress) {
     throw new Error('Trade position belongs to a different market.')
   }
   if (
@@ -791,15 +790,16 @@ export async function sendPauseTradePosition({
 
   const referenceAccounts = await derivePositionReferenceAccounts({
     currentSlot,
-    endSlotInterval: market.endSlotInterval,
+    endSlotInterval: END_SLOT_INTERVAL,
     marketAddress,
   })
   const futureIndex = getFutureIndex(
     getTradePositionEndSlot(tradePosition),
-    market.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
   const futureExits = await deriveExitsAddress(marketAddress, futureIndex)
-  const instruction = await getPauseTradePositionInstructionAsync({
+  const instruction = await getPauseTradePositionInstruction({
+    bookkeeping: await deriveBookkeepingAddress(marketAddress),
     baseMint: market.baseMint,
     baseTokenProgram: baseTokenProgram.programAddress,
     currentExits: referenceAccounts.currentExits,
@@ -864,25 +864,26 @@ export async function sendUnpauseTradePosition({
   )
   const referenceAccounts = await derivePositionReferenceAccounts({
     currentSlot,
-    endSlotInterval: market.endSlotInterval,
+    endSlotInterval: END_SLOT_INTERVAL,
     marketAddress,
   })
   const oldIndex = getFutureIndex(
     getTradePositionEndSlot(tradePosition),
-    market.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
   const unpausedEndSlot = getUnpausedEndSlot(
     currentSlot,
     tradePosition.remainingSlots,
-    market.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
-  const futureIndex = getFutureIndex(unpausedEndSlot, market.endSlotInterval)
+  const futureIndex = getFutureIndex(unpausedEndSlot, END_SLOT_INTERVAL)
   const [oldExits, futureExits, futurePrices] = await Promise.all([
     deriveExitsAddress(marketAddress, oldIndex),
     deriveExitsAddress(marketAddress, futureIndex),
     derivePricesAddress(marketAddress, futureIndex),
   ])
   const instruction = await getUnpauseTradePositionInstructionAsync({
+    bookkeeping: await deriveBookkeepingAddress(marketAddress),
     baseMint: market.baseMint,
     baseTokenProgram: baseTokenProgram.programAddress,
     currentExits: referenceAccounts.currentExits,
@@ -956,7 +957,7 @@ export async function sendWithdrawSwapped({
   }
   const referenceAccounts = await derivePositionReferenceAccounts({
     currentSlot,
-    endSlotInterval: market.endSlotInterval,
+    endSlotInterval: END_SLOT_INTERVAL,
     marketAddress,
   })
   const isNative = mint.toString() === WRAPPED_SOL_MINT
@@ -968,6 +969,8 @@ export async function sendWithdrawSwapped({
         tokenProgram: tokenProgram.programAddress,
       })
   const withdrawInstruction = await getWithdrawSwappedInstructionAsync({
+    bookkeeping: await deriveBookkeepingAddress(marketAddress),
+    programConfig: await deriveProgramConfigAddress(),
     currentExits: referenceAccounts.currentExits,
     currentPrices: referenceAccounts.currentPrices,
     market: marketAddress,
@@ -1088,7 +1091,7 @@ export async function sendClosePositions({
 
   const referenceIndex = getReferenceIndex(
     Number(currentSlot),
-    marketAccount.data.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
   const previousIndex = getPreviousIndex(referenceIndex)
 
@@ -1108,12 +1111,12 @@ export async function sendClosePositions({
       }
 
       const tradePosition = tradePositionAccount.data
-      if (tradePosition.marketId !== marketAccount.data.id) {
+      if (tradePosition.market !== marketAddress) {
         throw new Error('Trade position belongs to a different market.')
       }
       const futureIndex = getFutureIndex(
         getTradePositionEndSlot(tradePosition),
-        marketAccount.data.endSlotInterval,
+        END_SLOT_INTERVAL,
       )
       const [futureExits, futurePrices] = await Promise.all([
         deriveExitsAddress(marketAddress, futureIndex),
@@ -1147,6 +1150,8 @@ export async function sendClosePositions({
       }
 
       return getAuthorityCloseTradePositionInstructionAsync({
+        bookkeeping: await deriveBookkeepingAddress(marketAddress),
+        programConfig: await deriveProgramConfigAddress(),
         authority: walletSigner,
         baseMint: marketAccount.data.baseMint,
         baseReceiver: tradePosition.baseReceiver,
@@ -1239,7 +1244,7 @@ export async function sendReclaimRent({
 
   const referenceIndex = getReferenceIndex(
     Number(currentSlot),
-    marketAccount.data.endSlotInterval,
+    END_SLOT_INTERVAL,
   )
   if (referenceIndex <= 0n) {
     throw new Error('Reclaim rent is not available yet for this market.')
@@ -1247,7 +1252,7 @@ export async function sendReclaimRent({
   const previousIndex = getPreviousIndex(referenceIndex)
   const candidatePairs = collectCloseableRentAccountPairs({
     currentSlot: Number(currentSlot),
-    endSlotInterval: marketAccount.data.endSlotInterval,
+    endSlotInterval: END_SLOT_INTERVAL,
     exitsAccounts,
     maxAccounts: exitsAccounts.length + pricesAccounts.length,
     market: marketAddress,
@@ -1282,7 +1287,7 @@ export async function sendReclaimRent({
 
   const instructions = await Promise.all(
     closeablePairs.map((pair) =>
-      getCloseExitsAndPricesAccountInstructionAsync({
+      getCloseExitsAndPricesAccountInstruction({
         bookkeeping: bookkeepingAddress,
         currentExits,
         currentPrices,

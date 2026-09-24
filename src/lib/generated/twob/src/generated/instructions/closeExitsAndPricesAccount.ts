@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -38,16 +36,14 @@ import {
 } from '@solana/kit'
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CLOSE_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR = new Uint8Array([
-  24, 39, 124, 223, 183, 214, 51, 28,
-])
+export const CLOSE_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([24, 39, 124, 223, 183, 214, 51, 28])
 
-export function getCloseExitsAndPricesAccountDiscriminatorBytes() {
+export function getCloseExitsAndPricesAccountDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     CLOSE_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR,
   )
@@ -147,161 +143,6 @@ export function getCloseExitsAndPricesAccountInstructionDataCodec(): FixedSizeCo
     getCloseExitsAndPricesAccountInstructionDataEncoder(),
     getCloseExitsAndPricesAccountInstructionDataDecoder(),
   )
-}
-
-export type CloseExitsAndPricesAccountAsyncInput<
-  TAccountSigner extends string = string,
-  TAccountPayer extends string = string,
-  TAccountExits extends string = string,
-  TAccountPrices extends string = string,
-  TAccountMarket extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountSystemProgram extends string = string,
-> = {
-  signer: TransactionSigner<TAccountSigner>
-  payer: Address<TAccountPayer>
-  exits: Address<TAccountExits>
-  prices: Address<TAccountPrices>
-  market: Address<TAccountMarket>
-  bookkeeping?: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: CloseExitsAndPricesAccountInstructionDataArgs['referenceIndex']
-}
-
-export async function getCloseExitsAndPricesAccountInstructionAsync<
-  TAccountSigner extends string,
-  TAccountPayer extends string,
-  TAccountExits extends string,
-  TAccountPrices extends string,
-  TAccountMarket extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: CloseExitsAndPricesAccountAsyncInput<
-    TAccountSigner,
-    TAccountPayer,
-    TAccountExits,
-    TAccountPrices,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  CloseExitsAndPricesAccountInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountPayer,
-    TAccountExits,
-    TAccountPrices,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
-    payer: { value: input.payer ?? null, isWritable: true },
-    exits: { value: input.exits ?? null, isWritable: true },
-    prices: { value: input.prices ?? null, isWritable: true },
-    market: { value: input.market ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('signer', accounts.signer),
-      getAccountMeta('payer', accounts.payer),
-      getAccountMeta('exits', accounts.exits),
-      getAccountMeta('prices', accounts.prices),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-    ],
-    data: getCloseExitsAndPricesAccountInstructionDataEncoder().encode(
-      args as CloseExitsAndPricesAccountInstructionDataArgs,
-    ),
-    programAddress,
-  } as CloseExitsAndPricesAccountInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountPayer,
-    TAccountExits,
-    TAccountPrices,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >)
 }
 
 export type CloseExitsAndPricesAccountInput<

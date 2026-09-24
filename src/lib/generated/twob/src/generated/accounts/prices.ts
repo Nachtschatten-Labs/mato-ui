@@ -45,22 +45,19 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const PRICES_DISCRIMINATOR = new Uint8Array([
+export const PRICES_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   74, 25, 25, 70, 56, 98, 39, 21,
 ])
 
-export function getPricesDiscriminatorBytes() {
+export function getPricesDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(PRICES_DISCRIMINATOR)
 }
 
 export type Prices = {
   discriminator: ReadonlyUint8Array
-  /**
-   * Market this account belongs to, kept first so it can be read without deserializing
-   * the whole account
-   */
+  /** Market this account belongs to */
   market: Address
-  /** Reference interval this account covers, kept next to `market` for the same reason */
+  /** Reference interval this account covers */
   index: bigint
   /** Address which funded this account, used to determine where the rent goes if account is closed */
   payer: Address
@@ -74,12 +71,9 @@ export type Prices = {
 }
 
 export type PricesArgs = {
-  /**
-   * Market this account belongs to, kept first so it can be read without deserializing
-   * the whole account
-   */
+  /** Market this account belongs to */
   market: Address
-  /** Reference interval this account covers, kept next to `market` for the same reason */
+  /** Reference interval this account covers */
   index: number | bigint
   /** Address which funded this account, used to determine where the rent goes if account is closed */
   payer: Address
@@ -100,11 +94,11 @@ export function getPricesEncoder(): FixedSizeEncoder<PricesArgs> {
       ['market', getAddressEncoder()],
       ['index', getU64Encoder()],
       ['payer', getAddressEncoder()],
-      ['basePerQuoteSnapshot', getArrayEncoder(getU128Encoder(), { size: 20 })],
-      ['quotePerBaseSnapshot', getArrayEncoder(getU128Encoder(), { size: 20 })],
+      ['basePerQuoteSnapshot', getArrayEncoder(getU128Encoder(), { size: 30 })],
+      ['quotePerBaseSnapshot', getArrayEncoder(getU128Encoder(), { size: 30 })],
       [
         'slotsWithoutTradesSnapshot',
-        getArrayEncoder(getU32Encoder(), { size: 20 }),
+        getArrayEncoder(getU32Encoder(), { size: 30 }),
       ],
       ['bump', getU8Encoder()],
     ]),
@@ -119,11 +113,11 @@ export function getPricesDecoder(): FixedSizeDecoder<Prices> {
     ['market', getAddressDecoder()],
     ['index', getU64Decoder()],
     ['payer', getAddressDecoder()],
-    ['basePerQuoteSnapshot', getArrayDecoder(getU128Decoder(), { size: 20 })],
-    ['quotePerBaseSnapshot', getArrayDecoder(getU128Decoder(), { size: 20 })],
+    ['basePerQuoteSnapshot', getArrayDecoder(getU128Decoder(), { size: 30 })],
+    ['quotePerBaseSnapshot', getArrayDecoder(getU128Decoder(), { size: 30 })],
     [
       'slotsWithoutTradesSnapshot',
-      getArrayDecoder(getU32Decoder(), { size: 20 }),
+      getArrayDecoder(getU32Decoder(), { size: 30 }),
     ],
     ['bump', getU8Decoder()],
   ])
@@ -188,5 +182,5 @@ export async function fetchAllMaybePrices(
 }
 
 export function getPricesSize(): number {
-  return 801
+  return 1161
 }

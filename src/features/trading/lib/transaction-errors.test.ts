@@ -101,12 +101,30 @@ describe('formatTransactionError', () => {
 
   it('explains when no newly swapped funds are available', () => {
     const error = new Error(
-      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6031}]}',
+      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6039}]}',
     )
 
     expect(formatTransactionError(error, 'fallback')).toBe(
       'There are no new swapped funds to withdraw yet.',
     )
+  })
+
+  it.each([
+    [6037, 'This position is already paused.'],
+    [6038, 'This position is not paused.'],
+    [6039, 'There are no new swapped funds to withdraw yet.'],
+  ])('decodes the current structured position error %s', (code, message) => {
+    expect(
+      formatTransactionError(
+        { context: { __code: 4_615_026, code } },
+        'fallback',
+      ),
+    ).toBe(message)
+  })
+
+  it('does not interpret an old AmountZero code as a withdrawal error', () => {
+    const message = 'Transaction failed: {"Custom":6031}'
+    expect(formatTransactionError(new Error(message), 'fallback')).toBe(message)
   })
 
   it('explains the insecure wallet browser error', () => {

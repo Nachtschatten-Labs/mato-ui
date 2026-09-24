@@ -49,11 +49,11 @@ import {
   type SideArgs,
 } from '../types'
 
-export const TRADE_POSITION_DISCRIMINATOR = new Uint8Array([
+export const TRADE_POSITION_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   37, 143, 119, 76, 200, 164, 122, 202,
 ])
 
-export function getTradePositionDiscriminatorBytes() {
+export function getTradePositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     TRADE_POSITION_DISCRIMINATOR,
   )
@@ -63,6 +63,8 @@ export type TradePosition = {
   discriminator: ReadonlyUint8Array
   /** Creator of this position, can change operator and receiver and everything what operator can do */
   authority: Address
+  /** Corresponding market address */
+  market: Address
   /** Payer of rent */
   payer: Address
   /** Operator can pause and continue this position */
@@ -94,8 +96,8 @@ export type TradePosition = {
   withdrawnAmount: bigint
   /** Position id */
   id: number
-  /** Corresponding market id */
-  marketId: number
+  /** Trading fee at submission, retained through pauses, withdrawals, and final settlement. */
+  feeBpsAtSubmission: number
   /** Whether this position buys or sells the base token */
   side: Side
   bump: number
@@ -104,6 +106,8 @@ export type TradePosition = {
 export type TradePositionArgs = {
   /** Creator of this position, can change operator and receiver and everything what operator can do */
   authority: Address
+  /** Corresponding market address */
+  market: Address
   /** Payer of rent */
   payer: Address
   /** Operator can pause and continue this position */
@@ -135,8 +139,8 @@ export type TradePositionArgs = {
   withdrawnAmount: number | bigint
   /** Position id */
   id: number
-  /** Corresponding market id */
-  marketId: number
+  /** Trading fee at submission, retained through pauses, withdrawals, and final settlement. */
+  feeBpsAtSubmission: number
   /** Whether this position buys or sells the base token */
   side: SideArgs
   bump: number
@@ -148,6 +152,7 @@ export function getTradePositionEncoder(): FixedSizeEncoder<TradePositionArgs> {
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['authority', getAddressEncoder()],
+      ['market', getAddressEncoder()],
       ['payer', getAddressEncoder()],
       ['operator', getAddressEncoder()],
       ['baseReceiver', getAddressEncoder()],
@@ -164,7 +169,7 @@ export function getTradePositionEncoder(): FixedSizeEncoder<TradePositionArgs> {
       ['swappedAmountAtSnapshot', getU64Encoder()],
       ['withdrawnAmount', getU64Encoder()],
       ['id', getU32Encoder()],
-      ['marketId', getU32Encoder()],
+      ['feeBpsAtSubmission', getU8Encoder()],
       ['side', getSideEncoder()],
       ['bump', getU8Encoder()],
     ]),
@@ -177,6 +182,7 @@ export function getTradePositionDecoder(): FixedSizeDecoder<TradePosition> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['authority', getAddressDecoder()],
+    ['market', getAddressDecoder()],
     ['payer', getAddressDecoder()],
     ['operator', getAddressDecoder()],
     ['baseReceiver', getAddressDecoder()],
@@ -193,7 +199,7 @@ export function getTradePositionDecoder(): FixedSizeDecoder<TradePosition> {
     ['swappedAmountAtSnapshot', getU64Decoder()],
     ['withdrawnAmount', getU64Decoder()],
     ['id', getU32Decoder()],
-    ['marketId', getU32Decoder()],
+    ['feeBpsAtSubmission', getU8Decoder()],
     ['side', getSideDecoder()],
     ['bump', getU8Decoder()],
   ])
@@ -261,5 +267,5 @@ export async function fetchAllMaybeTradePosition(
 }
 
 export function getTradePositionSize(): number {
-  return 274
+  return 303
 }

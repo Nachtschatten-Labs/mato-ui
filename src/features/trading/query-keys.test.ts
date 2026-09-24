@@ -3,18 +3,18 @@ import { tradingQueryKeys } from './query-keys'
 
 describe('tradingQueryKeys.tradePositions', () => {
   it('isolates exact queries by authority and market', () => {
-    expect(tradingQueryKeys.tradePositions('wallet-address', 1)).not.toEqual(
-      tradingQueryKeys.tradePositions('wallet-address', 2),
-    )
+    expect(
+      tradingQueryKeys.tradePositions('wallet-address', 'market-a'),
+    ).not.toEqual(tradingQueryKeys.tradePositions('wallet-address', 'market-b'))
   })
 
   it('provides an authority prefix that matches every market', () => {
     const prefix = tradingQueryKeys.tradePositionsForAuthority('wallet-address')
 
-    for (const marketId of [1, 2, 4]) {
+    for (const marketAddress of ['market-a', 'market-b', 'market-c']) {
       expect(
         tradingQueryKeys
-          .tradePositions('wallet-address', marketId)
+          .tradePositions('wallet-address', marketAddress)
           .slice(0, prefix.length),
       ).toEqual(prefix)
     }

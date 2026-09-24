@@ -141,11 +141,10 @@ export function TradingDashboard({
     marketId: REFERENCE_PRICE_MARKET_ID,
   })
   const streamingStateQuery = useStreamingMarketState(marketAddress)
-  const tradePositionsQuery = useTradePositions(address, marketId)
+  const tradePositionsQuery = useTradePositions(address, marketAddress)
   const shouldLoadOrderBookPositions = marketPanelTab === 'order-book'
   const orderBookPositionsQuery = useMarketTradePositions(
     marketAddress,
-    marketId,
     shouldLoadOrderBookPositions,
   )
 

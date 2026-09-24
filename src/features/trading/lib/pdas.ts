@@ -16,10 +16,23 @@ function seed(value: string) {
   return getBytesEncoder().encode(textEncoder.encode(value))
 }
 
-export async function findMarketAddress(marketId: number) {
+export async function findMarketAddress({
+  baseMint,
+  quoteMint,
+  id,
+}: {
+  baseMint: Address
+  quoteMint: Address
+  id: number
+}) {
   const [address] = await getProgramDerivedAddress({
     programAddress: TWOB_ANCHOR_PROGRAM_ADDRESS,
-    seeds: [seed('market'), getU32Encoder().encode(marketId)],
+    seeds: [
+      seed('market'),
+      getAddressEncoder().encode(baseMint),
+      getAddressEncoder().encode(quoteMint),
+      getU32Encoder().encode(id),
+    ],
   })
   return address
 }

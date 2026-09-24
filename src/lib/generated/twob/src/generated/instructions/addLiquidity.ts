@@ -43,11 +43,11 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const ADD_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
+export const ADD_LIQUIDITY_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   181, 157, 89, 67, 143, 182, 52, 72,
 ])
 
-export function getAddLiquidityDiscriminatorBytes() {
+export function getAddLiquidityDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     ADD_LIQUIDITY_DISCRIMINATOR,
   )
@@ -144,14 +144,14 @@ export type AddLiquidityInstruction<
 export type AddLiquidityInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
-  baseLamports: bigint
-  quoteLamports: bigint
+  baseAtoms: bigint
+  quoteAtoms: bigint
 }
 
 export type AddLiquidityInstructionDataArgs = {
   referenceIndex: number | bigint
-  baseLamports: number | bigint
-  quoteLamports: number | bigint
+  baseAtoms: number | bigint
+  quoteAtoms: number | bigint
 }
 
 export function getAddLiquidityInstructionDataEncoder(): FixedSizeEncoder<AddLiquidityInstructionDataArgs> {
@@ -159,8 +159,8 @@ export function getAddLiquidityInstructionDataEncoder(): FixedSizeEncoder<AddLiq
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
-      ['baseLamports', getU64Encoder()],
-      ['quoteLamports', getU64Encoder()],
+      ['baseAtoms', getU64Encoder()],
+      ['quoteAtoms', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: ADD_LIQUIDITY_DISCRIMINATOR }),
   )
@@ -170,8 +170,8 @@ export function getAddLiquidityInstructionDataDecoder(): FixedSizeDecoder<AddLiq
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
-    ['baseLamports', getU64Decoder()],
-    ['quoteLamports', getU64Decoder()],
+    ['baseAtoms', getU64Decoder()],
+    ['quoteAtoms', getU64Decoder()],
   ])
 }
 
@@ -211,10 +211,10 @@ export type AddLiquidityAsyncInput<
   authorityBaseTokenAccount?: Address<TAccountAuthorityBaseTokenAccount>
   authorityQuoteTokenAccount?: Address<TAccountAuthorityQuoteTokenAccount>
   market: Address<TAccountMarket>
-  liquidityPosition?: Address<TAccountLiquidityPosition>
+  liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -224,8 +224,8 @@ export type AddLiquidityAsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: AddLiquidityInstructionDataArgs['referenceIndex']
-  baseLamports: AddLiquidityInstructionDataArgs['baseLamports']
-  quoteLamports: AddLiquidityInstructionDataArgs['quoteLamports']
+  baseAtoms: AddLiquidityInstructionDataArgs['baseAtoms']
+  quoteAtoms: AddLiquidityInstructionDataArgs['quoteAtoms']
 }
 
 export async function getAddLiquidityInstructionAsync<
@@ -396,31 +396,6 @@ export async function getAddLiquidityInstructionAsync<
       ],
     })
   }
-  if (!accounts.liquidityPosition.value) {
-    accounts.liquidityPosition.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            108, 105, 113, 117, 105, 100, 105, 116, 121, 95, 112, 111, 115, 105,
-            116, 105, 111, 110,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
       programAddress:
@@ -468,24 +443,6 @@ export async function getAddLiquidityInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'quoteMint',
             accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
           ),
         ),
       ],
@@ -594,8 +551,8 @@ export type AddLiquidityInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: AddLiquidityInstructionDataArgs['referenceIndex']
-  baseLamports: AddLiquidityInstructionDataArgs['baseLamports']
-  quoteLamports: AddLiquidityInstructionDataArgs['quoteLamports']
+  baseAtoms: AddLiquidityInstructionDataArgs['baseAtoms']
+  quoteAtoms: AddLiquidityInstructionDataArgs['quoteAtoms']
 }
 
 export function getAddLiquidityInstruction<
