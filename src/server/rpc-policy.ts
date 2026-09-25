@@ -9,6 +9,8 @@ const READ_METHODS = new Set([
   'getGenesisHash',
   'getVersion',
   'getSlot',
+  // Align the mainnet reference chart with a devnet position's start time.
+  'getBlockTime',
   // Used by the client's blockhash-expiry check during confirmation.
   'getEpochInfo',
   'getBlockHeight',

@@ -24,6 +24,16 @@ const makeEnv = (): Env => ({
 })
 
 describe('RPC proxy boundary', () => {
+  it('allows read-only block timestamps for position charts', () => {
+    expect(
+      validateRpcPayload(
+        call('getBlockTime', [123]),
+        'http',
+        target.programId,
+        false,
+      ),
+    ).toBe(true)
+  })
   beforeEach(() => {
     vi.stubEnv('VITE_DEPLOYMENT_MODE', 'production')
     vi.stubEnv('VITE_ENABLE_TRANSACTIONS', 'false')

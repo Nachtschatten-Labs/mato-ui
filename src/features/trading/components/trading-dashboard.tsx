@@ -62,6 +62,7 @@ import { MarketPriceChart } from './market-price-chart'
 import { OrderEntryCard, formatDuration } from './order-entry-card'
 import { OrderBookTable } from './order-book-table'
 import { ActivePositionCard } from './active-position-card'
+import { BatchCloseReview } from './batch-close-review'
 import { HighPriceImpactDialog } from './high-price-impact-dialog'
 import { PositionPagination } from './position-pagination'
 import { ReclaimRentBanner } from './reclaim-rent-banner'
@@ -135,6 +136,10 @@ export function TradingDashboard({
     shouldLoadOrderBookPositions,
   )
 
+  const [batchCloseReview, setBatchCloseReview] = useState<{
+    positions: TradePositionRecord[]
+    validationId: string
+  } | null>(null)
   const [side, setSide] = useState<OrderSide>('buy')
   const [marketSelectorOpen, setMarketSelectorOpen] = useState(false)
   const marketOverview = useMarketOverview(marketSelectorOpen)
@@ -710,21 +715,21 @@ export function TradingDashboard({
         description: 'Market address is still loading.',
         id: validationId,
       })
-      return
+      return false
     }
     if (positions.length === 0) {
       toast.error('Positions not ready', {
         description: 'There are no matching positions to close.',
         id: validationId,
       })
-      return
+      return false
     }
     if (lowMaintenanceNativeSolWarning) {
       toast.warning('Not enough SOL', {
         description: lowMaintenanceNativeSolWarning,
         id: validationId,
       })
-      return
+      return false
     }
 
     const success = await closePosition.closePositions({
@@ -732,8 +737,9 @@ export function TradingDashboard({
       tradePositionAddresses: positions.map((position) => position.address),
     })
     if (success) {
-      await refreshBalances()
+      await refreshBalances().catch(() => undefined)
     }
+    return success
   }
 
   const handleReclaimRent = async () => {
@@ -936,7 +942,7 @@ export function TradingDashboard({
                         endedBatchPositions.length === 0
                       }
                       onClick={() => {
-                        void handleBatchClosePositions({
+                        setBatchCloseReview({
                           positions: endedBatchPositions,
                           validationId: 'batch-close-ended-validation',
                         })
@@ -959,7 +965,7 @@ export function TradingDashboard({
                         allBatchPositions.length === 0
                       }
                       onClick={() => {
-                        void handleBatchClosePositions({
+                        setBatchCloseReview({
                           positions: allBatchPositions,
                           validationId: 'batch-close-all-validation',
                         })
@@ -978,6 +984,19 @@ export function TradingDashboard({
                 ) : null}
               </div>
 
+              {batchCloseReview && marketAddress && (
+                <BatchCloseReview
+                  positions={batchCloseReview.positions}
+                  marketAddress={marketAddress}
+                  baseTicker={baseTicker}
+                  quoteTicker={quoteTicker}
+                  baseDecimals={baseDecimals}
+                  quoteDecimals={quoteDecimals}
+                  isPending={closePosition.isClosing}
+                  onDismiss={() => setBatchCloseReview(null)}
+                  onConfirm={() => handleBatchClosePositions(batchCloseReview)}
+                />
+              )}
               {positionPanelTab === 'active' ? (
                 !address ? (
                   <EmptyState copy="Connect a wallet to see your streams." />
@@ -1025,7 +1044,7 @@ export function TradingDashboard({
                               description: lowMaintenanceNativeSolWarning,
                               id: 'close-position-validation',
                             })
-                            return
+                            return false
                           }
 
                           const success = await closePosition.closePosition({
@@ -1033,8 +1052,9 @@ export function TradingDashboard({
                             tradePositionAddress,
                           })
                           if (success) {
-                            await refreshBalances()
+                            await refreshBalances().catch(() => undefined)
                           }
+                          return success
                         }}
                         onPauseToggle={async (tradePositionAddress) => {
                           const isPaused = position.data.pausedAtSlot > 0n
@@ -1080,6 +1100,7 @@ export function TradingDashboard({
                             await refreshBalances()
                           }
                         }}
+                        referencePrice={marketPriceQuery.data ?? null}
                         position={position}
                         quoteDecimals={quoteDecimals}
                         quoteTicker={quoteTicker}

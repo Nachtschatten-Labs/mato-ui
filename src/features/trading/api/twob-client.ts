@@ -1032,21 +1032,16 @@ export async function sendClosePosition({
   })
 }
 
-export async function sendClosePositions({
+// Share the exact close instructions between the review simulation and submission.
+export async function prepareClosePositionInstructions({
   client,
   request,
-  sendTransaction,
-  session,
+  authority,
 }: {
   client: SolanaClient
-  request: {
-    marketAddress: Address
-    tradePositionAddresses: Array<Address>
-  }
-  sendTransaction: SendTransactionHelper
-  session: WalletSession
+  request: { marketAddress: Address; tradePositionAddresses: Array<Address> }
+  authority: TransactionSigner
 }) {
-  assertTransactionsEnabled()
   const { marketAddress, tradePositionAddresses } = request
   if (tradePositionAddresses.length === 0) {
     throw new Error('Select at least one position to close.')
@@ -1059,7 +1054,6 @@ export async function sendClosePositions({
     )
   }
 
-  const walletSigner = createWalletTransactionSigner(session).signer
   const [marketAccount, tradePositionAccounts, currentSlot] = await Promise.all(
     [
       fetchMarket(client.runtime.rpc, marketAddress, {
@@ -1111,6 +1105,9 @@ export async function sendClosePositions({
       }
 
       const tradePosition = tradePositionAccount.data
+      if (tradePosition.authority !== authority.address) {
+        throw new Error('This wallet does not control the position.')
+      }
       if (tradePosition.market !== marketAddress) {
         throw new Error('Trade position belongs to a different market.')
       }
@@ -1152,7 +1149,7 @@ export async function sendClosePositions({
       return getAuthorityCloseTradePositionInstructionAsync({
         bookkeeping: await deriveBookkeepingAddress(marketAddress),
         programConfig: await deriveProgramConfigAddress(),
-        authority: walletSigner,
+        authority,
         baseMint: marketAccount.data.baseMint,
         baseReceiver: tradePosition.baseReceiver,
         baseTokenProgram: baseTokenProgram.programAddress,
@@ -1172,6 +1169,37 @@ export async function sendClosePositions({
       })
     }),
   )
+
+  return {
+    instructions: closeInstructions,
+    marketAccount,
+    tradePositionAccounts,
+    currentSlot,
+  }
+}
+
+export async function sendClosePositions({
+  client,
+  request,
+  sendTransaction,
+  session,
+}: {
+  client: SolanaClient
+  request: {
+    marketAddress: Address
+    tradePositionAddresses: Array<Address>
+  }
+  sendTransaction: SendTransactionHelper
+  session: WalletSession
+}) {
+  assertTransactionsEnabled()
+  const walletSigner = createWalletTransactionSigner(session).signer
+  const { instructions: closeInstructions, marketAccount } =
+    await prepareClosePositionInstructions({
+      client,
+      request,
+      authority: walletSigner,
+    })
 
   const unwrapInstructions =
     marketAccount.data.baseMint === WRAPPED_SOL_MINT ||
