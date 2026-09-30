@@ -1,8 +1,8 @@
 import {
+  AreaSeries,
   CandlestickSeries,
   ColorType,
   CrosshairMode,
-  LineSeries,
   createChart,
 } from 'lightweight-charts'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
@@ -12,11 +12,11 @@ import {
 } from '../lib/chart-history'
 import { CHART_HISTORY_REQUEST_DEBOUNCE_MS } from '../constants'
 import type {
+  AreaData,
   CandlestickData,
   IChartApi,
   ISeriesApi,
   ITimeScaleApi,
-  LineData,
   Logical,
   LogicalRange,
   Time,
@@ -84,6 +84,7 @@ const MAX_VALID_UNIX_TIME_SECONDS = 4102444800 // 2100-01-01T00:00:00Z
 const MAX_LIGHTWEIGHT_CHART_ABS_VALUE = 90_071_992_547_409.91
 const POSITION_BADGE_HEIGHT = 24
 const POSITION_BADGE_GAP = 4
+const EMPTY_POSITION_OVERLAYS: Array<ChartPositionOverlay> = []
 
 interface ProjectedPositionOverlay extends ChartPositionOverlay {
   badgeAnchorX: number
@@ -331,12 +332,12 @@ export function MarketPriceChart({
   defaultVisibleBars = 120,
   data,
   displayMode = 'candles',
-  height = 420,
+  height,
   hasMoreHistory = false,
   isLoadingMoreHistory = false,
   onCrosshairMove,
   onNeedOlderHistory,
-  positionOverlays = [],
+  positionOverlays = EMPTY_POSITION_OVERLAYS,
   resetSignal = 0,
   viewportPresetKey = 'default',
 }: {
@@ -355,16 +356,16 @@ export function MarketPriceChart({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
-  const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const lineSeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const seriesColors = useMemo(() => {
     if (typeof document === 'undefined') {
-      return { line: '#f6c465', negative: '#d4243a', positive: '#1fd79a' }
+      return { line: '#cf8654', negative: '#e47a78', positive: '#9fc891' }
     }
     const root = getComputedStyle(document.documentElement)
     return {
-      line: root.getPropertyValue('--color-accent-warm').trim() || '#f6c465',
-      positive: root.getPropertyValue('--color-positive').trim() || '#1fd79a',
-      negative: root.getPropertyValue('--color-negative').trim() || '#d4243a',
+      line: root.getPropertyValue('--color-accent-warm').trim() || '#cf8654',
+      positive: root.getPropertyValue('--color-positive').trim() || '#9fc891',
+      negative: root.getPropertyValue('--color-negative').trim() || '#e47a78',
     }
   }, [])
   const previousDataLengthRef = useRef(0)
@@ -396,7 +397,7 @@ export function MarketPriceChart({
   )
   const lineData = useMemo(
     () =>
-      chartData.map<LineData<UTCTimestamp>>((candle) => ({
+      chartData.map<AreaData<UTCTimestamp>>((candle) => ({
         time: candle.time as UTCTimestamp,
         value: candle.close,
       })),
@@ -440,7 +441,9 @@ export function MarketPriceChart({
       chartData.length === 0 ||
       positionOverlays.length === 0
     ) {
-      setProjectedPositionOverlays([])
+      setProjectedPositionOverlays((current) =>
+        current.length === 0 ? current : [],
+      )
       return
     }
 
@@ -605,8 +608,8 @@ export function MarketPriceChart({
         mode: CrosshairMode.Normal,
       },
       grid: {
-        horzLines: { color: 'rgba(255,255,255,0.06)' },
-        vertLines: { color: 'rgba(255,255,255,0.04)' },
+        horzLines: { color: 'rgba(255,255,255,0.03)' },
+        vertLines: { color: 'rgba(255,255,255,0.02)' },
       },
       handleScroll: {
         horzTouchDrag: true,
@@ -621,19 +624,21 @@ export function MarketPriceChart({
         mouseWheel: true,
         pinch: true,
       },
-      height,
+      height: height ?? containerRef.current.clientHeight,
       layout: {
         background: {
-          color: 'rgba(7, 17, 31, 0)',
+          color: 'rgba(20, 20, 20, 0)',
           type: ColorType.Solid,
         },
-        textColor: 'rgba(233,239,245,0.75)',
+        fontFamily: '"IBM Plex Sans", sans-serif',
+        fontSize: 11,
+        textColor: '#969896',
       },
       rightPriceScale: {
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(255,255,255,0.06)',
       },
       timeScale: {
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: 'rgba(255,255,255,0.06)',
         fixLeftEdge: true,
         timeVisible: true,
       },
@@ -648,8 +653,10 @@ export function MarketPriceChart({
       upColor: seriesColors.positive,
     })
 
-    const lineSeries = chart.addSeries(LineSeries, {
-      color: seriesColors.line,
+    const lineSeries = chart.addSeries(AreaSeries, {
+      lineColor: seriesColors.line,
+      topColor: 'rgba(207,134,84,0.16)',
+      bottomColor: 'rgba(207,134,84,0)',
       lineWidth: 2,
       priceLineColor: seriesColors.line,
       visible: false,
@@ -907,10 +914,11 @@ export function MarketPriceChart({
 
   return (
     <div
-      className="relative h-full min-h-[420px] w-full touch-none"
+      className={`relative w-full touch-none ${height === undefined ? 'h-[300px] lg:h-[480px]' : ''}`}
       data-base-ui-swipe-ignore=""
+      style={height === undefined ? undefined : { height }}
     >
-      <div ref={containerRef} className="h-full min-h-[420px] w-full" />
+      <div ref={containerRef} className="h-full w-full" />
       {projectedPositionOverlays.length > 0 ? (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <svg aria-hidden className="absolute inset-0 size-full">

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useSolanaClient } from '@solana/react-hooks'
 import { tradingQueries } from '../queries'
+import type { Address } from '@solana/kit'
 
 export function useTradePositions(
   authority: string | null | undefined,
-  marketId: number,
+  marketAddress: Address | undefined,
 ) {
   const client = useSolanaClient()
 
@@ -12,9 +13,9 @@ export function useTradePositions(
     ...tradingQueries.tradePositions({
       authority,
       client,
-      marketId,
+      marketAddress,
     }),
-    enabled: Boolean(authority),
+    enabled: Boolean(authority && marketAddress),
     refetchInterval: 5_000,
   })
 }

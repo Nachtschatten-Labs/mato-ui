@@ -43,11 +43,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CLOSE_LIQUIDITY_POSITION_DISCRIMINATOR = new Uint8Array([
-  34, 168, 107, 163, 194, 68, 131, 24,
-])
+export const CLOSE_LIQUIDITY_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([34, 168, 107, 163, 194, 68, 131, 24])
 
-export function getCloseLiquidityPositionDiscriminatorBytes() {
+export function getCloseLiquidityPositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     CLOSE_LIQUIDITY_POSITION_DISCRIMINATOR,
   )
@@ -206,10 +205,10 @@ export type CloseLiquidityPositionAsyncInput<
   authorityBaseTokenAccount?: Address<TAccountAuthorityBaseTokenAccount>
   authorityQuoteTokenAccount?: Address<TAccountAuthorityQuoteTokenAccount>
   market: Address<TAccountMarket>
-  liquidityPosition?: Address<TAccountLiquidityPosition>
+  liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -389,31 +388,6 @@ export async function getCloseLiquidityPositionInstructionAsync<
       ],
     })
   }
-  if (!accounts.liquidityPosition.value) {
-    accounts.liquidityPosition.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            108, 105, 113, 117, 105, 100, 105, 116, 121, 95, 112, 111, 115, 105,
-            116, 105, 111, 110,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
       programAddress:
@@ -461,24 +435,6 @@ export async function getCloseLiquidityPositionInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'quoteMint',
             accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
           ),
         ),
       ],

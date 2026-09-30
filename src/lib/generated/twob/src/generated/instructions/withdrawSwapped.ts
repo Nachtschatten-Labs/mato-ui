@@ -43,11 +43,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const WITHDRAW_SWAPPED_DISCRIMINATOR = new Uint8Array([
-  196, 235, 42, 103, 30, 197, 174, 94,
-])
+export const WITHDRAW_SWAPPED_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([196, 235, 42, 103, 30, 197, 174, 94])
 
-export function getWithdrawSwappedDiscriminatorBytes() {
+export function getWithdrawSwappedDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     WITHDRAW_SWAPPED_DISCRIMINATOR,
   )
@@ -56,6 +55,7 @@ export function getWithdrawSwappedDiscriminatorBytes() {
 export type WithdrawSwappedInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountSigner extends string | AccountMeta<string> = string,
+  TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountReceiver extends string | AccountMeta<string> = string,
   TAccountMint extends string | AccountMeta<string> = string,
   TAccountReceiverTokenAccount extends string | AccountMeta<string> = string,
@@ -82,6 +82,9 @@ export type WithdrawSwappedInstruction<
         ? WritableSignerAccount<TAccountSigner> &
             AccountSignerMeta<TAccountSigner>
         : TAccountSigner,
+      TAccountProgramConfig extends string
+        ? ReadonlyAccount<TAccountProgramConfig>
+        : TAccountProgramConfig,
       TAccountReceiver extends string
         ? WritableAccount<TAccountReceiver>
         : TAccountReceiver,
@@ -166,6 +169,7 @@ export function getWithdrawSwappedInstructionDataCodec(): FixedSizeCodec<
 
 export type WithdrawSwappedAsyncInput<
   TAccountSigner extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountReceiver extends string = string,
   TAccountMint extends string = string,
   TAccountReceiverTokenAccount extends string = string,
@@ -182,13 +186,14 @@ export type WithdrawSwappedAsyncInput<
   TAccountSystemProgram extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
+  programConfig: Address<TAccountProgramConfig>
   receiver: Address<TAccountReceiver>
   mint: Address<TAccountMint>
   receiverTokenAccount: Address<TAccountReceiverTokenAccount>
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
   vault?: Address<TAccountVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -201,6 +206,7 @@ export type WithdrawSwappedAsyncInput<
 
 export async function getWithdrawSwappedInstructionAsync<
   TAccountSigner extends string,
+  TAccountProgramConfig extends string,
   TAccountReceiver extends string,
   TAccountMint extends string,
   TAccountReceiverTokenAccount extends string,
@@ -219,6 +225,7 @@ export async function getWithdrawSwappedInstructionAsync<
 >(
   input: WithdrawSwappedAsyncInput<
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountReceiver,
     TAccountMint,
     TAccountReceiverTokenAccount,
@@ -239,6 +246,7 @@ export async function getWithdrawSwappedInstructionAsync<
   WithdrawSwappedInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountReceiver,
     TAccountMint,
     TAccountReceiverTokenAccount,
@@ -261,6 +269,7 @@ export async function getWithdrawSwappedInstructionAsync<
   // Original accounts.
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     receiver: { value: input.receiver ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     receiverTokenAccount: {
@@ -318,24 +327,6 @@ export async function getWithdrawSwappedInstructionAsync<
       ],
     })
   }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>
@@ -349,6 +340,7 @@ export async function getWithdrawSwappedInstructionAsync<
   return Object.freeze({
     accounts: [
       getAccountMeta('signer', accounts.signer),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('receiver', accounts.receiver),
       getAccountMeta('mint', accounts.mint),
       getAccountMeta('receiverTokenAccount', accounts.receiverTokenAccount),
@@ -371,6 +363,7 @@ export async function getWithdrawSwappedInstructionAsync<
   } as WithdrawSwappedInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountReceiver,
     TAccountMint,
     TAccountReceiverTokenAccount,
@@ -390,6 +383,7 @@ export async function getWithdrawSwappedInstructionAsync<
 
 export type WithdrawSwappedInput<
   TAccountSigner extends string = string,
+  TAccountProgramConfig extends string = string,
   TAccountReceiver extends string = string,
   TAccountMint extends string = string,
   TAccountReceiverTokenAccount extends string = string,
@@ -406,6 +400,7 @@ export type WithdrawSwappedInput<
   TAccountSystemProgram extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
+  programConfig: Address<TAccountProgramConfig>
   receiver: Address<TAccountReceiver>
   mint: Address<TAccountMint>
   receiverTokenAccount: Address<TAccountReceiverTokenAccount>
@@ -425,6 +420,7 @@ export type WithdrawSwappedInput<
 
 export function getWithdrawSwappedInstruction<
   TAccountSigner extends string,
+  TAccountProgramConfig extends string,
   TAccountReceiver extends string,
   TAccountMint extends string,
   TAccountReceiverTokenAccount extends string,
@@ -443,6 +439,7 @@ export function getWithdrawSwappedInstruction<
 >(
   input: WithdrawSwappedInput<
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountReceiver,
     TAccountMint,
     TAccountReceiverTokenAccount,
@@ -462,6 +459,7 @@ export function getWithdrawSwappedInstruction<
 ): WithdrawSwappedInstruction<
   TProgramAddress,
   TAccountSigner,
+  TAccountProgramConfig,
   TAccountReceiver,
   TAccountMint,
   TAccountReceiverTokenAccount,
@@ -483,6 +481,7 @@ export function getWithdrawSwappedInstruction<
   // Original accounts.
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: true },
+    programConfig: { value: input.programConfig ?? null, isWritable: false },
     receiver: { value: input.receiver ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     receiverTokenAccount: {
@@ -530,6 +529,7 @@ export function getWithdrawSwappedInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('signer', accounts.signer),
+      getAccountMeta('programConfig', accounts.programConfig),
       getAccountMeta('receiver', accounts.receiver),
       getAccountMeta('mint', accounts.mint),
       getAccountMeta('receiverTokenAccount', accounts.receiverTokenAccount),
@@ -552,6 +552,7 @@ export function getWithdrawSwappedInstruction<
   } as WithdrawSwappedInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountProgramConfig,
     TAccountReceiver,
     TAccountMint,
     TAccountReceiverTokenAccount,
@@ -576,20 +577,21 @@ export type ParsedWithdrawSwappedInstruction<
   programAddress: Address<TProgram>
   accounts: {
     signer: TAccountMetas[0]
-    receiver: TAccountMetas[1]
-    mint: TAccountMetas[2]
-    receiverTokenAccount: TAccountMetas[3]
-    market: TAccountMetas[4]
-    tradePosition: TAccountMetas[5]
-    vault: TAccountMetas[6]
-    bookkeeping: TAccountMetas[7]
-    currentExits: TAccountMetas[8]
-    previousExits: TAccountMetas[9]
-    currentPrices: TAccountMetas[10]
-    previousPrices: TAccountMetas[11]
-    tokenProgram: TAccountMetas[12]
-    associatedTokenProgram: TAccountMetas[13]
-    systemProgram: TAccountMetas[14]
+    programConfig: TAccountMetas[1]
+    receiver: TAccountMetas[2]
+    mint: TAccountMetas[3]
+    receiverTokenAccount: TAccountMetas[4]
+    market: TAccountMetas[5]
+    tradePosition: TAccountMetas[6]
+    vault: TAccountMetas[7]
+    bookkeeping: TAccountMetas[8]
+    currentExits: TAccountMetas[9]
+    previousExits: TAccountMetas[10]
+    currentPrices: TAccountMetas[11]
+    previousPrices: TAccountMetas[12]
+    tokenProgram: TAccountMetas[13]
+    associatedTokenProgram: TAccountMetas[14]
+    systemProgram: TAccountMetas[15]
   }
   data: WithdrawSwappedInstructionData
 }
@@ -602,12 +604,12 @@ export function parseWithdrawSwappedInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedWithdrawSwappedInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 15) {
+  if (instruction.accounts.length < 16) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 15,
+        expectedAccountMetas: 16,
       },
     )
   }
@@ -621,6 +623,7 @@ export function parseWithdrawSwappedInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       signer: getNextAccount(),
+      programConfig: getNextAccount(),
       receiver: getNextAccount(),
       mint: getNextAccount(),
       receiverTokenAccount: getNextAccount(),

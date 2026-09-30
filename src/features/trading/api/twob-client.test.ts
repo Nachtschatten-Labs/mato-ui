@@ -1,18 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import {
+  alignEndSlot,
   deriveAssociatedTokenAddress,
   deriveMarketAddress,
+  deriveProgramConfigAddress,
   deriveTemporaryWithdrawTokenAddress,
   fetchMarketTradePositions,
   fetchTradePositions,
   getApprovalSafeReferenceIndex,
+  getFutureIndex,
   getReferenceIndex,
   getSwappedPositionAsset,
   getUnpausedEndSlot,
+  resolveSnapshotLocation,
 } from './twob-client'
 import type { TwobRpcClient } from './twob-client'
 import type { Address } from '@solana/kit'
+import { createNoopSigner, getAddressDecoder } from '@solana/kit'
+import { ARRAY_LENGTH, END_SLOT_INTERVAL } from '../constants'
 import { getTradePositionEncoder } from '@/lib/generated/twob/src/generated/accounts'
+import { getInitializeProgramConfigInstructionAsync } from '@/lib/generated/twob/src/generated/instructions'
+import { findMarketPda } from '@/lib/generated/twob/src/generated/pdas'
+import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/programs'
 import { Side } from '@/lib/generated/twob/src/generated/types'
 
 const BASE_MINT = 'So11111111111111111111111111111111111111112' as Address
@@ -23,12 +32,15 @@ const LEGACY_TOKEN_PROGRAM =
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address
 const TOKEN_2022_PROGRAM =
   'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address
+const MARKET_ADDRESS = '32MAZ37ysSgJYgPeB9Qj3dMtkD7AyuMBrDjKxN37RNfj' as Address
+const PROGRAM_CONFIG_ADDRESS =
+  '9zQGyHTCCg3fLS2AcWQ1F76QN8NThAcWbadjpMyLyyef' as Address
 
 type ProgramAccountsConfig = NonNullable<
   Parameters<TwobRpcClient['getProgramAccounts']>[1]
 >
 
-function encodeTradePosition(marketId: number, id: number) {
+function encodeTradePosition(market: Address, id: number) {
   const bytes = getTradePositionEncoder().encode({
     amount: 100n,
     authority: BASE_RECEIVER,
@@ -39,7 +51,8 @@ function encodeTradePosition(marketId: number, id: number) {
     id,
     inactiveRefund: 0n,
     lastUpdateSlot: 1n,
-    marketId,
+    market,
+    feeBpsAtSubmission: 25,
     operator: BASE_RECEIVER,
     pausedAtSlot: 0n,
     payer: BASE_RECEIVER,
@@ -76,14 +89,53 @@ function createProgramAccountsRpc(
 }
 
 describe('twob v1 client helpers', () => {
-  it('derives the deployed market 1 PDA with a u32 seed', async () => {
-    await expect(deriveMarketAddress(1)).resolves.toBe(
-      'BMMWpvb3PtMCnWa3uh9ChS2UWufiLLFTV6tkrCJ6DUng',
+  it('uses the deployed devnet program and its configuration PDA', async () => {
+    expect(TWOB_ANCHOR_PROGRAM_ADDRESS).toBe(
+      'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX',
     )
+    await expect(deriveProgramConfigAddress()).resolves.toBe(
+      PROGRAM_CONFIG_ADDRESS,
+    )
+    const instruction = await getInitializeProgramConfigInstructionAsync({
+      payer: createNoopSigner(BASE_RECEIVER),
+      authorityTransferDelaySlots: 100,
+    })
+    expect(instruction.programAddress).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+    expect(instruction.accounts[0].address).toBe(
+      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
+    )
+    expect(instruction.accounts[2].address).toBe(PROGRAM_CONFIG_ADDRESS)
+  })
+
+  it('derives a market PDA from the ordered mint pair and a u32 id', async () => {
+    await expect(
+      deriveMarketAddress({
+        baseMint: BASE_MINT,
+        quoteMint: QUOTE_MINT,
+        id: 1,
+      }),
+    ).resolves.toBe(MARKET_ADDRESS)
+    await expect(
+      findMarketPda({ baseMint: BASE_MINT, quoteMint: QUOTE_MINT, id: 1 }),
+    ).resolves.toEqual([MARKET_ADDRESS, 253])
+    await expect(
+      deriveMarketAddress({
+        baseMint: QUOTE_MINT,
+        quoteMint: BASE_MINT,
+        id: 1,
+      }),
+    ).resolves.not.toBe(MARKET_ADDRESS)
+    await expect(
+      deriveMarketAddress({
+        baseMint: BASE_MINT,
+        quoteMint: QUOTE_MINT,
+        id: 2,
+      }),
+    ).resolves.not.toBe(MARKET_ADDRESS)
   })
 
   it('keeps reference index zero reserved', () => {
-    expect(getReferenceIndex(0, 107)).toBe(1n)
+    expect(getReferenceIndex(0, END_SLOT_INTERVAL)).toBe(1n)
   })
 
   it('always rounds a resumed position to the next end-slot interval', () => {
@@ -137,10 +189,10 @@ describe('twob v1 client helpers', () => {
     ).toEqual({ mint: QUOTE_MINT, receiver: QUOTE_RECEIVER })
   })
 
-  it('adds the little-endian market id filter to authority scans', async () => {
+  it('filters authority scans by the stored market address', async () => {
     const { getConfig, rpc } = createProgramAccountsRpc()
 
-    await fetchTradePositions(rpc, BASE_RECEIVER, 4)
+    await fetchTradePositions(rpc, BASE_RECEIVER, MARKET_ADDRESS)
 
     expect(getConfig()?.filters).toContainEqual({
       memcmp: {
@@ -151,9 +203,9 @@ describe('twob v1 client helpers', () => {
     })
     expect(getConfig()?.filters).toContainEqual({
       memcmp: {
-        bytes: '6vx8P',
+        bytes: MARKET_ADDRESS,
         encoding: 'base58',
-        offset: 268n,
+        offset: 40n,
       },
     })
   })
@@ -161,36 +213,65 @@ describe('twob v1 client helpers', () => {
   it('filters order-book scans on the server and after decoding', async () => {
     const { getConfig, rpc } = createProgramAccountsRpc([
       {
-        account: { data: [encodeTradePosition(4, 1), 'base64'] },
+        account: { data: [encodeTradePosition(MARKET_ADDRESS, 1), 'base64'] },
         pubkey: BASE_RECEIVER,
       },
       {
-        account: { data: [encodeTradePosition(3, 2), 'base64'] },
+        account: { data: [encodeTradePosition(QUOTE_RECEIVER, 2), 'base64'] },
         pubkey: QUOTE_RECEIVER,
       },
     ])
 
-    const positions = await fetchMarketTradePositions(rpc, 4)
+    const positions = await fetchMarketTradePositions(rpc, MARKET_ADDRESS)
 
     expect(getConfig()?.filters).toContainEqual({
       memcmp: {
-        bytes: '6vx8P',
+        bytes: MARKET_ADDRESS,
         encoding: 'base58',
-        offset: 268n,
+        offset: 40n,
       },
     })
-    expect(positions.map((position) => position.data.marketId)).toEqual([4])
+    expect(positions.map((position) => position.data.market)).toEqual([
+      MARKET_ADDRESS,
+    ])
+    expect(positions[0].data.feeBpsAtSubmission).toBe(25)
+  })
+
+  it('places the market immediately after authority in serialized positions', () => {
+    const bytes = Buffer.from(encodeTradePosition(MARKET_ADDRESS, 1), 'base64')
+    expect(bytes.length).toBe(303)
+    expect(getAddressDecoder().decode(bytes.subarray(40, 72))).toBe(
+      MARKET_ADDRESS,
+    )
+    expect(bytes[300]).toBe(25)
   })
 
   it('uses the next interval account when bookkeeping is current', () => {
-    expect(getApprovalSafeReferenceIndex(5_000, 4_900n, 107)).toBe(3n)
+    expect(getApprovalSafeReferenceIndex(500, 490n, END_SLOT_INTERVAL)).toBe(3n)
   })
 
   it('keeps the current account when bookkeeping is still in the previous window', () => {
-    expect(getApprovalSafeReferenceIndex(5_000, 4_200n, 107)).toBe(2n)
+    expect(getApprovalSafeReferenceIndex(500, 400n, END_SLOT_INTERVAL)).toBe(2n)
   })
 
   it('advances at the account boundary', () => {
-    expect(getApprovalSafeReferenceIndex(6_420, 6_420n, 107)).toBe(4n)
+    expect(getApprovalSafeReferenceIndex(630, 630n, END_SLOT_INTERVAL)).toBe(4n)
+  })
+
+  it('uses 30 seven-slot snapshots and rolls over at slot 210', () => {
+    expect(ARRAY_LENGTH).toBe(30)
+    expect(END_SLOT_INTERVAL).toBe(7)
+    expect(alignEndSlot(199, 7, END_SLOT_INTERVAL)).toBe(203n)
+    expect(alignEndSlot(200, 7, END_SLOT_INTERVAL)).toBe(210n)
+    expect(getFutureIndex(203n, END_SLOT_INTERVAL)).toBe(0n)
+    expect(getFutureIndex(210n, END_SLOT_INTERVAL)).toBe(1n)
+    expect(resolveSnapshotLocation(203, END_SLOT_INTERVAL)).toEqual({
+      pricesAccountIndex: 0,
+      snapshotIndex: 29,
+    })
+    expect(resolveSnapshotLocation(210, END_SLOT_INTERVAL)).toEqual({
+      pricesAccountIndex: 1,
+      snapshotIndex: 0,
+    })
   })
 })

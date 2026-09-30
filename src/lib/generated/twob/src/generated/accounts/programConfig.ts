@@ -23,6 +23,8 @@ import {
   getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU16Decoder,
+  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -45,11 +47,11 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const PROGRAM_CONFIG_DISCRIMINATOR = new Uint8Array([
+export const PROGRAM_CONFIG_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   196, 210, 90, 231, 144, 149, 140, 63,
 ])
 
-export function getProgramConfigDiscriminatorBytes() {
+export function getProgramConfigDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     PROGRAM_CONFIG_DISCRIMINATOR,
   )
@@ -65,6 +67,11 @@ export type ProgramConfig = {
   pendingAuthoritySlot: Option<bigint>
   /** Required cooldown before accept */
   authorityTransferDelaySlots: number
+  /**
+   * Share of realized dedicated-market trading fees credited to the maker, in basis points of
+   * the fee itself. The program authority may update this globally.
+   */
+  dedicatedMakerFeeShareBps: number
   bump: number
   /** Reserved for future fields */
   reserved: ReadonlyUint8Array
@@ -79,6 +86,11 @@ export type ProgramConfigArgs = {
   pendingAuthoritySlot: OptionOrNullable<number | bigint>
   /** Required cooldown before accept */
   authorityTransferDelaySlots: number
+  /**
+   * Share of realized dedicated-market trading fees credited to the maker, in basis points of
+   * the fee itself. The program authority may update this globally.
+   */
+  dedicatedMakerFeeShareBps: number
   bump: number
   /** Reserved for future fields */
   reserved: ReadonlyUint8Array
@@ -93,8 +105,9 @@ export function getProgramConfigEncoder(): Encoder<ProgramConfigArgs> {
       ['pendingAuthority', getOptionEncoder(getAddressEncoder())],
       ['pendingAuthoritySlot', getOptionEncoder(getU64Encoder())],
       ['authorityTransferDelaySlots', getU32Encoder()],
+      ['dedicatedMakerFeeShareBps', getU16Encoder()],
       ['bump', getU8Encoder()],
-      ['reserved', fixEncoderSize(getBytesEncoder(), 64)],
+      ['reserved', fixEncoderSize(getBytesEncoder(), 62)],
     ]),
     (value) => ({ ...value, discriminator: PROGRAM_CONFIG_DISCRIMINATOR }),
   )
@@ -108,8 +121,9 @@ export function getProgramConfigDecoder(): Decoder<ProgramConfig> {
     ['pendingAuthority', getOptionDecoder(getAddressDecoder())],
     ['pendingAuthoritySlot', getOptionDecoder(getU64Decoder())],
     ['authorityTransferDelaySlots', getU32Decoder()],
+    ['dedicatedMakerFeeShareBps', getU16Decoder()],
     ['bump', getU8Decoder()],
-    ['reserved', fixDecoderSize(getBytesDecoder(), 64)],
+    ['reserved', fixDecoderSize(getBytesDecoder(), 62)],
   ])
 }
 

@@ -1,4 +1,9 @@
 import { isRpcRateLimitError } from '@/integrations/solana/rpc'
+import {
+  TWOB_ANCHOR_ERROR__AMOUNT_ZERO,
+  TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED,
+  TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED,
+} from '@/lib/generated/twob/src/generated/errors'
 
 const GENERIC_TRANSACTION_PLAN_MESSAGE =
   'The provided transaction plan failed to execute.'
@@ -197,14 +202,19 @@ function isStaleMarketAccountError(...values: Array<unknown>) {
 
 function getPositionControlErrorMessage(...values: Array<unknown>) {
   const detail = serializeErrorDetails(values)
+  const matches = (code: number, name: string) =>
+    values.some((value) => hasStructuredCustomProgramError(value, code)) ||
+    hasCustomProgramError(detail, code, code.toString(16), name)
 
-  if (hasCustomProgramError(detail, 6031, '178f', 'AmountZero')) {
+  if (matches(TWOB_ANCHOR_ERROR__AMOUNT_ZERO, 'AmountZero')) {
     return 'There are no new swapped funds to withdraw yet.'
   }
-  if (hasCustomProgramError(detail, 6029, '178d', 'PositionIsPaused')) {
+  if (matches(TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED, 'PositionIsPaused')) {
     return 'This position is already paused.'
   }
-  if (hasCustomProgramError(detail, 6030, '178e', 'PositionIsNotPaused')) {
+  if (
+    matches(TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED, 'PositionIsNotPaused')
+  ) {
     return 'This position is not paused.'
   }
 

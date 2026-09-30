@@ -43,11 +43,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const WITHDRAW_LIQUIDITY_DISCRIMINATOR = new Uint8Array([
-  149, 158, 33, 185, 47, 243, 253, 31,
-])
+export const WITHDRAW_LIQUIDITY_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([149, 158, 33, 185, 47, 243, 253, 31])
 
-export function getWithdrawLiquidityDiscriminatorBytes() {
+export function getWithdrawLiquidityDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     WITHDRAW_LIQUIDITY_DISCRIMINATOR,
   )
@@ -144,14 +143,14 @@ export type WithdrawLiquidityInstruction<
 export type WithdrawLiquidityInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
-  baseLamports: bigint
-  quoteLamports: bigint
+  baseAtoms: bigint
+  quoteAtoms: bigint
 }
 
 export type WithdrawLiquidityInstructionDataArgs = {
   referenceIndex: number | bigint
-  baseLamports: number | bigint
-  quoteLamports: number | bigint
+  baseAtoms: number | bigint
+  quoteAtoms: number | bigint
 }
 
 export function getWithdrawLiquidityInstructionDataEncoder(): FixedSizeEncoder<WithdrawLiquidityInstructionDataArgs> {
@@ -159,8 +158,8 @@ export function getWithdrawLiquidityInstructionDataEncoder(): FixedSizeEncoder<W
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
-      ['baseLamports', getU64Encoder()],
-      ['quoteLamports', getU64Encoder()],
+      ['baseAtoms', getU64Encoder()],
+      ['quoteAtoms', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: WITHDRAW_LIQUIDITY_DISCRIMINATOR }),
   )
@@ -170,8 +169,8 @@ export function getWithdrawLiquidityInstructionDataDecoder(): FixedSizeDecoder<W
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
-    ['baseLamports', getU64Decoder()],
-    ['quoteLamports', getU64Decoder()],
+    ['baseAtoms', getU64Decoder()],
+    ['quoteAtoms', getU64Decoder()],
   ])
 }
 
@@ -211,10 +210,10 @@ export type WithdrawLiquidityAsyncInput<
   authorityBaseTokenAccount?: Address<TAccountAuthorityBaseTokenAccount>
   authorityQuoteTokenAccount?: Address<TAccountAuthorityQuoteTokenAccount>
   market: Address<TAccountMarket>
-  liquidityPosition?: Address<TAccountLiquidityPosition>
+  liquidityPosition: Address<TAccountLiquidityPosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   currentExits: Address<TAccountCurrentExits>
   previousExits: Address<TAccountPreviousExits>
   currentPrices: Address<TAccountCurrentPrices>
@@ -224,8 +223,8 @@ export type WithdrawLiquidityAsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: WithdrawLiquidityInstructionDataArgs['referenceIndex']
-  baseLamports: WithdrawLiquidityInstructionDataArgs['baseLamports']
-  quoteLamports: WithdrawLiquidityInstructionDataArgs['quoteLamports']
+  baseAtoms: WithdrawLiquidityInstructionDataArgs['baseAtoms']
+  quoteAtoms: WithdrawLiquidityInstructionDataArgs['quoteAtoms']
 }
 
 export async function getWithdrawLiquidityInstructionAsync<
@@ -396,31 +395,6 @@ export async function getWithdrawLiquidityInstructionAsync<
       ],
     })
   }
-  if (!accounts.liquidityPosition.value) {
-    accounts.liquidityPosition.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            108, 105, 113, 117, 105, 100, 105, 116, 121, 95, 112, 111, 115, 105,
-            116, 105, 111, 110,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
       programAddress:
@@ -468,24 +442,6 @@ export async function getWithdrawLiquidityInstructionAsync<
           getAddressFromResolvedInstructionAccount(
             'quoteMint',
             accounts.quoteMint.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
           ),
         ),
       ],
@@ -594,8 +550,8 @@ export type WithdrawLiquidityInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: WithdrawLiquidityInstructionDataArgs['referenceIndex']
-  baseLamports: WithdrawLiquidityInstructionDataArgs['baseLamports']
-  quoteLamports: WithdrawLiquidityInstructionDataArgs['quoteLamports']
+  baseAtoms: WithdrawLiquidityInstructionDataArgs['baseAtoms']
+  quoteAtoms: WithdrawLiquidityInstructionDataArgs['quoteAtoms']
 }
 
 export function getWithdrawLiquidityInstruction<

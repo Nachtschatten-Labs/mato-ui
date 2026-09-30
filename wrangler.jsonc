@@ -44,9 +44,6 @@
       ],
     },
   },
-  "secrets": {
-    "required": [],
-  },
   "ratelimits": [
     {
       "name": "RPC_RATE_LIMITER",

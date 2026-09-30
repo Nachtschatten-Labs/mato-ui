@@ -20,6 +20,7 @@ import {
   resolveSnapshotLocation,
 } from './api/twob-client'
 import { tradingQueryKeys } from './query-keys'
+import { getMarketDefinition, type MarketId } from './constants'
 import type { Address } from '@solana/kit'
 import type { SolanaClient } from '@solana/client'
 
@@ -29,10 +30,10 @@ const MARKET_PRICE_CHANGE_24H_WINDOW_MS = 25 * 60 * 60_000
 const MARKET_PRICE_CHANGE_24H_MAX_POINTS = 320
 
 export const tradingQueries = {
-  marketAddress: (marketId: number) =>
+  marketAddress: (marketId: MarketId) =>
     queryOptions({
-      queryKey: tradingQueryKeys.marketAddress(marketId),
-      queryFn: () => deriveMarketAddress(marketId),
+      queryKey: tradingQueryKeys.marketAddress(getMarketDefinition(marketId)),
+      queryFn: () => deriveMarketAddress(getMarketDefinition(marketId)),
       staleTime: Infinity,
     }),
   marketConfig: (marketId: number) =>
@@ -99,33 +100,31 @@ export const tradingQueries = {
   tradePositions: ({
     authority,
     client,
-    marketId,
+    marketAddress,
   }: {
     authority: string | null | undefined
     client: SolanaClient
-    marketId: number
+    marketAddress: Address | undefined
   }) =>
     queryOptions({
-      queryKey: tradingQueryKeys.tradePositions(authority, marketId),
+      queryKey: tradingQueryKeys.tradePositions(authority, marketAddress),
       queryFn: async () => {
-        if (!authority) return []
-        return fetchTradePositions(client.runtime.rpc, authority, marketId)
+        if (!authority || !marketAddress) return []
+        return fetchTradePositions(client.runtime.rpc, authority, marketAddress)
       },
     }),
   marketTradePositions: ({
     client,
     marketAddress,
-    marketId,
   }: {
     client: SolanaClient
     marketAddress: Address | undefined
-    marketId: number
   }) =>
     queryOptions({
       queryKey: tradingQueryKeys.marketTradePositions(marketAddress),
       queryFn: async () => {
         if (!marketAddress) return []
-        return fetchMarketTradePositions(client.runtime.rpc, marketId)
+        return fetchMarketTradePositions(client.runtime.rpc, marketAddress)
       },
     }),
   ownedPricesAccounts: ({

@@ -80,56 +80,59 @@ function RentPage() {
 
   return (
     <div className="relative min-h-[calc(100dvh-3.5rem)] bg-[color:var(--color-page-bg)] text-foreground">
-      <div className="relative mx-auto max-w-[1440px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-[-0.04em]">
-            Rent Accounts
-          </h1>
-          <Badge variant="accent">Wallet-funded prices + exits</Badge>
+      <div className="relative mx-auto max-w-[1440px] px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-medium tracking-tight">Rent accounts</h1>
+          <Badge
+            className="rounded-full border-white/6 bg-white/[0.03] text-muted-foreground"
+            variant="muted"
+          >
+            Wallet funded
+          </Badge>
         </div>
 
-        <p className="mb-5 max-w-3xl text-sm text-muted-foreground">
-          Connected wallet payers can reclaim rent after closing these account
-          pairs. This view lists every `prices` and `exits` account funded by
-          your wallet.
+        <p className="mb-8 max-w-2xl text-sm leading-6 text-muted-foreground">
+          View the price and exit accounts funded by your wallet. Once an
+          account pair is no longer in use, you can close it to reclaim its SOL
+          rent from the wallet menu.
         </p>
 
         {!ownerAddress ? (
-          <Alert className="mb-6 border-white/10 bg-black/15 text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Wallet className="size-4" />
+          <Alert className="mb-6 rounded-[20px] border-white/6 bg-white/[0.015] p-6 text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/5">
+                <Wallet className="size-4" />
+              </span>
               <span>Connect a wallet to load owned rent accounts.</span>
             </div>
           </Alert>
         ) : (
           <>
             <div className="mb-6 grid gap-3 sm:grid-cols-3">
-              <Card className="border-white/10 bg-black/15">
-                <CardContent className="space-y-1 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Total
+              <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
+                <CardContent className="space-y-3 p-5">
+                  <p className="text-xs text-muted-foreground">
+                    Total accounts
                   </p>
-                  <p className="text-2xl font-semibold leading-none">
+                  <p className="text-2xl font-medium tabular-nums leading-none">
                     {totalAccounts}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-white/10 bg-black/15">
-                <CardContent className="space-y-1 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Prices
+              <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
+                <CardContent className="space-y-3 p-5">
+                  <p className="text-xs text-muted-foreground">
+                    Price accounts
                   </p>
-                  <p className="text-2xl font-semibold leading-none">
+                  <p className="text-2xl font-medium tabular-nums leading-none">
                     {pricesRows.length}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-white/10 bg-black/15">
-                <CardContent className="space-y-1 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    Exits
-                  </p>
-                  <p className="text-2xl font-semibold leading-none">
+              <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
+                <CardContent className="space-y-3 p-5">
+                  <p className="text-xs text-muted-foreground">Exit accounts</p>
+                  <p className="text-2xl font-medium tabular-nums leading-none">
                     {exitsRows.length}
                   </p>
                 </CardContent>
@@ -137,13 +140,13 @@ function RentPage() {
             </div>
 
             {isRefreshing && !isLoading ? (
-              <p className="mb-4 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="mb-4 text-xs text-muted-foreground">
                 Refreshing account list...
               </p>
             ) : null}
 
             {errorMessage ? (
-              <Alert className="mb-6 border-destructive/30 bg-destructive/10 text-destructive">
+              <Alert className="mb-6 rounded-[20px] border-destructive/20 bg-destructive/5 text-destructive">
                 {errorMessage}
               </Alert>
             ) : null}
@@ -154,7 +157,7 @@ function RentPage() {
                 emptyLabel="No funded prices accounts found."
                 isLoading={isPricesLoading}
                 rows={pricesRows}
-                title="Prices Accounts"
+                title="Price accounts"
               />
               <OwnedAccountCard
                 description="Exit flow accounts funded by this wallet."
@@ -162,7 +165,7 @@ function RentPage() {
                 isLoading={isExitsLoading}
                 rows={exitsRows}
                 showOpenPositions
-                title="Exits Accounts"
+                title="Exit accounts"
               />
             </div>
           </>
@@ -188,26 +191,30 @@ function OwnedAccountCard({
   title: string
 }) {
   return (
-    <Card className="border-white/10 bg-black/15">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="min-w-0 rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
+      <CardHeader className="px-5 pt-5">
+        <CardTitle className="text-base font-medium">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading accounts...</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Loading accounts...
+          </p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            {emptyLabel}
+          </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] text-left text-sm">
+            <table className="w-full min-w-[32rem] text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                <tr className="text-xs text-muted-foreground">
                   <th className="pb-3 pr-3 font-medium">Account</th>
                   <th className="pb-3 pr-3 font-medium">Index</th>
                   <th className="pb-3 pr-3 font-medium">Market</th>
                   {showOpenPositions ? (
-                    <th className="pb-3 pr-3 font-medium">Open Positions</th>
+                    <th className="pb-3 pr-3 font-medium">Open positions</th>
                   ) : null}
                   <th className="pb-3 font-medium">Payer</th>
                 </tr>
@@ -216,7 +223,7 @@ function OwnedAccountCard({
                 {rows.map((row) => (
                   <tr
                     key={row.address}
-                    className="border-t border-white/8 text-foreground/95"
+                    className="border-t border-white/6 text-foreground/90"
                   >
                     <td className="py-3 pr-3 font-mono text-xs">
                       <span title={row.address}>

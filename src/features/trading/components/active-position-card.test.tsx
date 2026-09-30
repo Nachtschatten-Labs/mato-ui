@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ActivePositionCard } from './active-position-card'
 import type { Address } from '@solana/kit'
 import type {
@@ -13,6 +20,43 @@ import { Side } from '@/lib/generated/twob/src/generated/types'
 vi.mock('../hooks/use-end-slot-bookkeeping-snapshot', () => ({
   useEndSlotBookkeepingSnapshot: () => ({ data: null }),
 }))
+vi.mock('../hooks/use-position-chart', () => ({
+  usePositionChart: () => ({
+    points: [
+      { timeMs: 1000, price: 120 },
+      { timeMs: 2000, price: 121 },
+    ],
+    startTimeMs: 1000,
+    estimatedStart: false,
+    isLoading: false,
+    hasError: false,
+  }),
+}))
+const previewState = vi.hoisted(() => ({
+  isError: false,
+  isFetching: false,
+  isLoading: false,
+  refetch: vi.fn(),
+}))
+vi.mock('../hooks/use-close-position-preview', () => ({
+  useClosePositionPreview: () => ({
+    ...previewState,
+    data: {
+      remainingDepositAtoms: 80n,
+      receivedAtoms: 19n,
+      feeAtoms: 1n,
+      positionRentLamports: 2_000_000n,
+      baseReceiver: '11111111111111111111111111111111',
+      quoteReceiver: '11111111111111111111111111111111',
+      rentReceiver: '11111111111111111111111111111111',
+      simulatedAtMs: Date.now(),
+    },
+  }),
+}))
+beforeEach(() => {
+  previewState.isError = false
+  previewState.isFetching = false
+})
 
 afterEach(cleanup)
 
@@ -34,7 +78,8 @@ function createPosition(paused: boolean): TradePositionRecord {
       id: 1,
       inactiveRefund: 0n,
       lastUpdateSlot: paused ? 5n : 0n,
-      marketId: 1,
+      market: '11111111111111111111111111111111' as Address,
+      feeBpsAtSubmission: 10,
       operator: '11111111111111111111111111111111' as Address,
       pausedAtSlot: paused ? 5n : 0n,
       payer: '11111111111111111111111111111111' as Address,
@@ -74,7 +119,7 @@ function renderCard({
   isResuming?: boolean
   paused?: boolean
 } = {}) {
-  const onClose = vi.fn()
+  const onClose = vi.fn().mockResolvedValue(true)
   const onPauseToggle = vi.fn()
   const onWithdraw = vi.fn()
 
@@ -145,7 +190,7 @@ describe('ActivePositionCard controls', () => {
     expect(
       screen
         .getByRole('button', {
-          name: 'Resuming...',
+          name: 'Resume position',
         })
         .hasAttribute('disabled'),
     ).toBe(true)
@@ -163,5 +208,76 @@ describe('ActivePositionCard controls', () => {
         })
         .hasAttribute('disabled'),
     ).toBe(true)
+  })
+
+  it('shows the chart and details initially and can collapse them', () => {
+    renderCard()
+    expect(
+      screen.getByRole('img', { name: /mainnet reference price history/ }),
+    ).toBeTruthy()
+    expect(screen.getByText('Available after fee')).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Collapse SOL position' }),
+    )
+    expect(
+      screen.queryByRole('img', { name: /mainnet reference price history/ }),
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Pause position' })).toBeTruthy()
+  })
+
+  it('requires a close review and keeps cancellation separate from submission', async () => {
+    const { onClose } = renderCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Close position' }))
+    const dialog = within(
+      await screen.findByRole('dialog', { name: 'Close this stream?' }),
+    )
+    expect(onClose).not.toHaveBeenCalled()
+    expect(
+      dialog.getByText('This ends the stream. It can’t be resumed.'),
+    ).toBeTruthy()
+    expect(dialog.getByText('19')).toBeTruthy()
+    expect(dialog.getByText('80')).toBeTruthy()
+    fireEvent.click(dialog.getByRole('button', { name: 'Keep it running' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Close position' }))
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Close stream',
+      }),
+    )
+    await waitFor(() =>
+      expect(onClose).toHaveBeenCalledExactlyOnceWith(POSITION_ADDRESS),
+    )
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('cannot confirm a failed or refreshing preview', async () => {
+    previewState.isError = true
+    const { onClose } = renderCard()
+    fireEvent.click(screen.getByRole('button', { name: 'Close position' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(
+      dialog
+        .getByRole('button', { name: 'Close stream' })
+        .hasAttribute('disabled'),
+    ).toBe(true)
+    fireEvent.click(dialog.getByRole('button', { name: 'Close stream' }))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(dialog.getByRole('alert')).toBeTruthy()
+  })
+
+  it('keeps the review open after a rejected close', async () => {
+    const { onClose } = renderCard({ paused: true })
+    onClose.mockResolvedValue(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Close position' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(dialog.getByRole('button', { name: 'Keep it paused' })).toBeTruthy()
+    fireEvent.click(dialog.getByRole('button', { name: 'Close stream' }))
+    await waitFor(() =>
+      expect(dialog.getByRole('alert').textContent).toContain(
+        'The position was not closed',
+      ),
+    )
   })
 })

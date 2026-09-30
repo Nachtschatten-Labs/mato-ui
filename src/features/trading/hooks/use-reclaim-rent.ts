@@ -5,7 +5,10 @@ import {
   useSolanaClient,
   useWalletSession,
 } from '@solana/react-hooks'
-import { MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION } from '../constants'
+import {
+  END_SLOT_INTERVAL,
+  MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION,
+} from '../constants'
 import { sendReclaimRent } from '../api/twob-client'
 import { formatTransactionError } from '../lib/transaction-errors'
 import { collectCloseableRentAccountPairs } from '../lib/rent'
@@ -54,7 +57,7 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
         throw new Error('Market address not available.')
       }
 
-      const [currentSlot, marketAccount] = await Promise.all([
+      const [currentSlot] = await Promise.all([
         client.runtime.rpc.getSlot({ commitment: 'confirmed' }).send(),
         fetchMarket(client.runtime.rpc, marketAddress, {
           commitment: 'confirmed',
@@ -62,7 +65,7 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
       ])
       return {
         currentSlot: Number(currentSlot),
-        endSlotInterval: marketAccount.data.endSlotInterval,
+        endSlotInterval: END_SLOT_INTERVAL,
       }
     },
     enabled: shouldFetch && Boolean(marketAddress),

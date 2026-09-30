@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -38,16 +36,15 @@ import {
 } from '@solana/kit'
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UNPAUSE_MARKET_DISCRIMINATOR = new Uint8Array([
+export const UNPAUSE_MARKET_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   219, 203, 199, 170, 212, 45, 170, 80,
 ])
 
-export function getUnpauseMarketDiscriminatorBytes() {
+export function getUnpauseMarketDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     UNPAUSE_MARKET_DISCRIMINATOR,
   )
@@ -131,145 +128,6 @@ export function getUnpauseMarketInstructionDataCodec(): FixedSizeCodec<
     getUnpauseMarketInstructionDataEncoder(),
     getUnpauseMarketInstructionDataDecoder(),
   )
-}
-
-export type UnpauseMarketAsyncInput<
-  TAccountAuthority extends string = string,
-  TAccountProgramConfig extends string = string,
-  TAccountMarket extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-> = {
-  authority: TransactionSigner<TAccountAuthority>
-  programConfig?: Address<TAccountProgramConfig>
-  market: Address<TAccountMarket>
-  bookkeeping?: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  referenceIndex: UnpauseMarketInstructionDataArgs['referenceIndex']
-}
-
-export async function getUnpauseMarketInstructionAsync<
-  TAccountAuthority extends string,
-  TAccountProgramConfig extends string,
-  TAccountMarket extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: UnpauseMarketAsyncInput<
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  UnpauseMarketInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
-    programConfig: { value: input.programConfig ?? null, isWritable: false },
-    market: { value: input.market ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('authority', accounts.authority),
-      getAccountMeta('programConfig', accounts.programConfig),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-    ],
-    data: getUnpauseMarketInstructionDataEncoder().encode(
-      args as UnpauseMarketInstructionDataArgs,
-    ),
-    programAddress,
-  } as UnpauseMarketInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig,
-    TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices
-  >)
 }
 
 export type UnpauseMarketInput<

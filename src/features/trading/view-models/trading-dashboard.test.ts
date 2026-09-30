@@ -4,8 +4,8 @@ import {
   calculateRelativePriceChangePercent,
   deriveMarketIdentity,
   formatDashboardPriceChangePercent,
-  selectReferenceMarketPricing,
 } from './trading-dashboard'
+import { MARKET_DEFINITIONS } from '../constants'
 import type { Address } from '@solana/kit'
 import type { TradingViewAggregatedCandle } from '../lib/market'
 
@@ -28,79 +28,38 @@ describe('deriveMarketIdentity', () => {
   })
 })
 
-describe('selectReferenceMarketPricing', () => {
-  it('removes the SOL reference feed from custom-market calculations', () => {
-    const referenceCandle: TradingViewAggregatedCandle = {
-      close: 150,
-      endSlot: 2,
-      high: 151,
-      low: 149,
-      open: 150,
-      startSlot: 1,
-      time: 1_742_428_800,
-      volume: 10,
-    }
-
-    expect(
-      selectReferenceMarketPricing({
-        chartCandles: [referenceCandle],
-        crosshairData: { ...referenceCandle },
-        isReferenceMarket: false,
-        marketPrice: { price: 150, slot: 2 },
-        marketUpdates: [
-          {
-            base_flow: 1n,
-            created_at: '2026-03-20T00:00:00Z',
-            id: 1,
-            market_id: 1,
-            quote_flow: 150n,
-            signature: 'reference',
-            slot: 2,
-          },
-        ],
-        priceChangeHistory: [referenceCandle],
-      }),
-    ).toEqual({
-      chartCandles: [],
-      crosshairData: null,
-      marketPrice: undefined,
-      marketUpdates: [],
-      priceChangeHistory: [],
-    })
-  })
-})
-
-describe('buildTradingDashboardViewModel', () => {
-  it('prefers the latest market price and derives execution preview', () => {
-    const chartCandles: Array<TradingViewAggregatedCandle> = [
-      {
-        close: 19,
-        endSlot: 11,
-        high: 19,
-        low: 18,
-        open: 18,
-        startSlot: 10,
-        time: 1_742_428_800,
-        volume: 20,
-      },
-    ]
-
-    const viewModel = buildTradingDashboardViewModel({
-      amountAtoms: 1_000_000_000n,
-      amountUiValue: 1,
+function dashboardInputs(): Parameters<
+  typeof buildTradingDashboardViewModel
+>[0] {
+  return {
+    amountAtoms: 1_000_000n,
+    amountUiValue: 1,
+    baseDecimals: 9,
+    baseTicker: 'SOL',
+    durationSeconds: 60,
+    quoteDecimals: 6,
+    quoteTicker: 'USDC',
+    referencePricing: {
       baseDecimals: 9,
-      baseTicker: 'SOL',
-      chartCandles,
+      chartCandles: [
+        {
+          close: 149,
+          high: 150,
+          low: 148,
+          open: 148,
+          time: 1_742_428_800,
+          volume: 20,
+        },
+      ],
       crosshairData: null,
-      durationSeconds: 60,
-      marketPrice: { eventTimeMs: 1_742_428_800_000, price: 20, slot: 11 },
+      marketPrice: { eventTimeMs: 1_742_428_800_000, price: 150, slot: 11 },
       marketUpdates: [
         {
           base_flow: 1_000_000_000n,
           created_at: '2026-03-20T00:00:00Z',
           id: 2,
           market_id: 1,
-          quote_flow: 19_000_000_000n,
+          quote_flow: 149_000_000n,
           signature: 'newer',
           slot: 11,
         },
@@ -109,50 +68,128 @@ describe('buildTradingDashboardViewModel', () => {
           created_at: '2026-03-19T23:59:00Z',
           id: 1,
           market_id: 1,
-          quote_flow: 18_000_000_000n,
+          quote_flow: 148_000_000n,
           signature: 'older',
           slot: 10,
         },
       ],
       priceChangeHistory: [
         {
-          close: 16,
-          endSlot: 1,
-          high: 16,
-          low: 16,
-          open: 16,
-          startSlot: 1,
+          close: 120,
+          high: 120,
+          low: 120,
+          open: 120,
           time: 1_742_342_400,
           volume: 10,
         },
       ],
-      quoteDecimals: 9,
-      quoteTicker: 'USDC',
-      side: 'buy',
-      streamingState: {
-        baseMint: 'So11111111111111111111111111111111111111112' as Address,
-        bookkeepingBasePerQuote: 0n,
-        bookkeepingLastUpdateSlot: 11,
-        bookkeepingQuotePerBase: 0n,
-        currentSlot: 11,
-        endSlotInterval: 5,
-        isPaused: false,
-        marketBaseFlow: 1_000_000_000n,
-        marketId: 1,
-        marketQuoteFlow: 20_000_000_000n,
-        minimumBaseDepositAtoms: 1n,
-        minimumQuoteDepositAtoms: 1n,
-        quoteMint: '11111111111111111111111111111111' as Address,
-      },
-      tradePositions: [],
-    })
+      quoteDecimals: 6,
+    },
+    side: 'buy',
+    streamingState: {
+      baseMint: 'So11111111111111111111111111111111111111112' as Address,
+      bookkeepingBasePerQuote: 0n,
+      bookkeepingLastUpdateSlot: 11,
+      bookkeepingQuotePerBase: 0n,
+      currentSlot: 11,
+      endSlotInterval: 7,
+      isPaused: false,
+      marketBaseFlow: 1_000_000_000_000_000_000n,
+      marketId: 1,
+      marketQuoteFlow: 2_500_000_000_000_000n,
+      minimumBaseDepositAtoms: 1n,
+      minimumQuoteDepositAtoms: 1n,
+      quoteMint: '11111111111111111111111111111111' as Address,
+    },
+    tradePositions: [],
+  }
+}
 
-    expect(viewModel.displayPrice).toBe(20)
+describe('buildTradingDashboardViewModel', () => {
+  it.each(MARKET_DEFINITIONS)(
+    'keeps the mainnet reference separate from execution in devnet market $id ($baseSymbol)',
+    (market) => {
+      const inputs = dashboardInputs()
+      inputs.baseDecimals = market.baseDecimals
+      inputs.baseTicker = market.baseSymbol
+      inputs.streamingState = {
+        ...inputs.streamingState!,
+        baseMint: market.baseMint,
+        marketBaseFlow: 10n ** BigInt(market.baseDecimals) * 1_000_000_000n,
+        marketId: market.id,
+        quoteMint: market.quoteMint,
+      }
+      const viewModel = buildTradingDashboardViewModel(inputs)
+
+      expect(viewModel.displayPrice).toBe(150)
+      expect(viewModel.chartCandles).toEqual(
+        inputs.referencePricing.chartCandles,
+      )
+      expect(viewModel.priceDelta).toBe(1)
+      expect(viewModel.priceChange24hPercent).toBe(25)
+      expect(viewModel.priceChange24hDisplay).toBe('+25.00% 24h')
+      expect(viewModel.onChainIndicativePrice).toBe(2.5)
+      expect(viewModel.executionPrice).toBeGreaterThan(2.5)
+      expect(viewModel.executionPrice).toBeLessThan(3)
+      expect(viewModel.estimatedConversionText).toMatch(
+        new RegExp(`^~0\\.\\d+ ${market.baseSymbol}$`),
+      )
+    },
+  )
+
+  it('uses reference token decimals for the mainnet tick fallback on custom markets', () => {
+    const inputs = dashboardInputs()
+    inputs.baseDecimals = 6
+    inputs.baseTicker = 'MATO'
+    inputs.referencePricing.marketPrice = undefined
+
+    const viewModel = buildTradingDashboardViewModel(inputs)
+
+    expect(viewModel.displayPrice).toBe(149)
     expect(viewModel.priceDelta).toBe(1)
-    expect(viewModel.priceChange24hPercent).toBe(25)
-    expect(viewModel.priceChange24hDisplay).toBe('+25.00% 24h')
-    expect(viewModel.estimatedConversionText).toContain('SOL')
-    expect(viewModel.executionPriceDisplay).toMatch(/^\$/)
+  })
+
+  it.each(['missing', 'zero'] as const)(
+    'leaves estimates unavailable when selected-market flows are %s',
+    (condition) => {
+      const inputs = dashboardInputs()
+      inputs.streamingState =
+        condition === 'missing'
+          ? null
+          : {
+              ...inputs.streamingState!,
+              marketBaseFlow: 0n,
+              marketQuoteFlow: 0n,
+            }
+
+      const viewModel = buildTradingDashboardViewModel(inputs)
+
+      expect(viewModel.displayPrice).toBe(150)
+      expect(viewModel.executionPrice).toBeNull()
+      expect(viewModel.executionPriceDisplay).toBe('—')
+      expect(viewModel.estimatedConversionText).toBe('— SOL')
+      expect(viewModel.priceImpactPercent).toBeNull()
+      expect(viewModel.priceImpactDisplay).toBe('—')
+    },
+  )
+
+  it('does not display devnet prices as mainnet prices when the reference is unavailable', () => {
+    const inputs = dashboardInputs()
+    inputs.referencePricing = {
+      baseDecimals: 9,
+      chartCandles: [],
+      crosshairData: null,
+      marketUpdates: [],
+      priceChangeHistory: [],
+      quoteDecimals: 6,
+    }
+
+    const viewModel = buildTradingDashboardViewModel(inputs)
+
+    expect(viewModel.displayPrice).toBeNull()
+    expect(viewModel.priceChange24hDisplay).toBe('24h —')
+    expect(viewModel.executionPrice).toBeGreaterThan(2.5)
+    expect(viewModel.executionPrice).toBeLessThan(3)
   })
 })
 

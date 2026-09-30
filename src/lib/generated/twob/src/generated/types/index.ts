@@ -6,7 +6,4 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from './authorityTransferred'
-export * from './closePositionEvent'
-export * from './marketUpdateEvent'
 export * from './side'

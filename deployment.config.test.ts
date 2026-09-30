@@ -1,9 +1,57 @@
 import { describe, expect, it } from 'vitest'
 import { deploymentEnvironment } from './deployment.config'
 import target from './deployment-target.json'
+import { TWOB_ANCHOR_PROGRAM_ADDRESS } from './src/lib/generated/twob/src/generated/programs'
 
 const configured = { VITE_READ_API_URL: 'https://read.example.com' }
 describe('deployment configuration', () => {
+  it('uses the same program for server RPC scans and the generated client', () => {
+    expect(target.programId).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+  })
+  it.each(['production', 'development'])(
+    'allows %s trading with the verified dedicated-market program',
+    (mode) => {
+      const result = deploymentEnvironment(mode, {
+        ...configured,
+        VITE_ENABLE_TRANSACTIONS: 'true',
+        VITE_VERIFIED_PROGRAM_ID: TWOB_ANCHOR_PROGRAM_ADDRESS,
+      })
+      expect(result.VITE_ENABLE_TRANSACTIONS).toBe('true')
+      expect(result.VITE_VERIFIED_PROGRAM_ID).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+    },
+  )
+  it('keeps development read-only without explicit opt-in', () => {
+    const result = deploymentEnvironment('development', configured)
+    expect(result.VITE_ENABLE_TRANSACTIONS).toBe('false')
+  })
+  it('limits development trading to the devnet target', () => {
+    const originalCluster = target.cluster
+    try {
+      target.cluster = 'mainnet-beta'
+      const result = deploymentEnvironment('development', {
+        ...configured,
+        VITE_ENABLE_TRANSACTIONS: 'true',
+        VITE_VERIFIED_PROGRAM_ID: target.programId,
+      })
+      expect(result.VITE_ENABLE_TRANSACTIONS).toBe('false')
+      expect(result.VITE_VERIFIED_PROGRAM_ID).toBe('')
+    } finally {
+      target.cluster = originalCluster
+    }
+  })
+  it.each(['production', 'development'])(
+    'rejects the previous program when enabling %s trading',
+    (mode) => {
+      expect(() =>
+        deploymentEnvironment(mode, {
+          ...configured,
+          VITE_ENABLE_TRANSACTIONS: 'true',
+          VITE_VERIFIED_PROGRAM_ID:
+            'CCAd78ZgUBAFNQmCCD5z4oGuFzb8uXLw5kfnBcRvDw16',
+        }),
+      ).toThrow('verified program ID')
+    },
+  )
   it('fails closed when production has no read API', () => {
     expect(() => deploymentEnvironment('production', {})).toThrow(
       'requires VITE_READ_API_URL',
@@ -35,15 +83,18 @@ describe('deployment configuration', () => {
       }),
     ).toThrow('server-only SOLANA_RPC_URL')
   })
-  it('requires a matching program before allowing trading', () => {
-    expect(() =>
-      deploymentEnvironment('production', {
-        ...configured,
-        VITE_ENABLE_TRANSACTIONS: 'true',
-        VITE_VERIFIED_PROGRAM_ID: 'wrong',
-      }),
-    ).toThrow('verified program ID')
-  })
+  it.each(['production', 'development'])(
+    'requires a matching program before allowing %s trading',
+    (mode) => {
+      expect(() =>
+        deploymentEnvironment(mode, {
+          ...configured,
+          VITE_ENABLE_TRANSACTIONS: 'true',
+          VITE_VERIFIED_PROGRAM_ID: 'wrong',
+        }),
+      ).toThrow('verified program ID')
+    },
+  )
   it('keeps private RPC configuration out of the browser and fixes the site URL', () => {
     const result = deploymentEnvironment('production', {
       ...configured,

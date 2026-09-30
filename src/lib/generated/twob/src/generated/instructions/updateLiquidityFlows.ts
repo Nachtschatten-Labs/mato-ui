@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -38,16 +36,14 @@ import {
 } from '@solana/kit'
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UPDATE_LIQUIDITY_FLOWS_DISCRIMINATOR = new Uint8Array([
-  59, 94, 163, 206, 138, 237, 163, 178,
-])
+export const UPDATE_LIQUIDITY_FLOWS_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([59, 94, 163, 206, 138, 237, 163, 178])
 
-export function getUpdateLiquidityFlowsDiscriminatorBytes() {
+export function getUpdateLiquidityFlowsDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     UPDATE_LIQUIDITY_FLOWS_DISCRIMINATOR,
   )
@@ -105,14 +101,14 @@ export type UpdateLiquidityFlowsInstruction<
 export type UpdateLiquidityFlowsInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
-  baseFlowU64: bigint
-  quoteFlowU64: bigint
+  baseFlowAtoms: bigint
+  quoteFlowAtoms: bigint
 }
 
 export type UpdateLiquidityFlowsInstructionDataArgs = {
   referenceIndex: number | bigint
-  baseFlowU64: number | bigint
-  quoteFlowU64: number | bigint
+  baseFlowAtoms: number | bigint
+  quoteFlowAtoms: number | bigint
 }
 
 export function getUpdateLiquidityFlowsInstructionDataEncoder(): FixedSizeEncoder<UpdateLiquidityFlowsInstructionDataArgs> {
@@ -120,8 +116,8 @@ export function getUpdateLiquidityFlowsInstructionDataEncoder(): FixedSizeEncode
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
-      ['baseFlowU64', getU64Encoder()],
-      ['quoteFlowU64', getU64Encoder()],
+      ['baseFlowAtoms', getU64Encoder()],
+      ['quoteFlowAtoms', getU64Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -134,8 +130,8 @@ export function getUpdateLiquidityFlowsInstructionDataDecoder(): FixedSizeDecode
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
-    ['baseFlowU64', getU64Decoder()],
-    ['quoteFlowU64', getU64Decoder()],
+    ['baseFlowAtoms', getU64Decoder()],
+    ['quoteFlowAtoms', getU64Decoder()],
   ])
 }
 
@@ -147,175 +143,6 @@ export function getUpdateLiquidityFlowsInstructionDataCodec(): FixedSizeCodec<
     getUpdateLiquidityFlowsInstructionDataEncoder(),
     getUpdateLiquidityFlowsInstructionDataDecoder(),
   )
-}
-
-export type UpdateLiquidityFlowsAsyncInput<
-  TAccountAuthority extends string = string,
-  TAccountMarket extends string = string,
-  TAccountLiquidityPosition extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountSystemProgram extends string = string,
-> = {
-  authority: TransactionSigner<TAccountAuthority>
-  market: Address<TAccountMarket>
-  liquidityPosition?: Address<TAccountLiquidityPosition>
-  bookkeeping?: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: UpdateLiquidityFlowsInstructionDataArgs['referenceIndex']
-  baseFlowU64: UpdateLiquidityFlowsInstructionDataArgs['baseFlowU64']
-  quoteFlowU64: UpdateLiquidityFlowsInstructionDataArgs['quoteFlowU64']
-}
-
-export async function getUpdateLiquidityFlowsInstructionAsync<
-  TAccountAuthority extends string,
-  TAccountMarket extends string,
-  TAccountLiquidityPosition extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: UpdateLiquidityFlowsAsyncInput<
-    TAccountAuthority,
-    TAccountMarket,
-    TAccountLiquidityPosition,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  UpdateLiquidityFlowsInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountMarket,
-    TAccountLiquidityPosition,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
-    market: { value: input.market ?? null, isWritable: true },
-    liquidityPosition: {
-      value: input.liquidityPosition ?? null,
-      isWritable: true,
-    },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.liquidityPosition.value) {
-    accounts.liquidityPosition.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            108, 105, 113, 117, 105, 100, 105, 116, 121, 95, 112, 111, 115, 105,
-            116, 105, 111, 110,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'authority',
-            accounts.authority.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('authority', accounts.authority),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('liquidityPosition', accounts.liquidityPosition),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-    ],
-    data: getUpdateLiquidityFlowsInstructionDataEncoder().encode(
-      args as UpdateLiquidityFlowsInstructionDataArgs,
-    ),
-    programAddress,
-  } as UpdateLiquidityFlowsInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountMarket,
-    TAccountLiquidityPosition,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountSystemProgram
-  >)
 }
 
 export type UpdateLiquidityFlowsInput<
@@ -339,8 +166,8 @@ export type UpdateLiquidityFlowsInput<
   previousPrices: Address<TAccountPreviousPrices>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: UpdateLiquidityFlowsInstructionDataArgs['referenceIndex']
-  baseFlowU64: UpdateLiquidityFlowsInstructionDataArgs['baseFlowU64']
-  quoteFlowU64: UpdateLiquidityFlowsInstructionDataArgs['quoteFlowU64']
+  baseFlowAtoms: UpdateLiquidityFlowsInstructionDataArgs['baseFlowAtoms']
+  quoteFlowAtoms: UpdateLiquidityFlowsInstructionDataArgs['quoteFlowAtoms']
 }
 
 export function getUpdateLiquidityFlowsInstruction<

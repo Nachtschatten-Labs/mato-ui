@@ -1,11 +1,19 @@
-import { AlertTriangle } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { AlertTriangle, ArrowDownUp, Info } from 'lucide-react'
 import { DURATION_OPTIONS } from '../constants'
 import { formatUiAmount } from '../lib/format'
 import type { OrderSide } from '../constants'
+import { TokenMark } from './token-mark'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 export function OrderEntryCard({
@@ -28,6 +36,8 @@ export function OrderEntryCard({
   onSubmit,
   priceImpactDisplay,
   priceImpactWarningText,
+  receiveBalanceDisplay,
+  receiveTokenTicker,
   selectedPercent,
   side,
   statusLabel,
@@ -51,217 +61,352 @@ export function OrderEntryCard({
   onSubmit: () => void
   priceImpactDisplay: string
   priceImpactWarningText: string | null
+  receiveBalanceDisplay?: number
+  receiveTokenTicker: string
   selectedPercent: number
   side: OrderSide
   statusLabel: string
 }) {
-  return (
-    <Card className="border-white/10 bg-black/20">
-      <CardContent className="space-y-5 pt-6">
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/5 p-1">
-          <Button
-            className="rounded-xl"
-            onClick={() => onSideChange('buy')}
-            variant={side === 'buy' ? 'default' : 'ghost'}
-          >
-            Buy
-          </Button>
-          <Button
-            className="rounded-xl"
-            onClick={() => onSideChange('sell')}
-            variant={side === 'sell' ? 'default' : 'ghost'}
-          >
-            Sell
-          </Button>
-        </div>
+  const [showPercentages, setShowPercentages] = useState(false)
+  const [durationDialogOpen, setDurationDialogOpen] = useState(false)
+  const durationTriggerRef = useRef<HTMLButtonElement>(null)
+  const [draftDurationSeconds, setDraftDurationSeconds] =
+    useState(durationSeconds)
+  const receiveSuffix = ` ${receiveTokenTicker}`
+  const receiveAmount = estimatedConversionText.endsWith(receiveSuffix)
+    ? estimatedConversionText.slice(0, -receiveSuffix.length)
+    : estimatedConversionText
+  const draftDurationIndex = DURATION_OPTIONS.reduce(
+    (closest, option, index) =>
+      Math.abs(option.seconds - draftDurationSeconds) <
+      Math.abs(DURATION_OPTIONS[closest].seconds - draftDurationSeconds)
+        ? index
+        : closest,
+    0,
+  )
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <label
-                className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground"
-                htmlFor="order-amount"
+  function openDurationDialog() {
+    setDraftDurationSeconds(durationSeconds)
+    setDurationDialogOpen(true)
+  }
+
+  return (
+    <Card className="rounded-[20px]">
+      <CardContent className="p-5 sm:p-10">
+        <div
+          className={cn(
+            'rounded-xl border bg-input p-4 sm:p-5',
+            amountValidationMessage ? 'border-destructive/60' : 'border-border',
+          )}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <label className="font-medium" htmlFor="order-amount">
+              You pay
+            </label>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Balance {formatUiAmount(availableAmountDisplay, 4)}</span>
+              <Button
+                aria-label="Use maximum balance"
+                className="h-6 rounded-md bg-secondary px-1.5 text-[11px] text-foreground"
+                onClick={onMaxClick}
+                size="xs"
+                variant="ghost"
               >
-                Order size
-              </label>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                <span>
-                  Available {formatUiAmount(availableAmountDisplay)}{' '}
-                  {amountTokenTicker}
-                </span>
-                <span>
-                  Minimum {minimumAmountDisplay} {amountTokenTicker}
-                </span>
-              </div>
+                Max
+              </Button>
+              <Button
+                aria-controls="order-balance-percentage"
+                aria-expanded={showPercentages}
+                aria-label="Choose balance percentage"
+                className="h-6 rounded-md px-1.5 text-xs"
+                onClick={() => setShowPercentages((value) => !value)}
+                size="xs"
+                variant={showPercentages ? 'secondary' : 'ghost'}
+              >
+                %
+              </Button>
             </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-3">
+            <Input
+              aria-describedby="order-amount-help"
+              aria-invalid={amountValidationMessage ? true : undefined}
+              autoComplete="off"
+              className="h-12 w-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-[32px] font-normal tracking-tight shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
+              id="order-amount"
+              inputMode="decimal"
+              onChange={(event) => onAmountChange(event.target.value)}
+              placeholder="0.00"
+              value={amountInput}
+            />
+            <span className="flex shrink-0 items-center gap-2 text-base font-medium">
+              <TokenMark symbol={amountTokenTicker} />
+              {amountTokenTicker}
+            </span>
             <Button
-              className="rounded-full px-3"
-              onClick={onMaxClick}
-              size="xs"
-              variant="outline"
+              aria-label={`Switch to ${side === 'sell' ? 'buy' : 'sell'}`}
+              className="rounded-lg bg-secondary text-muted-foreground"
+              onClick={() => onSideChange(side === 'sell' ? 'buy' : 'sell')}
+              size="icon-sm"
+              variant="ghost"
             >
-              Use max
+              <ArrowDownUp className="size-3.5" />
             </Button>
           </div>
 
-          <div
+          <p
+            aria-live={amountValidationMessage ? 'polite' : undefined}
             className={cn(
-              'rounded-[1.25rem] border p-2 transition-colors',
+              'mt-1 text-xs leading-5',
               amountValidationMessage
-                ? 'border-destructive/60 bg-destructive/10'
-                : 'border-white/10 bg-black/25',
+                ? 'text-destructive'
+                : 'text-muted-foreground',
             )}
+            id="order-amount-help"
           >
-            <div className="flex items-center gap-3">
-              <Input
-                aria-describedby={
-                  amountValidationMessage ? 'order-amount-error' : undefined
-                }
-                aria-invalid={amountValidationMessage ? true : undefined}
-                autoComplete="off"
-                className="h-14 w-0 min-w-0 flex-1 border-0 bg-transparent px-3 text-2xl font-semibold shadow-none focus-visible:ring-0"
-                id="order-amount"
-                inputMode="decimal"
-                onChange={(event) => onAmountChange(event.target.value)}
-                placeholder="0.00"
-                value={amountInput}
-              />
-              <Badge
-                className="shrink-0 rounded-full px-3 py-2 text-sm"
-                variant="muted"
-              >
-                {amountTokenTicker}
-              </Badge>
-            </div>
-          </div>
+            {amountValidationMessage ??
+              `Minimum ${minimumAmountDisplay} ${amountTokenTicker}`}
+          </p>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <span
-              aria-live={amountValidationMessage ? 'polite' : undefined}
-              className={cn(
-                'text-sm',
-                amountValidationMessage
-                  ? 'text-destructive'
-                  : 'text-muted-foreground',
-              )}
-              id={amountValidationMessage ? 'order-amount-error' : undefined}
+          {showPercentages ? (
+            <div
+              className="mt-4 space-y-3 border-t border-border pt-4"
+              id="order-balance-percentage"
             >
-              {amountValidationMessage ??
-                `${selectedPercent.toFixed(1)}% of available balance`}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <label htmlFor="order-balance-slider">
+                  Use available balance
+                </label>
+                <span>{selectedPercent.toFixed(1)}%</span>
+              </div>
+              <input
+                className="block w-full cursor-pointer accent-primary"
+                id="order-balance-slider"
+                max={100}
+                min={0}
+                onChange={(event) => onSliderChange(Number(event.target.value))}
+                step={0.1}
+                type="range"
+                value={selectedPercent}
+              />
+              <div className="grid grid-cols-4 gap-2">
+                {[25, 50, 75, 100].map((percent) => (
+                  <Button
+                    key={percent}
+                    aria-pressed={Math.abs(selectedPercent - percent) < 0.5}
+                    className="rounded-full"
+                    onClick={() => onPercentSelect(percent)}
+                    size="xs"
+                    variant={
+                      Math.abs(selectedPercent - percent) < 0.5
+                        ? 'default'
+                        : 'secondary'
+                    }
+                  >
+                    {percent}%
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-5 text-xs">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <span>
+              Over{' '}
+              <span className="text-foreground">
+                {formatDuration(durationSeconds)}
+              </span>
+            </span>
+            <span title="Your order executes gradually over the selected duration.">
+              <Info
+                aria-label="Orders execute gradually over the selected duration"
+                className="size-3.5"
+              />
+            </span>
+          </div>
+          <Button
+            className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+            onClick={openDurationDialog}
+            ref={durationTriggerRef}
+            variant="link"
+          >
+            Customize duration
+          </Button>
+        </div>
+
+        <div className="min-h-[140px] rounded-xl border border-white/[0.06] bg-secondary p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-muted-foreground">Est. receive</span>
+            {receiveBalanceDisplay !== undefined ? (
+              <span className="text-xs text-muted-foreground">
+                Balance {formatUiAmount(receiveBalanceDisplay, 4)}
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <span
+              className="min-w-0 truncate text-[32px] leading-[48px] font-normal tracking-tight"
+              title={estimatedConversionText}
+            >
+              {receiveAmount}
+            </span>
+            <span className="flex shrink-0 items-center gap-2 text-base font-medium">
+              <TokenMark symbol={receiveTokenTicker} />
+              {receiveTokenTicker}
             </span>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <input
-            aria-label="Use balance percentage"
-            className="w-full accent-[var(--color-accent-strong)]"
-            max={100}
-            min={0}
-            onChange={(event) => onSliderChange(Number(event.target.value))}
-            type="range"
-            value={selectedPercent}
-          />
-          <div className="flex flex-wrap gap-2">
-            {[25, 50, 75, 100].map((percent) => (
-              <Button
-                key={percent}
-                className="rounded-full px-3"
-                onClick={() => onPercentSelect(percent)}
-                size="xs"
-                variant={
-                  Math.abs(selectedPercent - percent) < 0.5
-                    ? 'default'
-                    : 'outline'
-                }
-              >
-                {percent}%
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <DetailMetric
-            label="Estimated receive"
-            value={estimatedConversionText}
-          />
-          <DetailMetric
-            label="Price impact"
-            tone={priceImpactWarningText ? 'warning' : 'default'}
-            value={`${priceImpactDisplay} (${executionPriceDisplay})`}
-          />
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-5 text-xs text-muted-foreground">
+          <span>
+            Est. price{' '}
+            <span className="text-foreground">{executionPriceDisplay}</span>
+          </span>
+          <span
+            className={cn(priceImpactWarningText && 'text-warning-foreground')}
+          >
+            Price impact {priceImpactDisplay}
+          </span>
         </div>
 
         {priceImpactWarningText ? (
-          <div className="flex items-start gap-2 rounded-[1.25rem] border border-warning/35 bg-warning/10 px-3 py-2 text-sm leading-6 text-warning-foreground">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+          <div
+            className="mb-4 flex items-start gap-2 rounded-xl border border-warning/25 bg-warning/5 px-3 py-2 text-sm leading-6 text-warning-foreground"
+            role="alert"
+          >
+            <AlertTriangle className="mt-1 size-4 shrink-0" />
             <span>{priceImpactWarningText}</span>
           </div>
         ) : null}
 
-        <div className="space-y-3">
-          <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-            Duration
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {DURATION_OPTIONS.map((option) => (
-              <Button
-                key={option.label}
-                className="rounded-full whitespace-nowrap"
-                onClick={() => onDurationChange(option.seconds)}
-                size="xs"
-                variant={
-                  durationSeconds === option.seconds ? 'default' : 'outline'
-                }
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-
         <Button
-          className="h-12 w-full rounded-2xl text-base"
+          className="h-12 w-full rounded-full text-sm font-medium"
           disabled={!isConnected || !canSubmit}
           onClick={onSubmit}
         >
           {statusLabel}
         </Button>
+        <p className="mt-4 text-center text-[11px] leading-5 text-muted-foreground">
+          Estimate from liquidity right now. Price can move while the stream
+          runs.
+        </p>
       </CardContent>
+
+      <Dialog onOpenChange={setDurationDialogOpen} open={durationDialogOpen}>
+        <DialogContent
+          className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[20px] p-6 sm:max-w-lg sm:p-8"
+          finalFocus={durationTriggerRef}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-medium">
+              Customize duration
+            </DialogTitle>
+            <DialogDescription className="pr-4 leading-6">
+              Spread your order over time. Choose how long your trade should
+              take to execute.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div>
+            <div
+              className="mb-6 text-center text-3xl tracking-tight"
+              aria-live="polite"
+            >
+              {formatDuration(draftDurationSeconds)}
+            </div>
+            <input
+              aria-label="Order duration"
+              aria-valuetext={formatDuration(draftDurationSeconds)}
+              className="block w-full cursor-pointer accent-accent-strong"
+              max={DURATION_OPTIONS.length - 1}
+              min={0}
+              onChange={(event) =>
+                setDraftDurationSeconds(
+                  DURATION_OPTIONS[Number(event.target.value)].seconds,
+                )
+              }
+              step={1}
+              type="range"
+              value={draftDurationIndex}
+            />
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>1 minute</span>
+              <span>1 year</span>
+            </div>
+            <div className="mt-5 grid grid-cols-5 gap-2">
+              {DURATION_OPTIONS.map((option) => (
+                <Button
+                  key={option.label}
+                  aria-label={formatDuration(option.seconds)}
+                  aria-pressed={draftDurationSeconds === option.seconds}
+                  className="rounded-full"
+                  onClick={() => setDraftDurationSeconds(option.seconds)}
+                  size="sm"
+                  variant={
+                    draftDurationSeconds === option.seconds
+                      ? 'default'
+                      : 'secondary'
+                  }
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-xl bg-secondary p-4 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Order amount</span>
+              <span>
+                {amountInput || '0'} {amountTokenTicker}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">Duration</span>
+              <span>{formatDuration(draftDurationSeconds)}</span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+              <span className="text-xs text-muted-foreground">
+                Current estimate · {formatDuration(durationSeconds)}
+              </span>
+              <span>{estimatedConversionText}</span>
+            </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Applying a duration updates the estimate. Final amounts depend on
+              market prices during execution.
+            </p>
+          </div>
+
+          <Button
+            className="h-12 w-full rounded-full"
+            onClick={() => {
+              onDurationChange(draftDurationSeconds)
+              setDurationDialogOpen(false)
+            }}
+          >
+            Use {formatDuration(draftDurationSeconds)}
+          </Button>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
 
-function DetailMetric({
-  label,
-  tone = 'default',
-  value,
-}: {
-  label: string
-  tone?: 'default' | 'warning'
-  value: string
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-2xl border p-3',
-        tone === 'warning'
-          ? 'border-warning/35 bg-warning/10 text-warning-foreground'
-          : 'border-white/10 bg-white/5',
-      )}
-    >
-      <div
-        className={cn(
-          'mb-1 text-[11px] uppercase tracking-[0.22em]',
-          tone === 'warning'
-            ? 'text-warning-foreground/80'
-            : 'text-muted-foreground',
-        )}
-      >
-        {label}
-      </div>
-      <div className="font-medium">{value}</div>
-    </div>
-  )
+export function formatDuration(seconds: number) {
+  const units = [
+    { seconds: 365 * 24 * 60 * 60, label: 'year' },
+    { seconds: 30 * 24 * 60 * 60, label: 'month' },
+    { seconds: 7 * 24 * 60 * 60, label: 'week' },
+    { seconds: 24 * 60 * 60, label: 'day' },
+    { seconds: 60 * 60, label: 'hour' },
+    { seconds: 60, label: 'minute' },
+  ]
+  const unit =
+    units.find((candidate) => seconds >= candidate.seconds) ??
+    units[units.length - 1]
+  const value = Number((seconds / unit.seconds).toFixed(1))
+  return `${value} ${unit.label}${value === 1 ? '' : 's'}`
 }

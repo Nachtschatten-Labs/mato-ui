@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useWalletConnection } from '@solana/react-hooks'
 import { toast } from 'sonner'
 import {
@@ -25,7 +25,6 @@ import {
 import type { MarketId } from '../constants'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { endpoint } from '@/integrations/solana'
 
 interface WalletConnectionButtonProps {
@@ -47,6 +46,7 @@ export function WalletConnectionButton({
   } = useWalletConnection()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const dropdownId = useId()
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const reclaimRent = useReclaimRent(open && connected, marketId)
   const nativeSolBalance = useWalletSolBalance()
@@ -61,10 +61,15 @@ export function WalletConnectionButton({
 
       setOpen(false)
     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
 
     document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [open])
 
@@ -119,9 +124,11 @@ export function WalletConnectionButton({
       <Button
         size="lg"
         variant="outline"
-        className="min-w-[9rem] justify-between rounded-full px-5 sm:min-w-[13rem]"
+        disabled
+        className="h-9 justify-center gap-2 rounded-full border-white/6 bg-card px-4 text-[12px] font-normal shadow-none"
       >
-        <span className="text-sm text-muted-foreground">Loading wallets</span>
+        <Wallet className="size-3.5" />
+        <span className="text-muted-foreground">Loading wallets</span>
       </Button>
     )
   }
@@ -172,36 +179,47 @@ export function WalletConnectionButton({
       <Button
         size="lg"
         variant="outline"
-        className="max-w-full min-w-[9rem] justify-between rounded-full border-white/10 bg-white/5 px-5 hover:bg-white/10 sm:min-w-[13rem]"
+        aria-controls={open ? dropdownId : undefined}
+        aria-expanded={open}
+        className="h-9 max-w-full justify-between gap-3 rounded-full border-white/6 bg-card px-4 text-[12px] font-normal shadow-none hover:bg-secondary"
         onClick={() => setOpen((previous) => !previous)}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <Wallet className="size-4" />
+          <Wallet className="size-3.5 text-muted-foreground" />
           <span className="truncate">
             {connected ? shortenAddress(address, 4, 4) : 'Connect wallet'}
           </span>
         </span>
         <ChevronDown
-          className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`size-3 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </Button>
 
       {open ? (
-        <Card className="absolute right-0 z-[80] mt-3 w-[19rem] border-white/10 bg-[color:var(--color-elevated)]/95 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.75)]">
+        <Card
+          id={dropdownId}
+          className="absolute right-0 z-[80] mt-3 w-[19rem] max-w-[calc(100vw-2.5rem)] rounded-2xl border-white/6 bg-card shadow-[0_24px_80px_-24px_rgba(0,0,0,0.75)]"
+        >
           <CardContent className="space-y-3 p-4">
             {connected ? (
               <>
-                <div className="max-w-full rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="max-w-full rounded-xl bg-secondary p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <Badge variant="accent">Connected</Badge>
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="size-1.5 rounded-full bg-positive" />
+                      Connected
+                    </span>
                     {currentConnector ? (
-                      <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {currentConnector.name}
                       </span>
                     ) : null}
                   </div>
                   <button
-                    className="flex max-w-full items-center gap-2 text-left font-mono text-sm leading-6 text-foreground transition-colors hover:text-[color:var(--color-accent-strong)]"
+                    aria-label={
+                      copied ? 'Address copied' : 'Copy wallet address'
+                    }
+                    className="flex max-w-full items-center gap-2 rounded-sm text-left text-sm leading-6 text-foreground transition-colors outline-none hover:text-[color:var(--color-accent-strong)] focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => {
                       void handleCopyAddress()
                     }}
@@ -256,12 +274,11 @@ export function WalletConnectionButton({
             ) : (
               <>
                 <div className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                    Wallet Standard
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Choose a desktop wallet. The web app uses Wallet Standard
-                    instead of the mobile adapter.
+                  <p className="text-sm font-medium">Connect a wallet</p>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {connectors.length > 0
+                      ? 'Choose your wallet to start trading.'
+                      : 'Open your wallet browser extension, then refresh to connect.'}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -276,7 +293,7 @@ export function WalletConnectionButton({
                       }}
                     >
                       {connector.name}
-                      <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         Connect
                       </span>
                     </Button>

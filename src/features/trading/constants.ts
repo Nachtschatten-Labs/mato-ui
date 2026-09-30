@@ -3,9 +3,12 @@ import type { Address } from '@solana/kit'
 const SUPPORTED_MARKET_IDS = [1, 2, 3, 4] as const
 
 export type MarketId = (typeof SUPPORTED_MARKET_IDS)[number]
+export type MarketCategory = 'crypto' | 'equities'
 
 export interface MarketDefinition {
   readonly id: MarketId
+  readonly name: string
+  readonly category: MarketCategory
   readonly baseSymbol: string
   readonly quoteSymbol: string
   readonly baseMint: Address
@@ -22,6 +25,8 @@ const DEVNET_USDC_MINT =
 export const MARKET_DEFINITIONS = [
   {
     id: 1,
+    name: 'Solana',
+    category: 'crypto',
     baseSymbol: 'SOL',
     quoteSymbol: 'USDC',
     baseMint: 'So11111111111111111111111111111111111111112' as Address,
@@ -33,6 +38,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 2,
+    name: 'Mato',
+    category: 'equities',
     baseSymbol: 'MATO',
     quoteSymbol: 'USDC',
     baseMint: '69zmVXSzZptwJo5cy5LfUxmrdE1mRkeRnnEqtYNrKBMc' as Address,
@@ -44,6 +51,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 3,
+    name: 'Solana Beach',
+    category: 'equities',
     baseSymbol: 'SB',
     quoteSymbol: 'USDC',
     baseMint: '5UodwdrKuvMkpYZqEAoeo5AbeX4fPzSeENEojJLZNUQR' as Address,
@@ -55,6 +64,8 @@ export const MARKET_DEFINITIONS = [
   },
   {
     id: 4,
+    name: 'Staking Facilities',
+    category: 'equities',
     baseSymbol: 'SF',
     quoteSymbol: 'USDC',
     baseMint: 'HxMsRrwZdg6fBVcZ5aqP3x18KVpmNG81kSncrCD7k13N' as Address,
@@ -113,7 +124,9 @@ export function parseMarketSearch(value: unknown): { market: MarketId } {
   return { market: parseSupportedMarketId(candidate) ?? DEFAULT_MARKET_ID }
 }
 
-export const ARRAY_LENGTH = 20
+// Must match twob-anchor v1's constants.rs (these are not emitted in the IDL).
+export const ARRAY_LENGTH = 30
+export const END_SLOT_INTERVAL = 7
 export const SLOT_DURATION_MS = 400
 export const SLOT_DURATION_SECONDS = SLOT_DURATION_MS / 1000
 export const NATIVE_SOL_DECIMALS = 9
@@ -128,7 +141,7 @@ export const CHART_HISTORY_REQUEST_DEBOUNCE_MS = 450
 export const CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX = 480
 export const CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS = 10
 export const CLOSED_POSITION_BATCH_GAP_SLOTS = 900
-// A v1 close uses 23 account metas; two self-custodied positions fit the wire limit.
+// A v1 close uses 24 account metas; two self-custodied positions fit the wire limit.
 export const MAX_BATCH_CLOSE_POSITIONS_PER_TRANSACTION = 2
 export const MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION = 10
 export const POSITION_PAGE_SIZE = 10
@@ -159,6 +172,17 @@ export const CHART_TIMEFRAMES = [
 ] as const
 
 export type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]['label']
+
+export const CHART_RANGES = [
+  { label: '1H', timeframe: '1m', visibleBars: 60 },
+  { label: '1D', timeframe: '5m', visibleBars: 288 },
+  { label: '1W', timeframe: '1h', visibleBars: 168 },
+] as const satisfies ReadonlyArray<{
+  label: string
+  timeframe: ChartTimeframe
+  visibleBars: number
+}>
+
 export type OrderSide = 'buy' | 'sell'
 export type MarketPanelTab = 'chart' | 'trades' | 'order-book'
 export type PositionPanelTab = 'active' | 'closed'

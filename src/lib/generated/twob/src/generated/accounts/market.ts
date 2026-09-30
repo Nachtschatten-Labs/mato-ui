@@ -19,12 +19,14 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getI128Decoder,
+  getI128Encoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
   getU128Decoder,
   getU128Encoder,
-  getU16Decoder,
-  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -34,90 +36,138 @@ import {
   transformEncoder,
   type Account,
   type Address,
+  type Codec,
+  type Decoder,
   type EncodedAccount,
+  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
-  type FixedSizeCodec,
-  type FixedSizeDecoder,
-  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
+  type Option,
+  type OptionOrNullable,
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const MARKET_DISCRIMINATOR = new Uint8Array([
+export const MARKET_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   219, 190, 213, 55, 0, 227, 198, 154,
 ])
 
-export function getMarketDiscriminatorBytes() {
+export function getMarketDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(MARKET_DISCRIMINATOR)
 }
 
 export type Market = {
   discriminator: ReadonlyUint8Array
-  /** Since mints are not included in market seeds, we store them in the account */
+  /** Immutable ordered mint pair used in the market PDA seeds. */
   baseMint: Address
   quoteMint: Address
-  /** Current flow of base token */
+  /** Current aggregate flow of base token. */
   baseFlow: bigint
-  /** Current flow of quote token */
+  /** Current aggregate flow of quote token. */
   quoteFlow: bigint
-  /** Minimum base trade amount */
+  /** Minimum base trade amount. */
   minimumBaseDepositAtoms: bigint
-  /** Minimum quote trade amount */
+  /** Minimum quote trade amount. */
   minimumQuoteDepositAtoms: bigint
-  /** Slot at which market is active */
+  /** Slot at which market is active. */
   startSlot: bigint
-  /** Stores the number of open positions (trade and liquidity) in this market */
+  /** Number of open trade and ordinary liquidity positions in this market. */
   openPositions: bigint
-  /** Stores accumulated and not yet withdrawn fees */
+  /** Protocol fees accumulated and not yet withdrawn. */
   accumulatedBaseFees: bigint
   accumulatedQuoteFees: bigint
-  /** Market id, every trading pair has its own id */
+  /** Immutable market id, scoped to the ordered base/quote mint pair across both market kinds. */
   id: number
-  /** Order can only and at a slot that is a multiple of end_slot_interval */
-  endSlotInterval: number
-  /** Trading fee in basis points */
+  /** Trading fee in basis points. */
   feeBps: number
-  /** Penalty fee for unhealthy liquidity position */
+  /** Penalty fee for unhealthy ordinary liquidity positions. */
   unhealthyLiquidityFeeBps: number
+  /** Slots of net outflow an ordinary liquidity position must cover to count as healthy. */
+  slotsUntilDebt: number
+  /** Ordinary liquidity amplification and withdrawal holdback factor. */
+  liquidityAmplification: number
+  /** One of `MARKET_KIND_*`. */
+  kind: number
+  /** One means new position admission/resumption is paused. Dedicated markets use maker control. */
   isPaused: number
+  /** Immutable canonical PDA bump, also used to sign vault transfers. */
   bump: number
+  /** Economic owner. Only this key may fund, withdraw, or change authorities. */
+  makerAuthority: Address
+  /** Two-step ownership transfer nominee. */
+  pendingMakerAuthority: Option<Address>
+  /** Hot key allowed to update the dedicated quote flows. */
+  quoteOperator: Address
+  /** Signed net maker inventory in bookkeeping precision. Negative values are maker debt. */
+  makerBaseInventory: bigint
+  makerQuoteInventory: bigint
+  /** Dedicated maker's configured flows in token atoms per slot. */
+  makerBaseFlowAtoms: bigint
+  makerQuoteFlowAtoms: bigint
+  /** Lazy-accounting snapshots for the single dedicated maker. */
+  makerBasePerQuoteSnapshot: bigint
+  makerQuotePerBaseSnapshot: bigint
+  makerSlotsWithoutTradeSnapshot: number
+  makerLastUpdateSlot: bigint
 }
 
 export type MarketArgs = {
-  /** Since mints are not included in market seeds, we store them in the account */
+  /** Immutable ordered mint pair used in the market PDA seeds. */
   baseMint: Address
   quoteMint: Address
-  /** Current flow of base token */
+  /** Current aggregate flow of base token. */
   baseFlow: number | bigint
-  /** Current flow of quote token */
+  /** Current aggregate flow of quote token. */
   quoteFlow: number | bigint
-  /** Minimum base trade amount */
+  /** Minimum base trade amount. */
   minimumBaseDepositAtoms: number | bigint
-  /** Minimum quote trade amount */
+  /** Minimum quote trade amount. */
   minimumQuoteDepositAtoms: number | bigint
-  /** Slot at which market is active */
+  /** Slot at which market is active. */
   startSlot: number | bigint
-  /** Stores the number of open positions (trade and liquidity) in this market */
+  /** Number of open trade and ordinary liquidity positions in this market. */
   openPositions: number | bigint
-  /** Stores accumulated and not yet withdrawn fees */
+  /** Protocol fees accumulated and not yet withdrawn. */
   accumulatedBaseFees: number | bigint
   accumulatedQuoteFees: number | bigint
-  /** Market id, every trading pair has its own id */
+  /** Immutable market id, scoped to the ordered base/quote mint pair across both market kinds. */
   id: number
-  /** Order can only and at a slot that is a multiple of end_slot_interval */
-  endSlotInterval: number
-  /** Trading fee in basis points */
+  /** Trading fee in basis points. */
   feeBps: number
-  /** Penalty fee for unhealthy liquidity position */
+  /** Penalty fee for unhealthy ordinary liquidity positions. */
   unhealthyLiquidityFeeBps: number
+  /** Slots of net outflow an ordinary liquidity position must cover to count as healthy. */
+  slotsUntilDebt: number
+  /** Ordinary liquidity amplification and withdrawal holdback factor. */
+  liquidityAmplification: number
+  /** One of `MARKET_KIND_*`. */
+  kind: number
+  /** One means new position admission/resumption is paused. Dedicated markets use maker control. */
   isPaused: number
+  /** Immutable canonical PDA bump, also used to sign vault transfers. */
   bump: number
+  /** Economic owner. Only this key may fund, withdraw, or change authorities. */
+  makerAuthority: Address
+  /** Two-step ownership transfer nominee. */
+  pendingMakerAuthority: OptionOrNullable<Address>
+  /** Hot key allowed to update the dedicated quote flows. */
+  quoteOperator: Address
+  /** Signed net maker inventory in bookkeeping precision. Negative values are maker debt. */
+  makerBaseInventory: number | bigint
+  makerQuoteInventory: number | bigint
+  /** Dedicated maker's configured flows in token atoms per slot. */
+  makerBaseFlowAtoms: number | bigint
+  makerQuoteFlowAtoms: number | bigint
+  /** Lazy-accounting snapshots for the single dedicated maker. */
+  makerBasePerQuoteSnapshot: number | bigint
+  makerQuotePerBaseSnapshot: number | bigint
+  makerSlotsWithoutTradeSnapshot: number
+  makerLastUpdateSlot: number | bigint
 }
 
 /** Gets the encoder for {@link MarketArgs} account data. */
-export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
+export function getMarketEncoder(): Encoder<MarketArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -132,18 +182,31 @@ export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
       ['accumulatedBaseFees', getU64Encoder()],
       ['accumulatedQuoteFees', getU64Encoder()],
       ['id', getU32Encoder()],
-      ['endSlotInterval', getU16Encoder()],
       ['feeBps', getU8Encoder()],
       ['unhealthyLiquidityFeeBps', getU8Encoder()],
+      ['slotsUntilDebt', getU8Encoder()],
+      ['liquidityAmplification', getU8Encoder()],
+      ['kind', getU8Encoder()],
       ['isPaused', getU8Encoder()],
       ['bump', getU8Encoder()],
+      ['makerAuthority', getAddressEncoder()],
+      ['pendingMakerAuthority', getOptionEncoder(getAddressEncoder())],
+      ['quoteOperator', getAddressEncoder()],
+      ['makerBaseInventory', getI128Encoder()],
+      ['makerQuoteInventory', getI128Encoder()],
+      ['makerBaseFlowAtoms', getU64Encoder()],
+      ['makerQuoteFlowAtoms', getU64Encoder()],
+      ['makerBasePerQuoteSnapshot', getU128Encoder()],
+      ['makerQuotePerBaseSnapshot', getU128Encoder()],
+      ['makerSlotsWithoutTradeSnapshot', getU32Encoder()],
+      ['makerLastUpdateSlot', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
   )
 }
 
 /** Gets the decoder for {@link Market} account data. */
-export function getMarketDecoder(): FixedSizeDecoder<Market> {
+export function getMarketDecoder(): Decoder<Market> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['baseMint', getAddressDecoder()],
@@ -157,16 +220,29 @@ export function getMarketDecoder(): FixedSizeDecoder<Market> {
     ['accumulatedBaseFees', getU64Decoder()],
     ['accumulatedQuoteFees', getU64Decoder()],
     ['id', getU32Decoder()],
-    ['endSlotInterval', getU16Decoder()],
     ['feeBps', getU8Decoder()],
     ['unhealthyLiquidityFeeBps', getU8Decoder()],
+    ['slotsUntilDebt', getU8Decoder()],
+    ['liquidityAmplification', getU8Decoder()],
+    ['kind', getU8Decoder()],
     ['isPaused', getU8Decoder()],
     ['bump', getU8Decoder()],
+    ['makerAuthority', getAddressDecoder()],
+    ['pendingMakerAuthority', getOptionDecoder(getAddressDecoder())],
+    ['quoteOperator', getAddressDecoder()],
+    ['makerBaseInventory', getI128Decoder()],
+    ['makerQuoteInventory', getI128Decoder()],
+    ['makerBaseFlowAtoms', getU64Decoder()],
+    ['makerQuoteFlowAtoms', getU64Decoder()],
+    ['makerBasePerQuoteSnapshot', getU128Decoder()],
+    ['makerQuotePerBaseSnapshot', getU128Decoder()],
+    ['makerSlotsWithoutTradeSnapshot', getU32Decoder()],
+    ['makerLastUpdateSlot', getU64Decoder()],
   ])
 }
 
 /** Gets the codec for {@link Market} account data. */
-export function getMarketCodec(): FixedSizeCodec<MarketArgs, Market> {
+export function getMarketCodec(): Codec<MarketArgs, Market> {
   return combineCodec(getMarketEncoder(), getMarketDecoder())
 }
 
@@ -221,8 +297,4 @@ export async function fetchAllMaybeMarket(
 ): Promise<MaybeAccount<Market>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config)
   return maybeAccounts.map((maybeAccount) => decodeMarket(maybeAccount))
-}
-
-export function getMarketSize(): number {
-  return 162
 }

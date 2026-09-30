@@ -135,20 +135,15 @@ function RootLayout() {
       <Navbar marketId={marketId}>
         <WalletConnectionButton marketId={marketId} />
       </Navbar>
-      {!transactionsEnabled() && (
-        <div
-          role="status"
-          className="border-b border-white/10 px-4 py-2 text-center text-sm text-muted-foreground"
-        >
-          Read-only mode · Trading is disabled
-        </div>
-      )}
-      <div
-        role="note"
-        className="border-b border-white/10 px-4 py-2 text-center text-sm text-muted-foreground"
-      >
-        Devnet wallet and positions · Charts show mainnet SOL/USDC reference
-        data
+      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-[11px] leading-4 text-muted-foreground sm:px-6">
+        <span role="note">
+          Devnet wallet and positions · Mainnet SOL/USDC reference chart
+        </span>
+        {!transactionsEnabled() && (
+          <span role="status" className="text-warning">
+            Read-only · Trading disabled
+          </span>
+        )}
       </div>
       <Outlet />
       {transactionsEnabled() && <RiskDisclaimerDialog />}

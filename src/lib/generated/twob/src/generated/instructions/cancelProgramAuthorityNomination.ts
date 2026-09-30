@@ -12,7 +12,6 @@ import {
   fixEncoderSize,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
@@ -38,11 +37,10 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CANCEL_PROGRAM_AUTHORITY_NOMINATION_DISCRIMINATOR = new Uint8Array(
-  [239, 32, 97, 130, 58, 193, 233, 90],
-)
+export const CANCEL_PROGRAM_AUTHORITY_NOMINATION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([239, 32, 97, 130, 58, 193, 233, 90])
 
-export function getCancelProgramAuthorityNominationDiscriminatorBytes() {
+export function getCancelProgramAuthorityNominationDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     CANCEL_PROGRAM_AUTHORITY_NOMINATION_DISCRIMINATOR,
   )
@@ -98,75 +96,6 @@ export function getCancelProgramAuthorityNominationInstructionDataCodec(): Fixed
     getCancelProgramAuthorityNominationInstructionDataEncoder(),
     getCancelProgramAuthorityNominationInstructionDataDecoder(),
   )
-}
-
-export type CancelProgramAuthorityNominationAsyncInput<
-  TAccountAuthority extends string = string,
-  TAccountProgramConfig extends string = string,
-> = {
-  authority: TransactionSigner<TAccountAuthority>
-  programConfig?: Address<TAccountProgramConfig>
-}
-
-export async function getCancelProgramAuthorityNominationInstructionAsync<
-  TAccountAuthority extends string,
-  TAccountProgramConfig extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: CancelProgramAuthorityNominationAsyncInput<
-    TAccountAuthority,
-    TAccountProgramConfig
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  CancelProgramAuthorityNominationInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
-    programConfig: { value: input.programConfig ?? null, isWritable: true },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('authority', accounts.authority),
-      getAccountMeta('programConfig', accounts.programConfig),
-    ],
-    data: getCancelProgramAuthorityNominationInstructionDataEncoder().encode(
-      {},
-    ),
-    programAddress,
-  } as CancelProgramAuthorityNominationInstruction<
-    TProgramAddress,
-    TAccountAuthority,
-    TAccountProgramConfig
-  >)
 }
 
 export type CancelProgramAuthorityNominationInput<

@@ -58,45 +58,65 @@ export const TWOB_ANCHOR_ERROR__MARKET_IS_PAUSED = 0x1783 // 6019
 export const TWOB_ANCHOR_ERROR__MARKET_NOT_STARTED = 0x1784 // 6020
 /** RemainingOrders: Market still has orders */
 export const TWOB_ANCHOR_ERROR__REMAINING_ORDERS = 0x1785 // 6021
+/** MarketStillExists: Market account still exists; use the bookkeeping-aware close instruction */
+export const TWOB_ANCHOR_ERROR__MARKET_STILL_EXISTS = 0x1786 // 6022
 /** AccountStillUsed: Too early to close account */
-export const TWOB_ANCHOR_ERROR__ACCOUNT_STILL_USED = 0x1786 // 6022
+export const TWOB_ANCHOR_ERROR__ACCOUNT_STILL_USED = 0x1787 // 6023
 /** FeeTooHigh: Fee too high */
-export const TWOB_ANCHOR_ERROR__FEE_TOO_HIGH = 0x1787 // 6023
+export const TWOB_ANCHOR_ERROR__FEE_TOO_HIGH = 0x1788 // 6024
+/** MakerFeeShareTooHigh: Maker fee share exceeds 100% */
+export const TWOB_ANCHOR_ERROR__MAKER_FEE_SHARE_TOO_HIGH = 0x1789 // 6025
+/** WrongMarketKind: Instruction is not supported for this market kind */
+export const TWOB_ANCHOR_ERROR__WRONG_MARKET_KIND = 0x178a // 6026
+/** InsufficientMakerInventory: Maker inventory is insufficient */
+export const TWOB_ANCHOR_ERROR__INSUFFICIENT_MAKER_INVENTORY = 0x178b // 6027
+/** MakerInventoryNotZero: Maker inventory must be settled to less than one token atom */
+export const TWOB_ANCHOR_ERROR__MAKER_INVENTORY_NOT_ZERO = 0x178c // 6028
+/** MakerFlowNotZero: Dedicated market flows must be exactly zero */
+export const TWOB_ANCHOR_ERROR__MAKER_FLOW_NOT_ZERO = 0x178d // 6029
+/** DedicatedFlowTooLarge: Dedicated market flow exceeds the program safety limit */
+export const TWOB_ANCHOR_ERROR__DEDICATED_FLOW_TOO_LARGE = 0x178e // 6030
+/** OutstandingProtocolFees: Protocol fees must be withdrawn before closing the market */
+export const TWOB_ANCHOR_ERROR__OUTSTANDING_PROTOCOL_FEES = 0x178f // 6031
 /** Unauthorized: Unauthorized */
-export const TWOB_ANCHOR_ERROR__UNAUTHORIZED = 0x1788 // 6024
+export const TWOB_ANCHOR_ERROR__UNAUTHORIZED = 0x1790 // 6032
 /** TimelockNotElapsed: Time lock not elapsed */
-export const TWOB_ANCHOR_ERROR__TIMELOCK_NOT_ELAPSED = 0x1789 // 6025
+export const TWOB_ANCHOR_ERROR__TIMELOCK_NOT_ELAPSED = 0x1791 // 6033
 /** NoPendingAuthority: No pending authority */
-export const TWOB_ANCHOR_ERROR__NO_PENDING_AUTHORITY = 0x178a // 6026
+export const TWOB_ANCHOR_ERROR__NO_PENDING_AUTHORITY = 0x1792 // 6034
 /** InvalidPayer: Account does not match the payer of the position */
-export const TWOB_ANCHOR_ERROR__INVALID_PAYER = 0x178b // 6027
+export const TWOB_ANCHOR_ERROR__INVALID_PAYER = 0x1793 // 6035
 /** InvalidReceiver: Account does not match the receiver of the position */
-export const TWOB_ANCHOR_ERROR__INVALID_RECEIVER = 0x178c // 6028
+export const TWOB_ANCHOR_ERROR__INVALID_RECEIVER = 0x1794 // 6036
 /** PositionIsPaused: Position is paused */
-export const TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED = 0x178d // 6029
+export const TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED = 0x1795 // 6037
 /** PositionIsNotPaused: Position is not paused */
-export const TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED = 0x178e // 6030
+export const TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED = 0x1796 // 6038
 /** AmountZero: The amount is zero */
-export const TWOB_ANCHOR_ERROR__AMOUNT_ZERO = 0x178f // 6031
+export const TWOB_ANCHOR_ERROR__AMOUNT_ZERO = 0x1797 // 6039
 /** UnsupportedMintExtension: Mint carries a token extension this program does not support */
-export const TWOB_ANCHOR_ERROR__UNSUPPORTED_MINT_EXTENSION = 0x1790 // 6032
+export const TWOB_ANCHOR_ERROR__UNSUPPORTED_MINT_EXTENSION = 0x1798 // 6040
 /** MintHasTransferHook: Mint has a transfer hook */
-export const TWOB_ANCHOR_ERROR__MINT_HAS_TRANSFER_HOOK = 0x1791 // 6033
+export const TWOB_ANCHOR_ERROR__MINT_HAS_TRANSFER_HOOK = 0x1799 // 6041
 /** MintIsPaused: Mint is paused */
-export const TWOB_ANCHOR_ERROR__MINT_IS_PAUSED = 0x1792 // 6034
+export const TWOB_ANCHOR_ERROR__MINT_IS_PAUSED = 0x179a // 6042
 /** MintFreezesNewAccounts: Mint freezes new token accounts by default */
-export const TWOB_ANCHOR_ERROR__MINT_FREEZES_NEW_ACCOUNTS = 0x1793 // 6035
+export const TWOB_ANCHOR_ERROR__MINT_FREEZES_NEW_ACCOUNTS = 0x179b // 6043
+/** MarketFlowNotZero: Market flows must be exactly zero */
+export const TWOB_ANCHOR_ERROR__MARKET_FLOW_NOT_ZERO = 0x179c // 6044
 
 export type TwobAnchorError =
   | typeof TWOB_ANCHOR_ERROR__ACCOUNT_STILL_USED
   | typeof TWOB_ANCHOR_ERROR__AMOUNT_ZERO
   | typeof TWOB_ANCHOR_ERROR__BOOK_NOT_UP_TO_DATE
+  | typeof TWOB_ANCHOR_ERROR__DEDICATED_FLOW_TOO_LARGE
   | typeof TWOB_ANCHOR_ERROR__DEPOSIT_TOO_SMALL
   | typeof TWOB_ANCHOR_ERROR__DURATION_TOO_LONG
   | typeof TWOB_ANCHOR_ERROR__DURATION_TOO_SHORT
   | typeof TWOB_ANCHOR_ERROR__END_SLOT_ALREADY_PASSED
   | typeof TWOB_ANCHOR_ERROR__FEE_TOO_HIGH
   | typeof TWOB_ANCHOR_ERROR__FLOW_TOO_SMALL
+  | typeof TWOB_ANCHOR_ERROR__INSUFFICIENT_MAKER_INVENTORY
   | typeof TWOB_ANCHOR_ERROR__INVALID_MINT
   | typeof TWOB_ANCHOR_ERROR__INVALID_ORDER
   | typeof TWOB_ANCHOR_ERROR__INVALID_PAYER
@@ -104,8 +124,13 @@ export type TwobAnchorError =
   | typeof TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_NOT_ACTIVE
   | typeof TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_STILL_ACTIVE
   | typeof TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_UNHEALTHY
+  | typeof TWOB_ANCHOR_ERROR__MAKER_FEE_SHARE_TOO_HIGH
+  | typeof TWOB_ANCHOR_ERROR__MAKER_FLOW_NOT_ZERO
+  | typeof TWOB_ANCHOR_ERROR__MAKER_INVENTORY_NOT_ZERO
+  | typeof TWOB_ANCHOR_ERROR__MARKET_FLOW_NOT_ZERO
   | typeof TWOB_ANCHOR_ERROR__MARKET_IS_PAUSED
   | typeof TWOB_ANCHOR_ERROR__MARKET_NOT_STARTED
+  | typeof TWOB_ANCHOR_ERROR__MARKET_STILL_EXISTS
   | typeof TWOB_ANCHOR_ERROR__MIN_AMOUNT_OUT_NOT_REACHED
   | typeof TWOB_ANCHOR_ERROR__MINT_FREEZES_NEW_ACCOUNTS
   | typeof TWOB_ANCHOR_ERROR__MINT_HAS_TRANSFER_HOOK
@@ -114,6 +139,7 @@ export type TwobAnchorError =
   | typeof TWOB_ANCHOR_ERROR__NO_DEBT
   | typeof TWOB_ANCHOR_ERROR__NO_PENDING_AUTHORITY
   | typeof TWOB_ANCHOR_ERROR__NOT_ENOUGH_DEPOSITS
+  | typeof TWOB_ANCHOR_ERROR__OUTSTANDING_PROTOCOL_FEES
   | typeof TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED
   | typeof TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED
   | typeof TWOB_ANCHOR_ERROR__POSITION_NOT_ENDED
@@ -122,21 +148,24 @@ export type TwobAnchorError =
   | typeof TWOB_ANCHOR_ERROR__UNAUTHORIZED
   | typeof TWOB_ANCHOR_ERROR__UNSUPPORTED_MINT_EXTENSION
   | typeof TWOB_ANCHOR_ERROR__WRONG_EXITS_ACCOUNT
+  | typeof TWOB_ANCHOR_ERROR__WRONG_MARKET_KIND
   | typeof TWOB_ANCHOR_ERROR__WRONG_PRICES_ACCOUNT
   | typeof TWOB_ANCHOR_ERROR__WRONG_TOKEN_ACCOUNT
 
 let twobAnchorErrorMessages: Record<TwobAnchorError, string> | undefined
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   twobAnchorErrorMessages = {
     [TWOB_ANCHOR_ERROR__ACCOUNT_STILL_USED]: `Too early to close account`,
     [TWOB_ANCHOR_ERROR__AMOUNT_ZERO]: `The amount is zero`,
     [TWOB_ANCHOR_ERROR__BOOK_NOT_UP_TO_DATE]: `Book not up to date`,
+    [TWOB_ANCHOR_ERROR__DEDICATED_FLOW_TOO_LARGE]: `Dedicated market flow exceeds the program safety limit`,
     [TWOB_ANCHOR_ERROR__DEPOSIT_TOO_SMALL]: `Increase order size`,
     [TWOB_ANCHOR_ERROR__DURATION_TOO_LONG]: `Duration is too long`,
     [TWOB_ANCHOR_ERROR__DURATION_TOO_SHORT]: `Duration is too short`,
     [TWOB_ANCHOR_ERROR__END_SLOT_ALREADY_PASSED]: `End slot has already passed`,
     [TWOB_ANCHOR_ERROR__FEE_TOO_HIGH]: `Fee too high`,
     [TWOB_ANCHOR_ERROR__FLOW_TOO_SMALL]: `Increase order size or reduce order duration`,
+    [TWOB_ANCHOR_ERROR__INSUFFICIENT_MAKER_INVENTORY]: `Maker inventory is insufficient`,
     [TWOB_ANCHOR_ERROR__INVALID_MINT]: `Invalid mint account`,
     [TWOB_ANCHOR_ERROR__INVALID_ORDER]: `Invalid order submission`,
     [TWOB_ANCHOR_ERROR__INVALID_PAYER]: `Account does not match the payer of the position`,
@@ -144,8 +173,13 @@ if (process.env.NODE_ENV !== 'production') {
     [TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_NOT_ACTIVE]: `Liquidity position not active anymore`,
     [TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_STILL_ACTIVE]: `Liquidity position still active`,
     [TWOB_ANCHOR_ERROR__LIQUIDITY_POSITION_UNHEALTHY]: `Liquidity position is unhealthy`,
+    [TWOB_ANCHOR_ERROR__MAKER_FEE_SHARE_TOO_HIGH]: `Maker fee share exceeds 100%`,
+    [TWOB_ANCHOR_ERROR__MAKER_FLOW_NOT_ZERO]: `Dedicated market flows must be exactly zero`,
+    [TWOB_ANCHOR_ERROR__MAKER_INVENTORY_NOT_ZERO]: `Maker inventory must be settled to less than one token atom`,
+    [TWOB_ANCHOR_ERROR__MARKET_FLOW_NOT_ZERO]: `Market flows must be exactly zero`,
     [TWOB_ANCHOR_ERROR__MARKET_IS_PAUSED]: `Market is paused`,
     [TWOB_ANCHOR_ERROR__MARKET_NOT_STARTED]: `Market has not started yet`,
+    [TWOB_ANCHOR_ERROR__MARKET_STILL_EXISTS]: `Market account still exists; use the bookkeeping-aware close instruction`,
     [TWOB_ANCHOR_ERROR__MIN_AMOUNT_OUT_NOT_REACHED]: `Minimum amount out is not reached`,
     [TWOB_ANCHOR_ERROR__MINT_FREEZES_NEW_ACCOUNTS]: `Mint freezes new token accounts by default`,
     [TWOB_ANCHOR_ERROR__MINT_HAS_TRANSFER_HOOK]: `Mint has a transfer hook`,
@@ -154,6 +188,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TWOB_ANCHOR_ERROR__NO_DEBT]: `Liquidity position has no debt`,
     [TWOB_ANCHOR_ERROR__NO_PENDING_AUTHORITY]: `No pending authority`,
     [TWOB_ANCHOR_ERROR__NOT_ENOUGH_DEPOSITS]: `Deposits are too low for specified flow`,
+    [TWOB_ANCHOR_ERROR__OUTSTANDING_PROTOCOL_FEES]: `Protocol fees must be withdrawn before closing the market`,
     [TWOB_ANCHOR_ERROR__POSITION_IS_NOT_PAUSED]: `Position is not paused`,
     [TWOB_ANCHOR_ERROR__POSITION_IS_PAUSED]: `Position is paused`,
     [TWOB_ANCHOR_ERROR__POSITION_NOT_ENDED]: `Cannot close open position`,
@@ -162,13 +197,14 @@ if (process.env.NODE_ENV !== 'production') {
     [TWOB_ANCHOR_ERROR__UNAUTHORIZED]: `Unauthorized`,
     [TWOB_ANCHOR_ERROR__UNSUPPORTED_MINT_EXTENSION]: `Mint carries a token extension this program does not support`,
     [TWOB_ANCHOR_ERROR__WRONG_EXITS_ACCOUNT]: `Wrong exits account`,
+    [TWOB_ANCHOR_ERROR__WRONG_MARKET_KIND]: `Instruction is not supported for this market kind`,
     [TWOB_ANCHOR_ERROR__WRONG_PRICES_ACCOUNT]: `Wrong prices account`,
     [TWOB_ANCHOR_ERROR__WRONG_TOKEN_ACCOUNT]: `Wrong token account`,
   }
 }
 
 export function getTwobAnchorErrorMessage(code: TwobAnchorError): string {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     return (twobAnchorErrorMessages as Record<TwobAnchorError, string>)[code]
   }
 

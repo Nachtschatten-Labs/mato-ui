@@ -41,11 +41,11 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CLOSE_MARKET_DISCRIMINATOR = new Uint8Array([
+export const CLOSE_MARKET_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   88, 154, 248, 186, 48, 14, 123, 244,
 ])
 
-export function getCloseMarketDiscriminatorBytes() {
+export function getCloseMarketDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(CLOSE_MARKET_DISCRIMINATOR)
 }
 
@@ -59,6 +59,10 @@ export type CloseMarketInstruction<
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
+  TAccountBaseDestinationTokenAccount extends string | AccountMeta<string> =
+    string,
+  TAccountQuoteDestinationTokenAccount extends string | AccountMeta<string> =
+    string,
   TAccountBookkeeping extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
@@ -93,6 +97,12 @@ export type CloseMarketInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
+      TAccountBaseDestinationTokenAccount extends string
+        ? WritableAccount<TAccountBaseDestinationTokenAccount>
+        : TAccountBaseDestinationTokenAccount,
+      TAccountQuoteDestinationTokenAccount extends string
+        ? WritableAccount<TAccountQuoteDestinationTokenAccount>
+        : TAccountQuoteDestinationTokenAccount,
       TAccountBookkeeping extends string
         ? WritableAccount<TAccountBookkeeping>
         : TAccountBookkeeping,
@@ -142,19 +152,25 @@ export type CloseMarketAsyncInput<
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountBaseDestinationTokenAccount extends string = string,
+  TAccountQuoteDestinationTokenAccount extends string = string,
   TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
 > = {
   authority: TransactionSigner<TAccountAuthority>
   payer: TransactionSigner<TAccountPayer>
-  programConfig?: Address<TAccountProgramConfig>
+  programConfig: Address<TAccountProgramConfig>
   market: Address<TAccountMarket>
   baseMint: Address<TAccountBaseMint>
   quoteMint: Address<TAccountQuoteMint>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
+  /** Existing token account selected by the program admin to receive base surplus. */
+  baseDestinationTokenAccount: Address<TAccountBaseDestinationTokenAccount>
+  /** Existing token account selected by the program admin to receive quote surplus. */
+  quoteDestinationTokenAccount: Address<TAccountQuoteDestinationTokenAccount>
+  bookkeeping: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
 }
@@ -168,6 +184,8 @@ export async function getCloseMarketInstructionAsync<
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountBaseDestinationTokenAccount extends string,
+  TAccountQuoteDestinationTokenAccount extends string,
   TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
@@ -182,6 +200,8 @@ export async function getCloseMarketInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountBaseDestinationTokenAccount,
+    TAccountQuoteDestinationTokenAccount,
     TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
@@ -198,6 +218,8 @@ export async function getCloseMarketInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountBaseDestinationTokenAccount,
+    TAccountQuoteDestinationTokenAccount,
     TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
@@ -216,6 +238,14 @@ export async function getCloseMarketInstructionAsync<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    baseDestinationTokenAccount: {
+      value: input.baseDestinationTokenAccount ?? null,
+      isWritable: true,
+    },
+    quoteDestinationTokenAccount: {
+      value: input.quoteDestinationTokenAccount ?? null,
+      isWritable: true,
+    },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
@@ -232,18 +262,6 @@ export async function getCloseMarketInstructionAsync<
   >
 
   // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
       programAddress:
@@ -296,24 +314,6 @@ export async function getCloseMarketInstructionAsync<
       ],
     })
   }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
   return Object.freeze({
@@ -326,6 +326,14 @@ export async function getCloseMarketInstructionAsync<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta(
+        'baseDestinationTokenAccount',
+        accounts.baseDestinationTokenAccount,
+      ),
+      getAccountMeta(
+        'quoteDestinationTokenAccount',
+        accounts.quoteDestinationTokenAccount,
+      ),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
@@ -342,6 +350,8 @@ export async function getCloseMarketInstructionAsync<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountBaseDestinationTokenAccount,
+    TAccountQuoteDestinationTokenAccount,
     TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
@@ -357,6 +367,8 @@ export type CloseMarketInput<
   TAccountQuoteMint extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
+  TAccountBaseDestinationTokenAccount extends string = string,
+  TAccountQuoteDestinationTokenAccount extends string = string,
   TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
@@ -369,6 +381,10 @@ export type CloseMarketInput<
   quoteMint: Address<TAccountQuoteMint>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
+  /** Existing token account selected by the program admin to receive base surplus. */
+  baseDestinationTokenAccount: Address<TAccountBaseDestinationTokenAccount>
+  /** Existing token account selected by the program admin to receive quote surplus. */
+  quoteDestinationTokenAccount: Address<TAccountQuoteDestinationTokenAccount>
   bookkeeping: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
@@ -383,6 +399,8 @@ export function getCloseMarketInstruction<
   TAccountQuoteMint extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
+  TAccountBaseDestinationTokenAccount extends string,
+  TAccountQuoteDestinationTokenAccount extends string,
   TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
@@ -397,6 +415,8 @@ export function getCloseMarketInstruction<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountBaseDestinationTokenAccount,
+    TAccountQuoteDestinationTokenAccount,
     TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
@@ -412,6 +432,8 @@ export function getCloseMarketInstruction<
   TAccountQuoteMint,
   TAccountBaseVault,
   TAccountQuoteVault,
+  TAccountBaseDestinationTokenAccount,
+  TAccountQuoteDestinationTokenAccount,
   TAccountBookkeeping,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram
@@ -429,6 +451,14 @@ export function getCloseMarketInstruction<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
+    baseDestinationTokenAccount: {
+      value: input.baseDestinationTokenAccount ?? null,
+      isWritable: true,
+    },
+    quoteDestinationTokenAccount: {
+      value: input.quoteDestinationTokenAccount ?? null,
+      isWritable: true,
+    },
     bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
@@ -455,6 +485,14 @@ export function getCloseMarketInstruction<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
+      getAccountMeta(
+        'baseDestinationTokenAccount',
+        accounts.baseDestinationTokenAccount,
+      ),
+      getAccountMeta(
+        'quoteDestinationTokenAccount',
+        accounts.quoteDestinationTokenAccount,
+      ),
       getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
@@ -471,6 +509,8 @@ export function getCloseMarketInstruction<
     TAccountQuoteMint,
     TAccountBaseVault,
     TAccountQuoteVault,
+    TAccountBaseDestinationTokenAccount,
+    TAccountQuoteDestinationTokenAccount,
     TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram
@@ -491,9 +531,13 @@ export type ParsedCloseMarketInstruction<
     quoteMint: TAccountMetas[5]
     baseVault: TAccountMetas[6]
     quoteVault: TAccountMetas[7]
-    bookkeeping: TAccountMetas[8]
-    baseTokenProgram: TAccountMetas[9]
-    quoteTokenProgram: TAccountMetas[10]
+    /** Existing token account selected by the program admin to receive base surplus. */
+    baseDestinationTokenAccount: TAccountMetas[8]
+    /** Existing token account selected by the program admin to receive quote surplus. */
+    quoteDestinationTokenAccount: TAccountMetas[9]
+    bookkeeping: TAccountMetas[10]
+    baseTokenProgram: TAccountMetas[11]
+    quoteTokenProgram: TAccountMetas[12]
   }
   data: CloseMarketInstructionData
 }
@@ -506,12 +550,12 @@ export function parseCloseMarketInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCloseMarketInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 11,
+        expectedAccountMetas: 13,
       },
     )
   }
@@ -532,6 +576,8 @@ export function parseCloseMarketInstruction<
       quoteMint: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
+      baseDestinationTokenAccount: getNextAccount(),
+      quoteDestinationTokenAccount: getNextAccount(),
       bookkeeping: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),

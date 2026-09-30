@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -38,16 +36,14 @@ import {
 } from '@solana/kit'
 import {
   getAccountMetaFactory,
-  getAddressFromResolvedInstructionAccount,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const PAUSE_TRADE_POSITION_DISCRIMINATOR = new Uint8Array([
-  93, 3, 178, 173, 29, 165, 4, 9,
-])
+export const PAUSE_TRADE_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([93, 3, 178, 173, 29, 165, 4, 9])
 
-export function getPauseTradePositionDiscriminatorBytes() {
+export function getPauseTradePositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     PAUSE_TRADE_POSITION_DISCRIMINATOR,
   )
@@ -164,206 +160,6 @@ export function getPauseTradePositionInstructionDataCodec(): FixedSizeCodec<
     getPauseTradePositionInstructionDataEncoder(),
     getPauseTradePositionInstructionDataDecoder(),
   )
-}
-
-export type PauseTradePositionAsyncInput<
-  TAccountSigner extends string = string,
-  TAccountBaseMint extends string = string,
-  TAccountQuoteMint extends string = string,
-  TAccountMarket extends string = string,
-  TAccountTradePosition extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountBaseTokenProgram extends string = string,
-  TAccountQuoteTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
-> = {
-  signer: TransactionSigner<TAccountSigner>
-  baseMint: Address<TAccountBaseMint>
-  quoteMint: Address<TAccountQuoteMint>
-  market: Address<TAccountMarket>
-  tradePosition: Address<TAccountTradePosition>
-  bookkeeping?: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  baseTokenProgram: Address<TAccountBaseTokenProgram>
-  quoteTokenProgram: Address<TAccountQuoteTokenProgram>
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
-  systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: PauseTradePositionInstructionDataArgs['referenceIndex']
-}
-
-export async function getPauseTradePositionInstructionAsync<
-  TAccountSigner extends string,
-  TAccountBaseMint extends string,
-  TAccountQuoteMint extends string,
-  TAccountMarket extends string,
-  TAccountTradePosition extends string,
-  TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountBaseTokenProgram extends string,
-  TAccountQuoteTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
->(
-  input: PauseTradePositionAsyncInput<
-    TAccountSigner,
-    TAccountBaseMint,
-    TAccountQuoteMint,
-    TAccountMarket,
-    TAccountTradePosition,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram
-  >,
-  config?: { programAddress?: TProgramAddress },
-): Promise<
-  PauseTradePositionInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountBaseMint,
-    TAccountQuoteMint,
-    TAccountMarket,
-    TAccountTradePosition,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram
-  >
-> {
-  // Program address.
-  const programAddress = config?.programAddress ?? TWOB_ANCHOR_PROGRAM_ADDRESS
-
-  // Original accounts.
-  const originalAccounts = {
-    signer: { value: input.signer ?? null, isWritable: true },
-    baseMint: { value: input.baseMint ?? null, isWritable: false },
-    quoteMint: { value: input.quoteMint ?? null, isWritable: false },
-    market: { value: input.market ?? null, isWritable: true },
-    tradePosition: { value: input.tradePosition ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    baseTokenProgram: {
-      value: input.baseTokenProgram ?? null,
-      isWritable: false,
-    },
-    quoteTokenProgram: {
-      value: input.quoteTokenProgram ?? null,
-      isWritable: false,
-    },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-  }
-  const accounts = originalAccounts as Record<
-    keyof typeof originalAccounts,
-    ResolvedInstructionAccount
-  >
-
-  // Original args.
-  const args = { ...input }
-
-  // Resolve default values.
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>
-  }
-
-  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId')
-  return Object.freeze({
-    accounts: [
-      getAccountMeta('signer', accounts.signer),
-      getAccountMeta('baseMint', accounts.baseMint),
-      getAccountMeta('quoteMint', accounts.quoteMint),
-      getAccountMeta('market', accounts.market),
-      getAccountMeta('tradePosition', accounts.tradePosition),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
-      getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
-      getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
-      getAccountMeta('systemProgram', accounts.systemProgram),
-    ],
-    data: getPauseTradePositionInstructionDataEncoder().encode(
-      args as PauseTradePositionInstructionDataArgs,
-    ),
-    programAddress,
-  } as PauseTradePositionInstruction<
-    TProgramAddress,
-    TAccountSigner,
-    TAccountBaseMint,
-    TAccountQuoteMint,
-    TAccountMarket,
-    TAccountTradePosition,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountBaseTokenProgram,
-    TAccountQuoteTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram
-  >)
 }
 
 export type PauseTradePositionInput<

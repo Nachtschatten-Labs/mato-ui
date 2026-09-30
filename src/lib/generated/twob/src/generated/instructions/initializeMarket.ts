@@ -16,8 +16,6 @@ import {
   getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
-  getU16Decoder,
-  getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
@@ -48,13 +46,13 @@ import {
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
+import { findBookkeepingPda, findMarketPda } from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const INITIALIZE_MARKET_DISCRIMINATOR = new Uint8Array([
-  35, 35, 189, 193, 155, 48, 170, 203,
-])
+export const INITIALIZE_MARKET_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([35, 35, 189, 193, 155, 48, 170, 203])
 
-export function getInitializeMarketDiscriminatorBytes() {
+export function getInitializeMarketDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     INITIALIZE_MARKET_DISCRIMINATOR,
   )
@@ -133,9 +131,10 @@ export type InitializeMarketInstructionData = {
   minimumBaseDeposit: bigint
   minimumQuoteDeposit: bigint
   startSlot: bigint
-  endSlotInterval: number
   feeBps: number
   unhealthyLiquidityFeeBps: number
+  slotsUntilDebt: number
+  liquidityAmplification: number
 }
 
 export type InitializeMarketInstructionDataArgs = {
@@ -143,9 +142,10 @@ export type InitializeMarketInstructionDataArgs = {
   minimumBaseDeposit: number | bigint
   minimumQuoteDeposit: number | bigint
   startSlot: number | bigint
-  endSlotInterval: number
   feeBps: number
   unhealthyLiquidityFeeBps: number
+  slotsUntilDebt: number
+  liquidityAmplification: number
 }
 
 export function getInitializeMarketInstructionDataEncoder(): FixedSizeEncoder<InitializeMarketInstructionDataArgs> {
@@ -156,9 +156,10 @@ export function getInitializeMarketInstructionDataEncoder(): FixedSizeEncoder<In
       ['minimumBaseDeposit', getU64Encoder()],
       ['minimumQuoteDeposit', getU64Encoder()],
       ['startSlot', getU64Encoder()],
-      ['endSlotInterval', getU16Encoder()],
       ['feeBps', getU8Encoder()],
       ['unhealthyLiquidityFeeBps', getU8Encoder()],
+      ['slotsUntilDebt', getU8Encoder()],
+      ['liquidityAmplification', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: INITIALIZE_MARKET_DISCRIMINATOR }),
   )
@@ -171,9 +172,10 @@ export function getInitializeMarketInstructionDataDecoder(): FixedSizeDecoder<In
     ['minimumBaseDeposit', getU64Decoder()],
     ['minimumQuoteDeposit', getU64Decoder()],
     ['startSlot', getU64Decoder()],
-    ['endSlotInterval', getU16Decoder()],
     ['feeBps', getU8Decoder()],
     ['unhealthyLiquidityFeeBps', getU8Decoder()],
+    ['slotsUntilDebt', getU8Decoder()],
+    ['liquidityAmplification', getU8Decoder()],
   ])
 }
 
@@ -204,7 +206,7 @@ export type InitializeMarketAsyncInput<
 > = {
   authority: TransactionSigner<TAccountAuthority>
   payer: TransactionSigner<TAccountPayer>
-  programConfig?: Address<TAccountProgramConfig>
+  programConfig: Address<TAccountProgramConfig>
   baseMint: Address<TAccountBaseMint>
   quoteMint: Address<TAccountQuoteMint>
   market?: Address<TAccountMarket>
@@ -219,9 +221,10 @@ export type InitializeMarketAsyncInput<
   minimumBaseDeposit: InitializeMarketInstructionDataArgs['minimumBaseDeposit']
   minimumQuoteDeposit: InitializeMarketInstructionDataArgs['minimumQuoteDeposit']
   startSlot: InitializeMarketInstructionDataArgs['startSlot']
-  endSlotInterval: InitializeMarketInstructionDataArgs['endSlotInterval']
   feeBps: InitializeMarketInstructionDataArgs['feeBps']
   unhealthyLiquidityFeeBps: InitializeMarketInstructionDataArgs['unhealthyLiquidityFeeBps']
+  slotsUntilDebt: InitializeMarketInstructionDataArgs['slotsUntilDebt']
+  liquidityAmplification: InitializeMarketInstructionDataArgs['liquidityAmplification']
 }
 
 export async function getInitializeMarketInstructionAsync<
@@ -311,28 +314,21 @@ export async function getInitializeMarketInstructionAsync<
   const args = { ...input }
 
   // Resolve default values.
-  if (!accounts.programConfig.value) {
-    accounts.programConfig.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            112, 114, 111, 103, 114, 97, 109, 95, 99, 111, 110, 102, 105, 103,
-          ]),
-        ),
-      ],
-    })
-  }
   if (!accounts.market.value) {
-    accounts.market.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([109, 97, 114, 107, 101, 116])),
-        getU32Encoder().encode(
-          getNonNullResolvedInstructionInput('id', args.id),
+    accounts.market.value = await findMarketPda(
+      {
+        baseMint: getAddressFromResolvedInstructionAccount(
+          'baseMint',
+          accounts.baseMint.value,
         ),
-      ],
-    })
+        quoteMint: getAddressFromResolvedInstructionAccount(
+          'quoteMint',
+          accounts.quoteMint.value,
+        ),
+        id: getNonNullResolvedInstructionInput('id', args.id),
+      },
+      { programAddress },
+    )
   }
   if (!accounts.baseVault.value) {
     accounts.baseVault.value = await getProgramDerivedAddress({
@@ -387,22 +383,15 @@ export async function getInitializeMarketInstructionAsync<
     })
   }
   if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
+    accounts.bookkeeping.value = await findBookkeepingPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
+      },
+      { programAddress },
+    )
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
@@ -484,9 +473,10 @@ export type InitializeMarketInput<
   minimumBaseDeposit: InitializeMarketInstructionDataArgs['minimumBaseDeposit']
   minimumQuoteDeposit: InitializeMarketInstructionDataArgs['minimumQuoteDeposit']
   startSlot: InitializeMarketInstructionDataArgs['startSlot']
-  endSlotInterval: InitializeMarketInstructionDataArgs['endSlotInterval']
   feeBps: InitializeMarketInstructionDataArgs['feeBps']
   unhealthyLiquidityFeeBps: InitializeMarketInstructionDataArgs['unhealthyLiquidityFeeBps']
+  slotsUntilDebt: InitializeMarketInstructionDataArgs['slotsUntilDebt']
+  liquidityAmplification: InitializeMarketInstructionDataArgs['liquidityAmplification']
 }
 
 export function getInitializeMarketInstruction<

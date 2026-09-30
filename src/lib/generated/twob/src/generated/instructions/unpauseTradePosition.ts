@@ -10,10 +10,8 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getProgramDerivedAddress,
   getStructDecoder,
   getStructEncoder,
   getU64Decoder,
@@ -42,13 +40,13 @@ import {
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
+import { findFutureExitsPda, findFuturePricesPda } from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UNPAUSE_TRADE_POSITION_DISCRIMINATOR = new Uint8Array([
-  212, 116, 103, 81, 196, 132, 86, 153,
-])
+export const UNPAUSE_TRADE_POSITION_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([212, 116, 103, 81, 196, 132, 86, 153])
 
-export function getUnpauseTradePositionDiscriminatorBytes() {
+export function getUnpauseTradePositionDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
     UNPAUSE_TRADE_POSITION_DISCRIMINATOR,
   )
@@ -203,7 +201,7 @@ export type UnpauseTradePositionAsyncInput<
   quoteMint: Address<TAccountQuoteMint>
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
-  bookkeeping?: Address<TAccountBookkeeping>
+  bookkeeping: Address<TAccountBookkeeping>
   /**
    * Exits account the position was registered in before it was paused
    * only ever written through its account data
@@ -326,57 +324,35 @@ export async function getUnpauseTradePositionInstructionAsync<
   const args = { ...input }
 
   // Resolve default values.
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([
-            98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103,
-          ]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
-        ),
-      ],
-    })
-  }
   if (!accounts.futureExits.value) {
-    accounts.futureExits.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([101, 120, 105, 116, 115])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
+    accounts.futureExits.value = await findFutureExitsPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getU64Encoder().encode(
-          getNonNullResolvedInstructionInput('futureIndex', args.futureIndex),
+        futureIndex: getNonNullResolvedInstructionInput(
+          'futureIndex',
+          args.futureIndex,
         ),
-      ],
-    })
+      },
+      { programAddress },
+    )
   }
   if (!accounts.futurePrices.value) {
-    accounts.futurePrices.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([112, 114, 105, 99, 101, 115])),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            'market',
-            accounts.market.value,
-          ),
+    accounts.futurePrices.value = await findFuturePricesPda(
+      {
+        market: getAddressFromResolvedInstructionAccount(
+          'market',
+          accounts.market.value,
         ),
-        getU64Encoder().encode(
-          getNonNullResolvedInstructionInput('futureIndex', args.futureIndex),
+        futureIndex: getNonNullResolvedInstructionInput(
+          'futureIndex',
+          args.futureIndex,
         ),
-      ],
-    })
+      },
+      { programAddress },
+    )
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =

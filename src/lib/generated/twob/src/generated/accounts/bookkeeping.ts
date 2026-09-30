@@ -15,6 +15,8 @@ import {
   fetchEncodedAccounts,
   fixDecoderSize,
   fixEncoderSize,
+  getAddressDecoder,
+  getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
@@ -41,16 +43,18 @@ import {
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
-export const BOOKKEEPING_DISCRIMINATOR = new Uint8Array([
+export const BOOKKEEPING_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   222, 183, 70, 70, 180, 109, 184, 251,
 ])
 
-export function getBookkeepingDiscriminatorBytes() {
+export function getBookkeepingDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(BOOKKEEPING_DISCRIMINATOR)
 }
 
 export type Bookkeeping = {
   discriminator: ReadonlyUint8Array
+  /** Immutable market association, set during canonical PDA initialization. */
+  market: Address
   /**
    * Defines how many base token atoms are exchanged per quote token atom
    * per slot multiplied by BOOKKEEPING_PRECISION_FACTOR
@@ -84,6 +88,8 @@ export type Bookkeeping = {
 }
 
 export type BookkeepingArgs = {
+  /** Immutable market association, set during canonical PDA initialization. */
+  market: Address
   /**
    * Defines how many base token atoms are exchanged per quote token atom
    * per slot multiplied by BOOKKEEPING_PRECISION_FACTOR
@@ -121,6 +127,7 @@ export function getBookkeepingEncoder(): FixedSizeEncoder<BookkeepingArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['market', getAddressEncoder()],
       ['basePerQuote', getU128Encoder()],
       ['previousBasePerQuote', getU128Encoder()],
       ['windowBasePerQuote', getU128Encoder()],
@@ -141,6 +148,7 @@ export function getBookkeepingEncoder(): FixedSizeEncoder<BookkeepingArgs> {
 export function getBookkeepingDecoder(): FixedSizeDecoder<Bookkeeping> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['market', getAddressDecoder()],
     ['basePerQuote', getU128Decoder()],
     ['previousBasePerQuote', getU128Decoder()],
     ['windowBasePerQuote', getU128Decoder()],
@@ -217,5 +225,5 @@ export async function fetchAllMaybeBookkeeping(
 }
 
 export function getBookkeepingSize(): number {
-  return 133
+  return 165
 }

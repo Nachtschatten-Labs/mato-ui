@@ -8,6 +8,13 @@ minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 
+# Patch Miniflare's pinned dependencies until the Cloudflare toolchain is updated.
+overrides:
+  # GHSA-rgj7-g3m4-5g8c (libheif vulnerabilities).
+  'miniflare>sharp': 0.35.4
+  # GHSA-rfgv-xxqx-mfg5 and GHSA-w293-vg96-wgc3 (WebSocket and TLS issues).
+  'miniflare>undici': 7.29.1
+
 # Use the exact pnpm version declared in package.json.
 pmOnFail: error
 saveExact: true
