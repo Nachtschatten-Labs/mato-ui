@@ -21,6 +21,7 @@ import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/
 import {
   deriveMarketIntervalAddress,
   deriveProgramConfigAddress,
+  fetchEndSlotBookkeepingSnapshot,
   fetchStreamingMarketState,
   sendClosePositions,
   sendPauseTradePosition,
@@ -78,7 +79,7 @@ function createMarket(kind = 0) {
         lastUpdateSlot: 490n,
         previousUpdateSlot: 480n,
         windowStartSlot: 470n,
-        slotsWithoutTrade: 0,
+        slotsWithoutTrade: 123,
         padding: new Uint8Array(4),
       },
       quoteOperator: WALLET,
@@ -228,6 +229,54 @@ describe('v1 protocol compatibility', () => {
         endSlotInterval: 11,
         marketBaseFlow: 1_000_000_000n,
         marketQuoteFlow: 2_000_000_000n,
+        bookkeepingSlotsWithoutTrades: 123,
+      })
+    },
+  )
+
+  it.each([true, false])(
+    'reads the price and inactive-slot count from the same end snapshot (buy=%s)',
+    async (isBuy) => {
+      const { client } = createContext()
+      const basePerQuoteSnapshot = Array<bigint>(16).fill(0n)
+      const quotePerBaseSnapshot = Array<bigint>(16).fill(0n)
+      const slotsWithoutTradesSnapshot = Array<number>(16).fill(0)
+      basePerQuoteSnapshot[12] = 50n
+      quotePerBaseSnapshot[12] = 80n
+      slotsWithoutTradesSnapshot[12] = 154
+      vi.mocked(accounts.fetchMarketInterval).mockResolvedValue({
+        data: {
+          market: MARKET,
+          index: 3n,
+          basePerQuoteSnapshot,
+          quotePerBaseSnapshot,
+          slotsWithoutTradesSnapshot,
+        },
+      } as Awaited<ReturnType<typeof accounts.fetchMarketInterval>>)
+
+      const request = {
+        rpcClient: client.runtime.rpc,
+        marketAddress: MARKET,
+        endSlot: 660,
+        endSlotInterval: 11,
+        isBuy,
+      }
+      await expect(
+        fetchEndSlotBookkeepingSnapshot({
+          ...request,
+          bookkeepingLastUpdateSlot: 659,
+        }),
+      ).resolves.toBeNull()
+      expect(accounts.fetchMarketInterval).not.toHaveBeenCalled()
+      await expect(
+        fetchEndSlotBookkeepingSnapshot({
+          ...request,
+          bookkeepingLastUpdateSlot: 700,
+        }),
+      ).resolves.toEqual({
+        slot: 660,
+        bookkeeping: isBuy ? 50n : 80n,
+        slotsWithoutTrades: 154,
       })
     },
   )

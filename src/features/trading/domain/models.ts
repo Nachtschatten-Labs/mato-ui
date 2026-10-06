@@ -20,6 +20,13 @@ export interface StreamingMarketState {
   bookkeepingBasePerQuote: bigint
   bookkeepingQuotePerBase: bigint
   bookkeepingLastUpdateSlot: number
+  bookkeepingSlotsWithoutTrades: number
+}
+
+export interface TradeSettlementSnapshot {
+  slot: number
+  bookkeeping: bigint
+  slotsWithoutTrades: number
 }
 
 export interface MarketPriceSnapshot {
