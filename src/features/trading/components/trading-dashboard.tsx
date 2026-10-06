@@ -682,8 +682,8 @@ export function TradingDashboard({
 
     if (success) {
       setAmountInput('')
-      await refreshBalances()
     }
+    await refreshBalances()
   }
 
   const handleSubmitRequest = async () => {

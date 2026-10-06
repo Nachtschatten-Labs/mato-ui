@@ -38,6 +38,7 @@ import {
   isBuyTradePosition,
 } from '../lib/trade-position'
 import { fetchOwnedMarketIntervals } from './rent-accounts'
+import { getSolOrderWrapAmount } from './sol-order-funding'
 import type { SolanaClient, WalletSession } from '@solana/client'
 import type { UseSendTransactionReturnType } from '@solana/react-hooks'
 import type { Address, TransactionSigner } from '@solana/kit'
@@ -453,15 +454,8 @@ export async function sendSubmitOrder({
   session: WalletSession
 }) {
   assertTransactionsEnabled()
-  const {
-    amount,
-    durationSlots,
-    existingWrappedAtoms = 0n,
-    id,
-    inputMintAddress,
-    isBuy,
-    marketAddress,
-  } = request
+  const { amount, durationSlots, id, inputMintAddress, isBuy, marketAddress } =
+    request
 
   if (!Number.isInteger(id) || id < 0 || id > 0xffffffff) {
     throw new Error('Order id must be an unsigned 32-bit integer.')
@@ -476,8 +470,12 @@ export async function sendSubmitOrder({
 
   const walletSigner = createWalletTransactionSigner(session).signer
   const wrapShortfall =
-    inputMintAddress === WRAPPED_SOL_MINT && amount > existingWrappedAtoms
-      ? amount - existingWrappedAtoms
+    inputMintAddress === WRAPPED_SOL_MINT
+      ? await getSolOrderWrapAmount({
+          amount,
+          client,
+          owner: session.account.address,
+        })
       : 0n
   const marketAccount = await fetchMarket(client.runtime.rpc, marketAddress, {
     commitment: 'confirmed',

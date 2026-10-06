@@ -1,11 +1,7 @@
-import {
-  useBalance,
-  useSplToken,
-  useWalletSession,
-  useWrapSol,
-} from '@solana/react-hooks'
+import { useSplToken, useWalletSession, useWrapSol } from '@solana/react-hooks'
 import { WRAPPED_SOL_MINT } from '@solana/client'
 import { getSpendableNativeAtoms, getSpendableTokenAtoms } from '../lib/amounts'
+import { useWalletSolBalance } from './use-wallet-sol-balance'
 
 export function useWalletTokenBalance(
   mintAddress: string | null | undefined,
@@ -13,7 +9,7 @@ export function useWalletTokenBalance(
 ) {
   const session = useWalletSession()
   const owner = session?.account.address ?? null
-  const nativeBalance = useBalance(owner ?? undefined)
+  const nativeBalance = useWalletSolBalance()
   const wrappedSol = useWrapSol({ owner: owner ?? undefined })
   const splToken = useSplToken(mintAddress ?? WRAPPED_SOL_MINT, {
     owner: owner ?? undefined,
@@ -27,9 +23,6 @@ export function useWalletTokenBalance(
   const lamports = nativeBalance.lamports ?? 0n
   const wrappedAtoms = wrappedSol.balance?.amount ?? 0n
   const tokenAtoms = splToken.balance?.amount ?? 0n
-  const nativeBalanceWithRefresh = nativeBalance as typeof nativeBalance & {
-    refresh?: () => Promise<unknown>
-  }
 
   const balanceAtoms = isNative ? lamports + wrappedAtoms : tokenAtoms
   const spendableAtoms = isNative
@@ -40,10 +33,7 @@ export function useWalletTokenBalance(
     : getSpendableTokenAtoms(splToken.balance?.amount ?? null)
   const refresh = async () => {
     if (isNative) {
-      await Promise.allSettled([
-        nativeBalanceWithRefresh.refresh?.() ?? Promise.resolve(),
-        wrappedSol.refresh(),
-      ])
+      await Promise.allSettled([nativeBalance.refresh(), wrappedSol.refresh()])
       return
     }
 
@@ -58,7 +48,7 @@ export function useWalletTokenBalance(
     isReady: session !== undefined,
     lamports,
     loading:
-      (isNative && (nativeBalance.fetching || wrappedSol.isFetching)) ||
+      (isNative && (nativeBalance.loading || wrappedSol.isFetching)) ||
       (!isNative && splToken.isFetching),
     refresh,
     spendableAtoms,
