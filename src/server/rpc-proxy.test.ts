@@ -1,4 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  getSolanaErrorFromJsonRpcError,
+  isSolanaError,
+  SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
+} from '@solana/kit'
 import target from '../../deployment-target.json'
 import { handleRpcProxy } from './rpc-proxy'
 import { sanitizeRpcResponse, validateRpcPayload } from './rpc-policy'
@@ -214,5 +219,95 @@ describe('RPC method policy', () => {
         error: { code: -1, message: 'Solana RPC request failed' },
       },
     ])
+  })
+})
+
+describe('RPC preflight error sanitization', () => {
+  const preflightFailure = (err: unknown) => ({
+    jsonrpc: '2.0',
+    id: 1,
+    error: {
+      code: -32002,
+      message: secret,
+      data: {
+        err,
+        logs: [secret],
+        provider: secret,
+        returnData: { data: [secret, 'base64'] },
+      },
+    },
+  })
+
+  it.each([
+    'InsufficientFundsForFee',
+    'BlockhashNotFound',
+    { InstructionError: [0, { Custom: 6006 }] },
+    { InstructionError: [2, 'InsufficientFunds'] },
+    { InstructionError: [2, { Custom: 0 }] },
+    { DuplicateInstruction: 1 },
+    { InsufficientFundsForRent: { account_index: 2 } },
+    { ProgramExecutionTemporarilyRestricted: { account_index: 3 } },
+  ])('preserves a supported transaction error: %j', (err) => {
+    const sanitized = sanitizeRpcResponse(preflightFailure(err)) as {
+      error: { data: { err: unknown } }
+    }
+    expect(sanitized).toEqual({
+      jsonrpc: '2.0',
+      id: 1,
+      error: {
+        code: -32002,
+        message: 'Solana RPC request failed',
+        data: { err },
+      },
+    })
+    expect(
+      isSolanaError(
+        getSolanaErrorFromJsonRpcError(sanitized.error),
+        SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
+      ),
+    ).toBe(true)
+  })
+
+  it.each([
+    undefined,
+    null,
+    secret,
+    'UnknownProviderError',
+    'InsufficientFundsForRent',
+    'ProgramExecutionTemporarilyRestricted',
+    'DuplicateInstruction',
+    { InstructionError: null },
+    { InstructionError: [0] },
+    { InstructionError: [256, 'InsufficientFunds'] },
+    { InstructionError: [0, secret] },
+    { InstructionError: [0, 'Custom'] },
+    { InstructionError: [0, { Custom: secret }] },
+    { InstructionError: [0, { Custom: -1 }] },
+    { InstructionError: [0, { Custom: 0x100000000 }] },
+    { InstructionError: [0, { Custom: 6006, provider: secret }] },
+    { InsufficientFundsForRent: { account_index: secret } },
+    { UnknownProviderError: secret },
+  ])('drops unsupported or malformed error details: %j', (err) => {
+    const sanitized = sanitizeRpcResponse(preflightFailure(err)) as {
+      error: { data: { err: unknown } }
+    }
+    expect(sanitized.error.data).toEqual({ err: null })
+    expect(JSON.stringify(sanitized)).not.toContain('private-provider-token')
+    expect(
+      isSolanaError(
+        getSolanaErrorFromJsonRpcError(sanitized.error),
+        SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
+      ),
+    ).toBe(true)
+  })
+
+  it('retains Borsh failure identity without its free-form text', () => {
+    expect(
+      sanitizeRpcResponse(
+        preflightFailure({ InstructionError: [0, { BorshIoError: secret }] }),
+      ),
+    ).toMatchObject({
+      error: { data: { err: { InstructionError: [0, 'BorshIoError'] } } },
+    })
   })
 })
