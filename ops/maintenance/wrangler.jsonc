@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mato-maintenance",
+  "account_id": "a47cdd329426d3fe463b84d562f36f45",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-10",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "mato.markets/*",
+      "zone_name": "mato.markets",
+    },
+  ],
+  "observability": {
+    "enabled": true,
+  },
+}
