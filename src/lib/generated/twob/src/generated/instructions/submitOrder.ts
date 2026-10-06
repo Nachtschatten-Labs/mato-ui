@@ -44,11 +44,7 @@ import {
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
-import {
-  findFutureExitsPda,
-  findFuturePricesPda,
-  findTradePositionPda,
-} from '../pdas'
+import { findFutureIntervalPda, findTradePositionPda } from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
 export const SUBMIT_ORDER_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
@@ -71,13 +67,9 @@ export type SubmitOrderInstruction<
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountTradePosition extends string | AccountMeta<string> = string,
   TAccountVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
-  TAccountFutureExits extends string | AccountMeta<string> = string,
-  TAccountFuturePrices extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
+  TAccountFutureInterval extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -121,27 +113,15 @@ export type SubmitOrderInstruction<
       TAccountVault extends string
         ? WritableAccount<TAccountVault>
         : TAccountVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
-      TAccountFutureExits extends string
-        ? WritableAccount<TAccountFutureExits>
-        : TAccountFutureExits,
-      TAccountFuturePrices extends string
-        ? WritableAccount<TAccountFuturePrices>
-        : TAccountFuturePrices,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
+      TAccountFutureInterval extends string
+        ? WritableAccount<TAccountFutureInterval>
+        : TAccountFutureInterval,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
@@ -218,13 +198,9 @@ export type SubmitOrderAsyncInput<
   TAccountMarket extends string = string,
   TAccountTradePosition extends string = string,
   TAccountVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
+  TAccountFutureInterval extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
@@ -239,13 +215,9 @@ export type SubmitOrderAsyncInput<
   market: Address<TAccountMarket>
   tradePosition?: Address<TAccountTradePosition>
   vault?: Address<TAccountVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  futureExits?: Address<TAccountFutureExits>
-  futurePrices?: Address<TAccountFuturePrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
+  futureInterval?: Address<TAccountFutureInterval>
   tokenProgram?: Address<TAccountTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
@@ -267,13 +239,9 @@ export async function getSubmitOrderInstructionAsync<
   TAccountMarket extends string,
   TAccountTradePosition extends string,
   TAccountVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
+  TAccountFutureInterval extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
@@ -290,13 +258,9 @@ export async function getSubmitOrderInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountFutureExits,
-    TAccountFuturePrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
+    TAccountFutureInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -315,13 +279,9 @@ export async function getSubmitOrderInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountFutureExits,
-    TAccountFuturePrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
+    TAccountFutureInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -342,13 +302,12 @@ export async function getSubmitOrderInstructionAsync<
     market: { value: input.market ?? null, isWritable: true },
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
+    futureInterval: { value: input.futureInterval ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
@@ -431,23 +390,8 @@ export async function getSubmitOrderInstructionAsync<
       ],
     })
   }
-  if (!accounts.futureExits.value) {
-    accounts.futureExits.value = await findFutureExitsPda(
-      {
-        market: getAddressFromResolvedInstructionAccount(
-          'market',
-          accounts.market.value,
-        ),
-        futureIndex: getNonNullResolvedInstructionInput(
-          'futureIndex',
-          args.futureIndex,
-        ),
-      },
-      { programAddress },
-    )
-  }
-  if (!accounts.futurePrices.value) {
-    accounts.futurePrices.value = await findFuturePricesPda(
+  if (!accounts.futureInterval.value) {
+    accounts.futureInterval.value = await findFutureIntervalPda(
       {
         market: getAddressFromResolvedInstructionAccount(
           'market',
@@ -483,13 +427,9 @@ export async function getSubmitOrderInstructionAsync<
       getAccountMeta('market', accounts.market),
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('vault', accounts.vault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
+      getAccountMeta('futureInterval', accounts.futureInterval),
       getAccountMeta('tokenProgram', accounts.tokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
@@ -510,13 +450,9 @@ export async function getSubmitOrderInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountFutureExits,
-    TAccountFuturePrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
+    TAccountFutureInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -534,13 +470,9 @@ export type SubmitOrderInput<
   TAccountMarket extends string = string,
   TAccountTradePosition extends string = string,
   TAccountVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
+  TAccountFutureInterval extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
@@ -555,13 +487,9 @@ export type SubmitOrderInput<
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
   vault: Address<TAccountVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
-  futureExits: Address<TAccountFutureExits>
-  futurePrices: Address<TAccountFuturePrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
+  futureInterval: Address<TAccountFutureInterval>
   tokenProgram?: Address<TAccountTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
@@ -583,13 +511,9 @@ export function getSubmitOrderInstruction<
   TAccountMarket extends string,
   TAccountTradePosition extends string,
   TAccountVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
+  TAccountFutureInterval extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
@@ -606,13 +530,9 @@ export function getSubmitOrderInstruction<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountFutureExits,
-    TAccountFuturePrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
+    TAccountFutureInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -630,13 +550,9 @@ export function getSubmitOrderInstruction<
   TAccountMarket,
   TAccountTradePosition,
   TAccountVault,
-  TAccountBookkeeping,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
-  TAccountFutureExits,
-  TAccountFuturePrices,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
+  TAccountFutureInterval,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram
@@ -656,13 +572,12 @@ export function getSubmitOrderInstruction<
     market: { value: input.market ?? null, isWritable: true },
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
+    futureInterval: { value: input.futureInterval ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
@@ -705,13 +620,9 @@ export function getSubmitOrderInstruction<
       getAccountMeta('market', accounts.market),
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('vault', accounts.vault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
+      getAccountMeta('futureInterval', accounts.futureInterval),
       getAccountMeta('tokenProgram', accounts.tokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
@@ -732,13 +643,9 @@ export function getSubmitOrderInstruction<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
-    TAccountFutureExits,
-    TAccountFuturePrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
+    TAccountFutureInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -761,16 +668,12 @@ export type ParsedSubmitOrderInstruction<
     market: TAccountMetas[7]
     tradePosition: TAccountMetas[8]
     vault: TAccountMetas[9]
-    bookkeeping: TAccountMetas[10]
-    currentExits: TAccountMetas[11]
-    previousExits: TAccountMetas[12]
-    currentPrices: TAccountMetas[13]
-    previousPrices: TAccountMetas[14]
-    futureExits: TAccountMetas[15]
-    futurePrices: TAccountMetas[16]
-    tokenProgram: TAccountMetas[17]
-    associatedTokenProgram: TAccountMetas[18]
-    systemProgram: TAccountMetas[19]
+    currentInterval: TAccountMetas[10]
+    previousInterval: TAccountMetas[11]
+    futureInterval: TAccountMetas[12]
+    tokenProgram: TAccountMetas[13]
+    associatedTokenProgram: TAccountMetas[14]
+    systemProgram: TAccountMetas[15]
   }
   data: SubmitOrderInstructionData
 }
@@ -783,12 +686,12 @@ export function parseSubmitOrderInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSubmitOrderInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
+  if (instruction.accounts.length < 16) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 20,
+        expectedAccountMetas: 16,
       },
     )
   }
@@ -811,13 +714,9 @@ export function parseSubmitOrderInstruction<
       market: getNextAccount(),
       tradePosition: getNextAccount(),
       vault: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
-      futureExits: getNextAccount(),
-      futurePrices: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
+      futureInterval: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),

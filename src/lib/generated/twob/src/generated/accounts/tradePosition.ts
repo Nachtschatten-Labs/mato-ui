@@ -42,12 +42,6 @@ import {
   type MaybeEncodedAccount,
   type ReadonlyUint8Array,
 } from '@solana/kit'
-import {
-  getSideDecoder,
-  getSideEncoder,
-  type Side,
-  type SideArgs,
-} from '../types'
 
 export const TRADE_POSITION_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   37, 143, 119, 76, 200, 164, 122, 202,
@@ -73,6 +67,10 @@ export type TradePosition = {
   baseReceiver: Address
   /** Receives quote token */
   quoteReceiver: Address
+  /** Trade amount per slot with FLOW_PRECISION */
+  flow: bigint
+  /** Snapshot of base_per_quote for buy order or quote_per_base for sell orders when this order was created */
+  bookkeepingSnapshot: bigint
   /** The amount to spend */
   amount: bigint
   /** Refund due to no trades happening because there was no opposite trade side */
@@ -81,26 +79,23 @@ export type TradePosition = {
   startSlot: bigint
   /** The slot when this position starts trading, updated when position is paused and continued */
   lastUpdateSlot: bigint
-  /** Remaining slots of trading from last_update_slot */
-  remainingSlots: number
-  /** Trade amount per slot with FLOW_PRECISION */
-  flow: bigint
-  /** Snapshot of base_per_quote for buy order or quote_per_base for sell orders when this order was created */
-  bookkeepingSnapshot: bigint
-  /** Snapshot of slots without trades in this market when this order was created */
-  slotsWithoutTradesSnapshot: number
   pausedAtSlot: bigint
   /** Amount that has been swapped so far until latest snapshots */
   swappedAmountAtSnapshot: bigint
   /** Swapped amount that has been withdrawn so far */
   withdrawnAmount: bigint
+  /** Remaining slots of trading from last_update_slot */
+  remainingSlots: number
+  /** Snapshot of slots without trades in this market when this order was created */
+  slotsWithoutTradesSnapshot: number
   /** Position id */
   id: number
   /** Trading fee at submission, retained through pauses, withdrawals, and final settlement. */
   feeBpsAtSubmission: number
   /** Whether this position buys or sells the base token */
-  side: Side
+  side: number
   bump: number
+  padding: ReadonlyUint8Array
 }
 
 export type TradePositionArgs = {
@@ -116,6 +111,10 @@ export type TradePositionArgs = {
   baseReceiver: Address
   /** Receives quote token */
   quoteReceiver: Address
+  /** Trade amount per slot with FLOW_PRECISION */
+  flow: number | bigint
+  /** Snapshot of base_per_quote for buy order or quote_per_base for sell orders when this order was created */
+  bookkeepingSnapshot: number | bigint
   /** The amount to spend */
   amount: number | bigint
   /** Refund due to no trades happening because there was no opposite trade side */
@@ -124,26 +123,23 @@ export type TradePositionArgs = {
   startSlot: number | bigint
   /** The slot when this position starts trading, updated when position is paused and continued */
   lastUpdateSlot: number | bigint
-  /** Remaining slots of trading from last_update_slot */
-  remainingSlots: number
-  /** Trade amount per slot with FLOW_PRECISION */
-  flow: number | bigint
-  /** Snapshot of base_per_quote for buy order or quote_per_base for sell orders when this order was created */
-  bookkeepingSnapshot: number | bigint
-  /** Snapshot of slots without trades in this market when this order was created */
-  slotsWithoutTradesSnapshot: number
   pausedAtSlot: number | bigint
   /** Amount that has been swapped so far until latest snapshots */
   swappedAmountAtSnapshot: number | bigint
   /** Swapped amount that has been withdrawn so far */
   withdrawnAmount: number | bigint
+  /** Remaining slots of trading from last_update_slot */
+  remainingSlots: number
+  /** Snapshot of slots without trades in this market when this order was created */
+  slotsWithoutTradesSnapshot: number
   /** Position id */
   id: number
   /** Trading fee at submission, retained through pauses, withdrawals, and final settlement. */
   feeBpsAtSubmission: number
   /** Whether this position buys or sells the base token */
-  side: SideArgs
+  side: number
   bump: number
+  padding: ReadonlyUint8Array
 }
 
 /** Gets the encoder for {@link TradePositionArgs} account data. */
@@ -157,21 +153,22 @@ export function getTradePositionEncoder(): FixedSizeEncoder<TradePositionArgs> {
       ['operator', getAddressEncoder()],
       ['baseReceiver', getAddressEncoder()],
       ['quoteReceiver', getAddressEncoder()],
+      ['flow', getU128Encoder()],
+      ['bookkeepingSnapshot', getU128Encoder()],
       ['amount', getU64Encoder()],
       ['inactiveRefund', getU64Encoder()],
       ['startSlot', getU64Encoder()],
       ['lastUpdateSlot', getU64Encoder()],
-      ['remainingSlots', getU32Encoder()],
-      ['flow', getU128Encoder()],
-      ['bookkeepingSnapshot', getU128Encoder()],
-      ['slotsWithoutTradesSnapshot', getU32Encoder()],
       ['pausedAtSlot', getU64Encoder()],
       ['swappedAmountAtSnapshot', getU64Encoder()],
       ['withdrawnAmount', getU64Encoder()],
+      ['remainingSlots', getU32Encoder()],
+      ['slotsWithoutTradesSnapshot', getU32Encoder()],
       ['id', getU32Encoder()],
       ['feeBpsAtSubmission', getU8Encoder()],
-      ['side', getSideEncoder()],
+      ['side', getU8Encoder()],
       ['bump', getU8Encoder()],
+      ['padding', fixEncoderSize(getBytesEncoder(), 9)],
     ]),
     (value) => ({ ...value, discriminator: TRADE_POSITION_DISCRIMINATOR }),
   )
@@ -187,21 +184,22 @@ export function getTradePositionDecoder(): FixedSizeDecoder<TradePosition> {
     ['operator', getAddressDecoder()],
     ['baseReceiver', getAddressDecoder()],
     ['quoteReceiver', getAddressDecoder()],
+    ['flow', getU128Decoder()],
+    ['bookkeepingSnapshot', getU128Decoder()],
     ['amount', getU64Decoder()],
     ['inactiveRefund', getU64Decoder()],
     ['startSlot', getU64Decoder()],
     ['lastUpdateSlot', getU64Decoder()],
-    ['remainingSlots', getU32Decoder()],
-    ['flow', getU128Decoder()],
-    ['bookkeepingSnapshot', getU128Decoder()],
-    ['slotsWithoutTradesSnapshot', getU32Decoder()],
     ['pausedAtSlot', getU64Decoder()],
     ['swappedAmountAtSnapshot', getU64Decoder()],
     ['withdrawnAmount', getU64Decoder()],
+    ['remainingSlots', getU32Decoder()],
+    ['slotsWithoutTradesSnapshot', getU32Decoder()],
     ['id', getU32Decoder()],
     ['feeBpsAtSubmission', getU8Decoder()],
-    ['side', getSideDecoder()],
+    ['side', getU8Decoder()],
     ['bump', getU8Decoder()],
+    ['padding', fixDecoderSize(getBytesDecoder(), 9)],
   ])
 }
 
@@ -267,5 +265,5 @@ export async function fetchAllMaybeTradePosition(
 }
 
 export function getTradePositionSize(): number {
-  return 303
+  return 312
 }

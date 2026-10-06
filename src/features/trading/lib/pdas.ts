@@ -37,37 +37,14 @@ export async function findMarketAddress({
   return address
 }
 
-export async function findBookkeepingAddress(marketAddress: Address) {
-  const [address] = await getProgramDerivedAddress({
-    programAddress: TWOB_ANCHOR_PROGRAM_ADDRESS,
-    seeds: [seed('bookkeeping'), getAddressEncoder().encode(marketAddress)],
-  })
-  return address
-}
-
-export async function findExitsAddress(
+export async function findMarketIntervalAddress(
   marketAddress: Address,
   index: bigint | number,
 ) {
   const [address] = await getProgramDerivedAddress({
     programAddress: TWOB_ANCHOR_PROGRAM_ADDRESS,
     seeds: [
-      seed('exits'),
-      getAddressEncoder().encode(marketAddress),
-      getU64Encoder().encode(BigInt(index)),
-    ],
-  })
-  return address
-}
-
-export async function findPricesAddress(
-  marketAddress: Address,
-  index: bigint | number,
-) {
-  const [address] = await getProgramDerivedAddress({
-    programAddress: TWOB_ANCHOR_PROGRAM_ADDRESS,
-    seeds: [
-      seed('prices'),
+      seed('market_interval'),
       getAddressEncoder().encode(marketAddress),
       getU64Encoder().encode(BigInt(index)),
     ],
@@ -114,9 +91,9 @@ export function resolveSnapshotLocation(slot: number, endSlotInterval: number) {
   if (!Number.isFinite(slot) || slot < 0) return null
   if (!Number.isFinite(endSlotInterval) || endSlotInterval <= 0) return null
 
-  const slotsPerPricesAccount = ARRAY_LENGTH * endSlotInterval
+  const slotsPerInterval = ARRAY_LENGTH * endSlotInterval
   return {
-    pricesAccountIndex: Math.floor(slot / slotsPerPricesAccount),
+    intervalIndex: Math.floor(slot / slotsPerInterval),
     snapshotIndex: Math.floor(slot / endSlotInterval) % ARRAY_LENGTH,
   }
 }

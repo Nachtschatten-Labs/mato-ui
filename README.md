@@ -1,28 +1,22 @@
-# Mato UI — v1
+# Mato UI
 
-Trading dashboard plus selectable markets, updated order book/positions, pause/resume and swapped-funds withdrawal controls, and the v1 program interface.
-
-Recovered application source with fresh build tooling and dependency lockfile.
-The old repository history and compromised configuration files are excluded.
+Mainnet SOL/USDC streaming trades for program
+`TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A`, including order book, positions,
+pause/resume, withdrawals, closed history, and interval rent reclamation.
 
 ```sh
 nvm use
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile --ignore-scripts
 pnpm dev
 ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, checks, and service configuration.
-See [RECOVERY.md](RECOVERY.md) for the recovery scope and limitations.
+Development and preview builds are read-only. Production trading requires explicit
+configuration for the verified mainnet program. See [DEVELOPMENT.md](DEVELOPMENT.md)
+and [DEPLOYMENT.md](DEPLOYMENT.md).
 
-The devnet program is `CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX`.
-The UI connects to its four dedicated markets: SOL/USDC, MATO/USDC, SB/USDC, and
-SF/USDC. Charts and reference prices use mainnet SOL/USDC for every market;
-execution estimates and wallet positions use only the selected devnet market.
-Closed-position history is not supported. See [DEVNET.md](DEVNET.md) for verified
-market addresses and deployment details.
+[MAINNET.md](MAINNET.md) records the supported deployment, validation, and remaining
+launch steps. The separate [maintenance Worker](ops/maintenance/README.md) continues
+to show “Mato is temporarily offline” until its route is removed.
 
-Local devnet trading requires `VITE_ENABLE_TRANSACTIONS=true` and the matching
-`VITE_VERIFIED_PROGRAM_ID` in `.env.local`. Production builds use the same
-settings in `.env.production.local`. Preview builds remain read-only.
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for Cloudflare configuration and publishing.
+This is recovered application source with fresh build tooling and dependency
+lockfile. See [RECOVERY.md](RECOVERY.md) for the recovery scope and limitations.

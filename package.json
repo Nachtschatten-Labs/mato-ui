@@ -21,11 +21,13 @@
     "deploy:preview": "pnpm check && wrangler deploy",
     "deploy:dry-run": "wrangler deploy --dry-run",
     "cf:typegen": "wrangler types --env production",
-    "deploy:production": "pnpm security:source && pnpm typecheck && pnpm test && pnpm build && pnpm security:bundle && wrangler deploy",
+    "deploy:production": "pnpm mainnet:verify && pnpm security:source && pnpm typecheck && pnpm test && pnpm build && pnpm security:bundle && wrangler deploy",
     "rpc:prepare": "node scripts/prepare-rpc.mjs",
     "rpc:upload": "pnpm rpc:prepare && wrangler secret bulk .cloudflare/rpc-secrets.json --config wrangler.jsonc --env production",
     "security:bundle": "node scripts/check-bundle.mjs",
-    "generate:twob": "node scripts/generate-twob-client.mjs"
+    "generate:twob": "node scripts/generate-twob-client.mjs",
+    "mainnet:verify": "node scripts/verify-mainnet.mjs",
+    "test:mainnet-fork": "MATO_MAINNET_FORK_TEST=true vitest run tests/mainnet-fork.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

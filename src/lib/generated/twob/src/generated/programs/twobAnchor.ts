@@ -34,23 +34,17 @@ import {
 } from '@solana/program-client-core'
 import { extendClient, type ExtendedClient } from '../../../kit-compat'
 import {
-  getBookkeepingCodec,
-  getExitsCodec,
   getLiquidityPositionCodec,
   getMarketCodec,
-  getPricesCodec,
+  getMarketIntervalCodec,
   getProgramConfigCodec,
   getTradePositionCodec,
-  type Bookkeeping,
-  type BookkeepingArgs,
-  type Exits,
-  type ExitsArgs,
   type LiquidityPosition,
   type LiquidityPositionArgs,
   type Market,
   type MarketArgs,
-  type Prices,
-  type PricesArgs,
+  type MarketInterval,
+  type MarketIntervalArgs,
   type ProgramConfig,
   type ProgramConfigArgs,
   type TradePosition,
@@ -64,10 +58,10 @@ import {
   getCancelDedicatedMakerAuthorityNominationInstruction,
   getCancelProgramAuthorityNominationInstruction,
   getCloseDedicatedMarketInstructionAsync,
-  getCloseExitsAndPricesAccountInstruction,
   getCloseLiquidityPositionInstructionAsync,
   getCloseMarketInstructionAsync,
-  getCloseOrphanedExitsAndPricesAccountInstruction,
+  getCloseMarketIntervalInstruction,
+  getCloseOrphanedMarketIntervalInstruction,
   getCompensateDebtInstructionAsync,
   getDepositDedicatedLiquidityInstructionAsync,
   getInitializeDedicatedMarketInstructionAsync,
@@ -102,10 +96,10 @@ import {
   parseCancelDedicatedMakerAuthorityNominationInstruction,
   parseCancelProgramAuthorityNominationInstruction,
   parseCloseDedicatedMarketInstruction,
-  parseCloseExitsAndPricesAccountInstruction,
   parseCloseLiquidityPositionInstruction,
   parseCloseMarketInstruction,
-  parseCloseOrphanedExitsAndPricesAccountInstruction,
+  parseCloseMarketIntervalInstruction,
+  parseCloseOrphanedMarketIntervalInstruction,
   parseCompensateDebtInstruction,
   parseDepositDedicatedLiquidityInstruction,
   parseInitializeDedicatedMarketInstruction,
@@ -140,10 +134,10 @@ import {
   type CancelDedicatedMakerAuthorityNominationInput,
   type CancelProgramAuthorityNominationInput,
   type CloseDedicatedMarketAsyncInput,
-  type CloseExitsAndPricesAccountInput,
   type CloseLiquidityPositionAsyncInput,
   type CloseMarketAsyncInput,
-  type CloseOrphanedExitsAndPricesAccountInput,
+  type CloseMarketIntervalInput,
+  type CloseOrphanedMarketIntervalInput,
   type CompensateDebtAsyncInput,
   type DepositDedicatedLiquidityAsyncInput,
   type InitializeDedicatedMarketAsyncInput,
@@ -158,10 +152,10 @@ import {
   type ParsedCancelDedicatedMakerAuthorityNominationInstruction,
   type ParsedCancelProgramAuthorityNominationInstruction,
   type ParsedCloseDedicatedMarketInstruction,
-  type ParsedCloseExitsAndPricesAccountInstruction,
   type ParsedCloseLiquidityPositionInstruction,
   type ParsedCloseMarketInstruction,
-  type ParsedCloseOrphanedExitsAndPricesAccountInstruction,
+  type ParsedCloseMarketIntervalInstruction,
+  type ParsedCloseOrphanedMarketIntervalInstruction,
   type ParsedCompensateDebtInstruction,
   type ParsedDepositDedicatedLiquidityInstruction,
   type ParsedInitializeDedicatedMarketInstruction,
@@ -211,9 +205,7 @@ import {
   type WithdrawSwappedAsyncInput,
 } from '../instructions'
 import {
-  findBookkeepingPda,
-  findFutureExitsPda,
-  findFuturePricesPda,
+  findFutureIntervalPda,
   findLiquidityPositionPda,
   findMarketPda,
   findProgramConfigPda,
@@ -221,14 +213,12 @@ import {
 } from '../pdas'
 
 export const TWOB_ANCHOR_PROGRAM_ADDRESS =
-  'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX' as Address<'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX'>
+  'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A' as Address<'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A'>
 
 export enum TwobAnchorAccount {
-  Bookkeeping,
-  Exits,
   LiquidityPosition,
   Market,
-  Prices,
+  MarketInterval,
   ProgramConfig,
   TradePosition,
 }
@@ -237,28 +227,6 @@ export function identifyTwobAnchorAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): TwobAnchorAccount {
   const data = 'data' in account ? account.data : account
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([222, 183, 70, 70, 180, 109, 184, 251]),
-      ),
-      0,
-    )
-  ) {
-    return TwobAnchorAccount.Bookkeeping
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([240, 175, 85, 167, 2, 200, 2, 180]),
-      ),
-      0,
-    )
-  ) {
-    return TwobAnchorAccount.Exits
-  }
   if (
     containsBytes(
       data,
@@ -285,12 +253,12 @@ export function identifyTwobAnchorAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([74, 25, 25, 70, 56, 98, 39, 21]),
+        new Uint8Array([227, 40, 58, 114, 183, 178, 213, 116]),
       ),
       0,
     )
   ) {
-    return TwobAnchorAccount.Prices
+    return TwobAnchorAccount.MarketInterval
   }
   if (
     containsBytes(
@@ -388,10 +356,10 @@ export enum TwobAnchorInstruction {
   CancelDedicatedMakerAuthorityNomination,
   CancelProgramAuthorityNomination,
   CloseDedicatedMarket,
-  CloseExitsAndPricesAccount,
   CloseLiquidityPosition,
   CloseMarket,
-  CloseOrphanedExitsAndPricesAccount,
+  CloseMarketInterval,
+  CloseOrphanedMarketInterval,
   CompensateDebt,
   DepositDedicatedLiquidity,
   InitializeDedicatedMarket,
@@ -506,17 +474,6 @@ export function identifyTwobAnchorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([24, 39, 124, 223, 183, 214, 51, 28]),
-      ),
-      0,
-    )
-  ) {
-    return TwobAnchorInstruction.CloseExitsAndPricesAccount
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([34, 168, 107, 163, 194, 68, 131, 24]),
       ),
       0,
@@ -539,12 +496,23 @@ export function identifyTwobAnchorInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([163, 65, 215, 45, 115, 163, 107, 216]),
+        new Uint8Array([220, 103, 218, 126, 157, 102, 70, 29]),
       ),
       0,
     )
   ) {
-    return TwobAnchorInstruction.CloseOrphanedExitsAndPricesAccount
+    return TwobAnchorInstruction.CloseMarketInterval
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([248, 156, 98, 135, 236, 61, 195, 180]),
+      ),
+      0,
+    )
+  ) {
+    return TwobAnchorInstruction.CloseOrphanedMarketInterval
   }
   if (
     containsBytes(
@@ -850,7 +818,7 @@ export function identifyTwobAnchorInstruction(
 }
 
 export type ParsedTwobAnchorInstruction<
-  TProgram extends string = 'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX',
+  TProgram extends string = 'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A',
 > =
   | ({
       instructionType: TwobAnchorInstruction.AcceptDedicatedMakerAuthority
@@ -874,17 +842,17 @@ export type ParsedTwobAnchorInstruction<
       instructionType: TwobAnchorInstruction.CloseDedicatedMarket
     } & ParsedCloseDedicatedMarketInstruction<TProgram>)
   | ({
-      instructionType: TwobAnchorInstruction.CloseExitsAndPricesAccount
-    } & ParsedCloseExitsAndPricesAccountInstruction<TProgram>)
-  | ({
       instructionType: TwobAnchorInstruction.CloseLiquidityPosition
     } & ParsedCloseLiquidityPositionInstruction<TProgram>)
   | ({
       instructionType: TwobAnchorInstruction.CloseMarket
     } & ParsedCloseMarketInstruction<TProgram>)
   | ({
-      instructionType: TwobAnchorInstruction.CloseOrphanedExitsAndPricesAccount
-    } & ParsedCloseOrphanedExitsAndPricesAccountInstruction<TProgram>)
+      instructionType: TwobAnchorInstruction.CloseMarketInterval
+    } & ParsedCloseMarketIntervalInstruction<TProgram>)
+  | ({
+      instructionType: TwobAnchorInstruction.CloseOrphanedMarketInterval
+    } & ParsedCloseOrphanedMarketIntervalInstruction<TProgram>)
   | ({
       instructionType: TwobAnchorInstruction.CompensateDebt
     } & ParsedCompensateDebtInstruction<TProgram>)
@@ -1022,13 +990,6 @@ export function parseTwobAnchorInstruction<TProgram extends string>(
         ...parseCloseDedicatedMarketInstruction(instruction),
       }
     }
-    case TwobAnchorInstruction.CloseExitsAndPricesAccount: {
-      assertIsInstructionWithAccounts(instruction)
-      return {
-        instructionType: TwobAnchorInstruction.CloseExitsAndPricesAccount,
-        ...parseCloseExitsAndPricesAccountInstruction(instruction),
-      }
-    }
     case TwobAnchorInstruction.CloseLiquidityPosition: {
       assertIsInstructionWithAccounts(instruction)
       return {
@@ -1043,12 +1004,18 @@ export function parseTwobAnchorInstruction<TProgram extends string>(
         ...parseCloseMarketInstruction(instruction),
       }
     }
-    case TwobAnchorInstruction.CloseOrphanedExitsAndPricesAccount: {
+    case TwobAnchorInstruction.CloseMarketInterval: {
       assertIsInstructionWithAccounts(instruction)
       return {
-        instructionType:
-          TwobAnchorInstruction.CloseOrphanedExitsAndPricesAccount,
-        ...parseCloseOrphanedExitsAndPricesAccountInstruction(instruction),
+        instructionType: TwobAnchorInstruction.CloseMarketInterval,
+        ...parseCloseMarketIntervalInstruction(instruction),
+      }
+    }
+    case TwobAnchorInstruction.CloseOrphanedMarketInterval: {
+      assertIsInstructionWithAccounts(instruction)
+      return {
+        instructionType: TwobAnchorInstruction.CloseOrphanedMarketInterval,
+        ...parseCloseOrphanedMarketIntervalInstruction(instruction),
       }
     }
     case TwobAnchorInstruction.CompensateDebt: {
@@ -1261,15 +1228,12 @@ export type TwobAnchorPlugin = {
 }
 
 export type TwobAnchorPluginAccounts = {
-  bookkeeping: ReturnType<typeof getBookkeepingCodec> &
-    SelfFetchFunctions<BookkeepingArgs, Bookkeeping>
-  exits: ReturnType<typeof getExitsCodec> & SelfFetchFunctions<ExitsArgs, Exits>
   liquidityPosition: ReturnType<typeof getLiquidityPositionCodec> &
     SelfFetchFunctions<LiquidityPositionArgs, LiquidityPosition>
   market: ReturnType<typeof getMarketCodec> &
     SelfFetchFunctions<MarketArgs, Market>
-  prices: ReturnType<typeof getPricesCodec> &
-    SelfFetchFunctions<PricesArgs, Prices>
+  marketInterval: ReturnType<typeof getMarketIntervalCodec> &
+    SelfFetchFunctions<MarketIntervalArgs, MarketInterval>
   programConfig: ReturnType<typeof getProgramConfigCodec> &
     SelfFetchFunctions<ProgramConfigArgs, ProgramConfig>
   tradePosition: ReturnType<typeof getTradePositionCodec> &
@@ -1307,10 +1271,6 @@ export type TwobAnchorPluginInstructions = {
     input: CloseDedicatedMarketAsyncInput,
   ) => ReturnType<typeof getCloseDedicatedMarketInstructionAsync> &
     SelfPlanAndSendFunctions
-  closeExitsAndPricesAccount: (
-    input: MakeOptional<CloseExitsAndPricesAccountInput, 'payer'>,
-  ) => ReturnType<typeof getCloseExitsAndPricesAccountInstruction> &
-    SelfPlanAndSendFunctions
   closeLiquidityPosition: (
     input: CloseLiquidityPositionAsyncInput,
   ) => ReturnType<typeof getCloseLiquidityPositionInstructionAsync> &
@@ -1319,9 +1279,13 @@ export type TwobAnchorPluginInstructions = {
     input: MakeOptional<CloseMarketAsyncInput, 'payer'>,
   ) => ReturnType<typeof getCloseMarketInstructionAsync> &
     SelfPlanAndSendFunctions
-  closeOrphanedExitsAndPricesAccount: (
-    input: MakeOptional<CloseOrphanedExitsAndPricesAccountInput, 'payer'>,
-  ) => ReturnType<typeof getCloseOrphanedExitsAndPricesAccountInstruction> &
+  closeMarketInterval: (
+    input: MakeOptional<CloseMarketIntervalInput, 'payer'>,
+  ) => ReturnType<typeof getCloseMarketIntervalInstruction> &
+    SelfPlanAndSendFunctions
+  closeOrphanedMarketInterval: (
+    input: MakeOptional<CloseOrphanedMarketIntervalInput, 'payer'>,
+  ) => ReturnType<typeof getCloseOrphanedMarketIntervalInstruction> &
     SelfPlanAndSendFunctions
   compensateDebt: (
     input: CompensateDebtAsyncInput,
@@ -1431,12 +1395,10 @@ export type TwobAnchorPluginInstructions = {
 
 export type TwobAnchorPluginPdas = {
   market: typeof findMarketPda
-  bookkeeping: typeof findBookkeepingPda
   programConfig: typeof findProgramConfigPda
   liquidityPosition: typeof findLiquidityPositionPda
   tradePosition: typeof findTradePositionPda
-  futureExits: typeof findFutureExitsPda
-  futurePrices: typeof findFuturePricesPda
+  futureInterval: typeof findFutureIntervalPda
 }
 
 export type TwobAnchorPluginRequirements = ClientWithRpc<
@@ -1453,14 +1415,15 @@ export function twobAnchorProgram() {
     return extendClient(client, {
       twobAnchor: <TwobAnchorPlugin>{
         accounts: {
-          bookkeeping: addSelfFetchFunctions(client, getBookkeepingCodec()),
-          exits: addSelfFetchFunctions(client, getExitsCodec()),
           liquidityPosition: addSelfFetchFunctions(
             client,
             getLiquidityPositionCodec(),
           ),
           market: addSelfFetchFunctions(client, getMarketCodec()),
-          prices: addSelfFetchFunctions(client, getPricesCodec()),
+          marketInterval: addSelfFetchFunctions(
+            client,
+            getMarketIntervalCodec(),
+          ),
           programConfig: addSelfFetchFunctions(client, getProgramConfigCodec()),
           tradePosition: addSelfFetchFunctions(client, getTradePositionCodec()),
         },
@@ -1503,14 +1466,6 @@ export function twobAnchorProgram() {
               client,
               getCloseDedicatedMarketInstructionAsync(input),
             ),
-          closeExitsAndPricesAccount: (input) =>
-            addSelfPlanAndSendFunctions(
-              client,
-              getCloseExitsAndPricesAccountInstruction({
-                ...input,
-                payer: input.payer ?? client.payer.address,
-              }),
-            ),
           closeLiquidityPosition: (input) =>
             addSelfPlanAndSendFunctions(
               client,
@@ -1524,10 +1479,18 @@ export function twobAnchorProgram() {
                 payer: input.payer ?? client.payer,
               }),
             ),
-          closeOrphanedExitsAndPricesAccount: (input) =>
+          closeMarketInterval: (input) =>
             addSelfPlanAndSendFunctions(
               client,
-              getCloseOrphanedExitsAndPricesAccountInstruction({
+              getCloseMarketIntervalInstruction({
+                ...input,
+                payer: input.payer ?? client.payer.address,
+              }),
+            ),
+          closeOrphanedMarketInterval: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getCloseOrphanedMarketIntervalInstruction({
                 ...input,
                 payer: input.payer ?? client.payer.address,
               }),
@@ -1685,12 +1648,10 @@ export function twobAnchorProgram() {
         },
         pdas: {
           market: findMarketPda,
-          bookkeeping: findBookkeepingPda,
           programConfig: findProgramConfigPda,
           liquidityPosition: findLiquidityPositionPda,
           tradePosition: findTradePositionPda,
-          futureExits: findFutureExitsPda,
-          futurePrices: findFuturePricesPda,
+          futureInterval: findFutureIntervalPda,
         },
         identifyAccount: identifyTwobAnchorAccount,
         identifyInstruction: identifyTwobAnchorInstruction,

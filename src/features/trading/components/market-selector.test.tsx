@@ -42,48 +42,34 @@ describe('MarketSelector', () => {
     const onOpenChange = vi.fn()
     render(
       <MarketSelector
-        marketId={2}
+        marketId={1}
         onMarketChange={vi.fn()}
         onOpenChange={onOpenChange}
       />,
     )
     const dialog = await openSelector()
     expect(dialog.getByRole('textbox', { name: 'Search markets' })).toBeTruthy()
-    expect(visibleMarkets()).toEqual([
-      'Select MATO/USDC',
-      'Select SB/USDC',
-      'Select SF/USDC',
-      'Select SOL/USDC',
-    ])
+    expect(visibleMarkets()).toEqual(['Select SOL/USDC'])
     expect(
       dialog
-        .getByRole('button', { name: 'Select MATO/USDC' })
+        .getByRole('button', { name: 'Select SOL/USDC' })
         .getAttribute('aria-current'),
     ).toBe('true')
     expect(onOpenChange).toHaveBeenCalledWith(true)
   })
 
-  it('filters crypto and equities and searches within the selected category', async () => {
+  it('excludes undeployed markets and supports searching', async () => {
     render(<MarketSelector marketId={1} onMarketChange={vi.fn()} />)
     const dialog = await openSelector()
-    fireEvent.click(dialog.getByRole('tab', { name: 'Crypto' }))
-    expect(visibleMarkets()).toEqual(['Select SOL/USDC'])
     fireEvent.click(dialog.getByRole('tab', { name: 'Equities' }))
-    expect(visibleMarkets()).toEqual([
-      'Select MATO/USDC',
-      'Select SB/USDC',
-      'Select SF/USDC',
-    ])
-    fireEvent.change(dialog.getByRole('textbox'), {
-      target: { value: 'staking facilities' },
-    })
-    expect(visibleMarkets()).toEqual(['Select SF/USDC'])
+    expect(visibleMarkets()).toEqual([])
+    fireEvent.click(dialog.getByRole('tab', { name: 'Crypto' }))
     fireEvent.change(dialog.getByRole('textbox'), {
       target: { value: 'no such market' },
     })
     expect(dialog.getByText('No markets found')).toBeTruthy()
     fireEvent.click(dialog.getByRole('button', { name: 'Clear search' }))
-    expect(visibleMarkets()).toHaveLength(3)
+    expect(visibleMarkets()).toEqual(['Select SOL/USDC'])
   })
 
   it('persists favorites without selecting the market and supports an empty watchlist', async () => {
@@ -96,20 +82,20 @@ describe('MarketSelector', () => {
     expect(dialog.getByText('Your watchlist starts here')).toBeTruthy()
     fireEvent.click(dialog.getByRole('button', { name: 'Browse all markets' }))
     fireEvent.click(
-      dialog.getByRole('button', { name: 'Add SF/USDC to favorites' }),
+      dialog.getByRole('button', { name: 'Add SOL/USDC to favorites' }),
     )
     expect(onMarketChange).not.toHaveBeenCalled()
     expect(
       JSON.parse(window.localStorage.getItem(MARKET_FAVORITES_KEY)!),
-    ).toEqual([4])
+    ).toEqual([1])
     first.unmount()
 
     render(<MarketSelector marketId={1} onMarketChange={onMarketChange} />)
     dialog = await openSelector()
     fireEvent.click(dialog.getByRole('tab', { name: /Favorites/ }))
-    expect(visibleMarkets()).toEqual(['Select SF/USDC'])
+    expect(visibleMarkets()).toEqual(['Select SOL/USDC'])
     fireEvent.click(
-      dialog.getByRole('button', { name: 'Remove SF/USDC from favorites' }),
+      dialog.getByRole('button', { name: 'Remove SOL/USDC from favorites' }),
     )
     expect(dialog.getByText('Your watchlist starts here')).toBeTruthy()
   })
@@ -124,47 +110,13 @@ describe('MarketSelector', () => {
     render(<MarketSelector marketId={1} onMarketChange={vi.fn()} />)
     const dialog = await openSelector()
     fireEvent.click(
-      dialog.getByRole('button', { name: 'Add MATO/USDC to favorites' }),
+      dialog.getByRole('button', { name: 'Add SOL/USDC to favorites' }),
     )
     fireEvent.click(dialog.getByRole('tab', { name: /Favorites/ }))
-    expect(visibleMarkets()).toEqual(['Select MATO/USDC'])
+    expect(visibleMarkets()).toEqual(['Select SOL/USDC'])
   })
 
-  it('sorts prices numerically in both directions with unavailable prices last', async () => {
-    render(
-      <MarketSelector
-        marketId={1}
-        onMarketChange={vi.fn()}
-        stats={{
-          1: { price: 100, change24h: null, volume24h: null },
-          2: { price: 2, change24h: null, volume24h: null },
-          3: { price: 9, change24h: null, volume24h: null },
-        }}
-      />,
-    )
-    const dialog = await openSelector()
-    fireEvent.click(dialog.getByRole('button', { name: 'Price' }))
-    expect(visibleMarkets()).toEqual([
-      'Select SOL/USDC',
-      'Select SB/USDC',
-      'Select MATO/USDC',
-      'Select SF/USDC',
-    ])
-    expect(
-      dialog
-        .getByRole('columnheader', { name: 'Price' })
-        .getAttribute('aria-sort'),
-    ).toBe('descending')
-    fireEvent.click(dialog.getByRole('button', { name: 'Price' }))
-    expect(visibleMarkets()).toEqual([
-      'Select MATO/USDC',
-      'Select SB/USDC',
-      'Select SOL/USDC',
-      'Select SF/USDC',
-    ])
-  })
-
-  it('reports a numeric market id and closes after selection', async () => {
+  it('closes when selecting the already active market', async () => {
     const onMarketChange = vi.fn()
     const onOpenChange = vi.fn()
     render(
@@ -175,8 +127,8 @@ describe('MarketSelector', () => {
       />,
     )
     const dialog = await openSelector()
-    fireEvent.click(dialog.getByRole('button', { name: 'Select SF/USDC' }))
-    expect(onMarketChange).toHaveBeenCalledExactlyOnceWith(4)
+    fireEvent.click(dialog.getByRole('button', { name: 'Select SOL/USDC' }))
+    expect(onMarketChange).not.toHaveBeenCalled()
     expect(onOpenChange).toHaveBeenLastCalledWith(false)
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
@@ -189,7 +141,7 @@ describe('MarketSelector', () => {
     await waitFor(() => expect(document.activeElement).toBe(search))
     fireEvent.keyDown(search, { key: 'ArrowDown' })
     expect(document.activeElement).toBe(
-      dialog.getByRole('button', { name: 'Select MATO/USDC' }),
+      dialog.getByRole('button', { name: 'Select SOL/USDC' }),
     )
     fireEvent.keyDown(document.activeElement!, { key: 'End' })
     expect(document.activeElement).toBe(
@@ -210,15 +162,15 @@ describe('MarketSelector', () => {
     )
   })
 
-  it('selects the first search match with Enter', async () => {
+  it('accepts the active search match with Enter', async () => {
     const onMarketChange = vi.fn()
     render(<MarketSelector marketId={1} onMarketChange={onMarketChange} />)
     const dialog = await openSelector()
     fireEvent.change(dialog.getByRole('textbox'), {
-      target: { value: 'mAtO / UsDc' },
+      target: { value: 'sOl / UsDc' },
     })
     fireEvent.keyDown(dialog.getByRole('textbox'), { key: 'Enter' })
-    expect(onMarketChange).toHaveBeenCalledExactlyOnceWith(2)
+    expect(onMarketChange).not.toHaveBeenCalled()
   })
 
   it('cannot open while a market change is pending', () => {

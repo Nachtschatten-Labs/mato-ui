@@ -69,13 +69,9 @@ export type PublicCloseTradePositionInstruction<
   TAccountTradePosition extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountFutureExits extends string | AccountMeta<string> = string,
-  TAccountFuturePrices extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountFutureInterval extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -127,27 +123,15 @@ export type PublicCloseTradePositionInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountFutureExits extends string
-        ? WritableAccount<TAccountFutureExits>
-        : TAccountFutureExits,
-      TAccountFuturePrices extends string
-        ? WritableAccount<TAccountFuturePrices>
-        : TAccountFuturePrices,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountFutureInterval extends string
+        ? WritableAccount<TAccountFutureInterval>
+        : TAccountFutureInterval,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -217,13 +201,9 @@ export type PublicCloseTradePositionAsyncInput<
   TAccountTradePosition extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountFutureInterval extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -242,13 +222,9 @@ export type PublicCloseTradePositionAsyncInput<
   tradePosition: Address<TAccountTradePosition>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  futurePrices: Address<TAccountFuturePrices>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  futureInterval: Address<TAccountFutureInterval>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -270,13 +246,9 @@ export async function getPublicCloseTradePositionInstructionAsync<
   TAccountTradePosition extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountFutureInterval extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -297,13 +269,9 @@ export async function getPublicCloseTradePositionInstructionAsync<
     TAccountTradePosition,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -326,13 +294,9 @@ export async function getPublicCloseTradePositionInstructionAsync<
     TAccountTradePosition,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -363,13 +327,12 @@ export async function getPublicCloseTradePositionInstructionAsync<
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    futureInterval: { value: input.futureInterval ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -476,13 +439,9 @@ export async function getPublicCloseTradePositionInstructionAsync<
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('futureInterval', accounts.futureInterval),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -507,13 +466,9 @@ export async function getPublicCloseTradePositionInstructionAsync<
     TAccountTradePosition,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -535,13 +490,9 @@ export type PublicCloseTradePositionInput<
   TAccountTradePosition extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountFuturePrices extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountFutureInterval extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -560,13 +511,9 @@ export type PublicCloseTradePositionInput<
   tradePosition: Address<TAccountTradePosition>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  futurePrices: Address<TAccountFuturePrices>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  futureInterval: Address<TAccountFutureInterval>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -588,13 +535,9 @@ export function getPublicCloseTradePositionInstruction<
   TAccountTradePosition extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountFuturePrices extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountFutureInterval extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -615,13 +558,9 @@ export function getPublicCloseTradePositionInstruction<
     TAccountTradePosition,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -643,13 +582,9 @@ export function getPublicCloseTradePositionInstruction<
   TAccountTradePosition,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountBookkeeping,
-  TAccountFutureExits,
-  TAccountFuturePrices,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountFutureInterval,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -679,13 +614,12 @@ export function getPublicCloseTradePositionInstruction<
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    futurePrices: { value: input.futurePrices ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    futureInterval: { value: input.futureInterval ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -740,13 +674,9 @@ export function getPublicCloseTradePositionInstruction<
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('futurePrices', accounts.futurePrices),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('futureInterval', accounts.futureInterval),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -771,13 +701,9 @@ export function getPublicCloseTradePositionInstruction<
     TAccountTradePosition,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountFuturePrices,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -804,17 +730,13 @@ export type ParsedPublicCloseTradePositionInstruction<
     tradePosition: TAccountMetas[10]
     baseVault: TAccountMetas[11]
     quoteVault: TAccountMetas[12]
-    bookkeeping: TAccountMetas[13]
-    futureExits: TAccountMetas[14]
-    futurePrices: TAccountMetas[15]
-    currentExits: TAccountMetas[16]
-    previousExits: TAccountMetas[17]
-    currentPrices: TAccountMetas[18]
-    previousPrices: TAccountMetas[19]
-    baseTokenProgram: TAccountMetas[20]
-    quoteTokenProgram: TAccountMetas[21]
-    associatedTokenProgram: TAccountMetas[22]
-    systemProgram: TAccountMetas[23]
+    futureInterval: TAccountMetas[13]
+    currentInterval: TAccountMetas[14]
+    previousInterval: TAccountMetas[15]
+    baseTokenProgram: TAccountMetas[16]
+    quoteTokenProgram: TAccountMetas[17]
+    associatedTokenProgram: TAccountMetas[18]
+    systemProgram: TAccountMetas[19]
   }
   data: PublicCloseTradePositionInstructionData
 }
@@ -827,12 +749,12 @@ export function parsePublicCloseTradePositionInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPublicCloseTradePositionInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 24) {
+  if (instruction.accounts.length < 20) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 24,
+        expectedAccountMetas: 20,
       },
     )
   }
@@ -858,13 +780,9 @@ export function parsePublicCloseTradePositionInstruction<
       tradePosition: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      futureExits: getNextAccount(),
-      futurePrices: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      futureInterval: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

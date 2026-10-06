@@ -1,4 +1,4 @@
-name: Validate recovered application
+name: Validate mainnet UI
 on:
   push:
     branches: [main, v1]
@@ -23,5 +23,11 @@ jobs:
       - run: npm install --global pnpm@12.3.4 --ignore-scripts
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm check
+      - run: pnpm build
+        env:
+          VITE_READ_API_URL: https://read-api-production-f8ea.up.railway.app
+          VITE_ENABLE_TRANSACTIONS: 'true'
+          VITE_VERIFIED_PROGRAM_ID: TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A
+      - run: pnpm security:bundle
       - run: pnpm deploy:dry-run
       - run: pnpm audit --audit-level high

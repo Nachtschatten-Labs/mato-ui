@@ -101,7 +101,7 @@ describe('formatTransactionError', () => {
 
   it('explains when no newly swapped funds are available', () => {
     const error = new Error(
-      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6039}]}',
+      'Transaction failed during confirmation: {"InstructionError":[0,{"Custom":6038}]}',
     )
 
     expect(formatTransactionError(error, 'fallback')).toBe(
@@ -110,9 +110,9 @@ describe('formatTransactionError', () => {
   })
 
   it.each([
-    [6037, 'This position is already paused.'],
-    [6038, 'This position is not paused.'],
-    [6039, 'There are no new swapped funds to withdraw yet.'],
+    [6036, 'This position is already paused.'],
+    [6037, 'This position is not paused.'],
+    [6038, 'There are no new swapped funds to withdraw yet.'],
   ])('decodes the current structured position error %s', (code, message) => {
     expect(
       formatTransactionError(

@@ -10,28 +10,34 @@ import {
   getAddressEncoder,
   getBytesEncoder,
   getProgramDerivedAddress,
+  getU64Encoder,
   type Address,
   type ProgramDerivedAddress,
 } from '@solana/kit'
 
-export type BookkeepingSeeds = {
+export type FutureIntervalSeeds = {
   market: Address
+  futureIndex: number | bigint
 }
 
-export async function findBookkeepingPda(
-  seeds: BookkeepingSeeds,
+export async function findFutureIntervalPda(
+  seeds: FutureIntervalSeeds,
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = 'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX' as Address<'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX'>,
+    programAddress = 'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A' as Address<'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A'>,
   } = config
   return await getProgramDerivedAddress({
     programAddress,
     seeds: [
       getBytesEncoder().encode(
-        new Uint8Array([98, 111, 111, 107, 107, 101, 101, 112, 105, 110, 103]),
+        new Uint8Array([
+          109, 97, 114, 107, 101, 116, 95, 105, 110, 116, 101, 114, 118, 97,
+          108,
+        ]),
       ),
       getAddressEncoder().encode(seeds.market),
+      getU64Encoder().encode(seeds.futureIndex),
     ],
   })
 }

@@ -1,6 +1,6 @@
 function browserOrigin() {
   return typeof window === 'undefined'
-    ? import.meta.env.VITE_SITE_URL || 'https://devnet.mato.markets'
+    ? import.meta.env.VITE_SITE_URL || 'https://mato.markets'
     : window.location.origin
 }
 

@@ -103,10 +103,7 @@ export function usePositionControls() {
             queryKey: tradingQueryKeys.streamingMarket(marketAddress),
           }),
           queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.ownedExitsAccounts(connectedAddress),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.ownedPricesAccounts(connectedAddress),
+            queryKey: tradingQueryKeys.ownedMarketIntervals(connectedAddress),
           }),
         ])
         setStatus('success')

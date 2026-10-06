@@ -54,11 +54,8 @@ export type UpdateLiquidityFlowsInstruction<
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountLiquidityPosition extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -76,21 +73,12 @@ export type UpdateLiquidityFlowsInstruction<
       TAccountLiquidityPosition extends string
         ? WritableAccount<TAccountLiquidityPosition>
         : TAccountLiquidityPosition,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -149,21 +137,15 @@ export type UpdateLiquidityFlowsInput<
   TAccountAuthority extends string = string,
   TAccountMarket extends string = string,
   TAccountLiquidityPosition extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   authority: TransactionSigner<TAccountAuthority>
   market: Address<TAccountMarket>
   liquidityPosition: Address<TAccountLiquidityPosition>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: UpdateLiquidityFlowsInstructionDataArgs['referenceIndex']
   baseFlowAtoms: UpdateLiquidityFlowsInstructionDataArgs['baseFlowAtoms']
@@ -174,11 +156,8 @@ export function getUpdateLiquidityFlowsInstruction<
   TAccountAuthority extends string,
   TAccountMarket extends string,
   TAccountLiquidityPosition extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
@@ -186,11 +165,8 @@ export function getUpdateLiquidityFlowsInstruction<
     TAccountAuthority,
     TAccountMarket,
     TAccountLiquidityPosition,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
@@ -199,11 +175,8 @@ export function getUpdateLiquidityFlowsInstruction<
   TAccountAuthority,
   TAccountMarket,
   TAccountLiquidityPosition,
-  TAccountBookkeeping,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountSystemProgram
 > {
   // Program address.
@@ -217,11 +190,11 @@ export function getUpdateLiquidityFlowsInstruction<
       value: input.liquidityPosition ?? null,
       isWritable: true,
     },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   }
   const accounts = originalAccounts as Record<
@@ -244,11 +217,8 @@ export function getUpdateLiquidityFlowsInstruction<
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('market', accounts.market),
       getAccountMeta('liquidityPosition', accounts.liquidityPosition),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getUpdateLiquidityFlowsInstructionDataEncoder().encode(
@@ -260,11 +230,8 @@ export function getUpdateLiquidityFlowsInstruction<
     TAccountAuthority,
     TAccountMarket,
     TAccountLiquidityPosition,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountSystemProgram
   >)
 }
@@ -278,12 +245,9 @@ export type ParsedUpdateLiquidityFlowsInstruction<
     authority: TAccountMetas[0]
     market: TAccountMetas[1]
     liquidityPosition: TAccountMetas[2]
-    bookkeeping: TAccountMetas[3]
-    currentExits: TAccountMetas[4]
-    previousExits: TAccountMetas[5]
-    currentPrices: TAccountMetas[6]
-    previousPrices: TAccountMetas[7]
-    systemProgram: TAccountMetas[8]
+    currentInterval: TAccountMetas[3]
+    previousInterval: TAccountMetas[4]
+    systemProgram: TAccountMetas[5]
   }
   data: UpdateLiquidityFlowsInstructionData
 }
@@ -296,12 +260,12 @@ export function parseUpdateLiquidityFlowsInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateLiquidityFlowsInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 6) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 9,
+        expectedAccountMetas: 6,
       },
     )
   }
@@ -317,11 +281,8 @@ export function parseUpdateLiquidityFlowsInstruction<
       authority: getNextAccount(),
       market: getNextAccount(),
       liquidityPosition: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getUpdateLiquidityFlowsInstructionDataDecoder().decode(

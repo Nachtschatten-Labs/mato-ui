@@ -21,8 +21,6 @@ import {
   getBytesEncoder,
   getI128Decoder,
   getI128Encoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
   getU128Decoder,
@@ -36,18 +34,22 @@ import {
   transformEncoder,
   type Account,
   type Address,
-  type Codec,
-  type Decoder,
   type EncodedAccount,
-  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyUint8Array,
 } from '@solana/kit'
+import {
+  getBookkeepingStateDecoder,
+  getBookkeepingStateEncoder,
+  type BookkeepingState,
+  type BookkeepingStateArgs,
+} from '../types'
 
 export const MARKET_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
   219, 190, 213, 55, 0, 227, 198, 154,
@@ -95,10 +97,11 @@ export type Market = {
   bump: number
   /** Economic owner. Only this key may fund, withdraw, or change authorities. */
   makerAuthority: Address
-  /** Two-step ownership transfer nominee. */
-  pendingMakerAuthority: Option<Address>
+  /** Two-step ownership transfer nominee; the default address means no pending nomination. */
+  pendingMakerAuthority: Address
   /** Hot key allowed to update the dedicated quote flows. */
   quoteOperator: Address
+  padding0: ReadonlyUint8Array
   /** Signed net maker inventory in bookkeeping precision. Negative values are maker debt. */
   makerBaseInventory: bigint
   makerQuoteInventory: bigint
@@ -109,7 +112,10 @@ export type Market = {
   makerBasePerQuoteSnapshot: bigint
   makerQuotePerBaseSnapshot: bigint
   makerSlotsWithoutTradeSnapshot: number
+  padding1: ReadonlyUint8Array
   makerLastUpdateSlot: bigint
+  /** Cumulative prices, inactive slots, and average-price windows for this market. */
+  bookkeeping: BookkeepingState
 }
 
 export type MarketArgs = {
@@ -149,10 +155,11 @@ export type MarketArgs = {
   bump: number
   /** Economic owner. Only this key may fund, withdraw, or change authorities. */
   makerAuthority: Address
-  /** Two-step ownership transfer nominee. */
-  pendingMakerAuthority: OptionOrNullable<Address>
+  /** Two-step ownership transfer nominee; the default address means no pending nomination. */
+  pendingMakerAuthority: Address
   /** Hot key allowed to update the dedicated quote flows. */
   quoteOperator: Address
+  padding0: ReadonlyUint8Array
   /** Signed net maker inventory in bookkeeping precision. Negative values are maker debt. */
   makerBaseInventory: number | bigint
   makerQuoteInventory: number | bigint
@@ -163,11 +170,14 @@ export type MarketArgs = {
   makerBasePerQuoteSnapshot: number | bigint
   makerQuotePerBaseSnapshot: number | bigint
   makerSlotsWithoutTradeSnapshot: number
+  padding1: ReadonlyUint8Array
   makerLastUpdateSlot: number | bigint
+  /** Cumulative prices, inactive slots, and average-price windows for this market. */
+  bookkeeping: BookkeepingStateArgs
 }
 
 /** Gets the encoder for {@link MarketArgs} account data. */
-export function getMarketEncoder(): Encoder<MarketArgs> {
+export function getMarketEncoder(): FixedSizeEncoder<MarketArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
@@ -190,8 +200,9 @@ export function getMarketEncoder(): Encoder<MarketArgs> {
       ['isPaused', getU8Encoder()],
       ['bump', getU8Encoder()],
       ['makerAuthority', getAddressEncoder()],
-      ['pendingMakerAuthority', getOptionEncoder(getAddressEncoder())],
+      ['pendingMakerAuthority', getAddressEncoder()],
       ['quoteOperator', getAddressEncoder()],
+      ['padding0', fixEncoderSize(getBytesEncoder(), 5)],
       ['makerBaseInventory', getI128Encoder()],
       ['makerQuoteInventory', getI128Encoder()],
       ['makerBaseFlowAtoms', getU64Encoder()],
@@ -199,14 +210,16 @@ export function getMarketEncoder(): Encoder<MarketArgs> {
       ['makerBasePerQuoteSnapshot', getU128Encoder()],
       ['makerQuotePerBaseSnapshot', getU128Encoder()],
       ['makerSlotsWithoutTradeSnapshot', getU32Encoder()],
+      ['padding1', fixEncoderSize(getBytesEncoder(), 4)],
       ['makerLastUpdateSlot', getU64Encoder()],
+      ['bookkeeping', getBookkeepingStateEncoder()],
     ]),
     (value) => ({ ...value, discriminator: MARKET_DISCRIMINATOR }),
   )
 }
 
 /** Gets the decoder for {@link Market} account data. */
-export function getMarketDecoder(): Decoder<Market> {
+export function getMarketDecoder(): FixedSizeDecoder<Market> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['baseMint', getAddressDecoder()],
@@ -228,8 +241,9 @@ export function getMarketDecoder(): Decoder<Market> {
     ['isPaused', getU8Decoder()],
     ['bump', getU8Decoder()],
     ['makerAuthority', getAddressDecoder()],
-    ['pendingMakerAuthority', getOptionDecoder(getAddressDecoder())],
+    ['pendingMakerAuthority', getAddressDecoder()],
     ['quoteOperator', getAddressDecoder()],
+    ['padding0', fixDecoderSize(getBytesDecoder(), 5)],
     ['makerBaseInventory', getI128Decoder()],
     ['makerQuoteInventory', getI128Decoder()],
     ['makerBaseFlowAtoms', getU64Decoder()],
@@ -237,12 +251,14 @@ export function getMarketDecoder(): Decoder<Market> {
     ['makerBasePerQuoteSnapshot', getU128Decoder()],
     ['makerQuotePerBaseSnapshot', getU128Decoder()],
     ['makerSlotsWithoutTradeSnapshot', getU32Decoder()],
+    ['padding1', fixDecoderSize(getBytesDecoder(), 4)],
     ['makerLastUpdateSlot', getU64Decoder()],
+    ['bookkeeping', getBookkeepingStateDecoder()],
   ])
 }
 
 /** Gets the codec for {@link Market} account data. */
-export function getMarketCodec(): Codec<MarketArgs, Market> {
+export function getMarketCodec(): FixedSizeCodec<MarketArgs, Market> {
   return combineCodec(getMarketEncoder(), getMarketDecoder())
 }
 
@@ -297,4 +313,8 @@ export async function fetchAllMaybeMarket(
 ): Promise<MaybeAccount<Market>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config)
   return maybeAccounts.map((maybeAccount) => decodeMarket(maybeAccount))
+}
+
+export function getMarketSize(): number {
+  return 488
 }

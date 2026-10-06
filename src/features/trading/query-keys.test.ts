@@ -29,7 +29,7 @@ describe('tradingQueryKeys.closedPositionsForAuthority', () => {
       authority,
       1,
       1000,
-      '2026-06-05T12:00:00.000Z',
+      450000000,
     )
     const listQueryKey = tradingQueryKeys.closedPositions(
       authority,

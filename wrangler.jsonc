@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "mato-ui-devnet-preview",
+  "name": "mato-ui-preview",
   "account_id": "a47cdd329426d3fe463b84d562f36f45",
   "main": "src/server.ts",
   "compatibility_date": "2026-09-03",
@@ -12,12 +12,12 @@
   },
   "env": {
     "production": {
-      "name": "mato-ui-devnet",
+      "name": "mato-ui",
       "workers_dev": false,
       "preview_urls": false,
       "routes": [
         {
-          "pattern": "devnet.mato.markets",
+          "pattern": "mato.markets",
           "custom_domain": true,
         },
       ],
@@ -27,7 +27,7 @@
       "ratelimits": [
         {
           "name": "RPC_RATE_LIMITER",
-          "namespace_id": "301009082",
+          "namespace_id": "301009080",
           "simple": {
             "limit": 300,
             "period": 60,
@@ -35,7 +35,7 @@
         },
         {
           "name": "RPC_WS_LIMITER",
-          "namespace_id": "301009083",
+          "namespace_id": "301009081",
           "simple": {
             "limit": 15,
             "period": 60,
@@ -47,7 +47,7 @@
   "ratelimits": [
     {
       "name": "RPC_RATE_LIMITER",
-      "namespace_id": "301009182",
+      "namespace_id": "301009180",
       "simple": {
         "limit": 300,
         "period": 60,
@@ -55,7 +55,7 @@
     },
     {
       "name": "RPC_WS_LIMITER",
-      "namespace_id": "301009183",
+      "namespace_id": "301009181",
       "simple": {
         "limit": 15,
         "period": 60,

@@ -62,11 +62,8 @@ export type WithdrawSwappedInstruction<
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountTradePosition extends string | AccountMeta<string> = string,
   TAccountVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -103,21 +100,12 @@ export type WithdrawSwappedInstruction<
       TAccountVault extends string
         ? WritableAccount<TAccountVault>
         : TAccountVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
@@ -176,11 +164,8 @@ export type WithdrawSwappedAsyncInput<
   TAccountMarket extends string = string,
   TAccountTradePosition extends string = string,
   TAccountVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
@@ -193,11 +178,8 @@ export type WithdrawSwappedAsyncInput<
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
   vault?: Address<TAccountVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   tokenProgram?: Address<TAccountTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
@@ -213,11 +195,8 @@ export async function getWithdrawSwappedInstructionAsync<
   TAccountMarket extends string,
   TAccountTradePosition extends string,
   TAccountVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
@@ -232,11 +211,8 @@ export async function getWithdrawSwappedInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -253,11 +229,8 @@ export async function getWithdrawSwappedInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -279,11 +252,11 @@ export async function getWithdrawSwappedInstructionAsync<
     market: { value: input.market ?? null, isWritable: true },
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
@@ -347,11 +320,8 @@ export async function getWithdrawSwappedInstructionAsync<
       getAccountMeta('market', accounts.market),
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('vault', accounts.vault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('tokenProgram', accounts.tokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
@@ -370,11 +340,8 @@ export async function getWithdrawSwappedInstructionAsync<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -390,11 +357,8 @@ export type WithdrawSwappedInput<
   TAccountMarket extends string = string,
   TAccountTradePosition extends string = string,
   TAccountVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
@@ -407,11 +371,8 @@ export type WithdrawSwappedInput<
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
   vault: Address<TAccountVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   tokenProgram?: Address<TAccountTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
   systemProgram?: Address<TAccountSystemProgram>
@@ -427,11 +388,8 @@ export function getWithdrawSwappedInstruction<
   TAccountMarket extends string,
   TAccountTradePosition extends string,
   TAccountVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
@@ -446,11 +404,8 @@ export function getWithdrawSwappedInstruction<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -466,11 +421,8 @@ export function getWithdrawSwappedInstruction<
   TAccountMarket,
   TAccountTradePosition,
   TAccountVault,
-  TAccountBookkeeping,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram
@@ -491,11 +443,11 @@ export function getWithdrawSwappedInstruction<
     market: { value: input.market ?? null, isWritable: true },
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
     vault: { value: input.vault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
@@ -536,11 +488,8 @@ export function getWithdrawSwappedInstruction<
       getAccountMeta('market', accounts.market),
       getAccountMeta('tradePosition', accounts.tradePosition),
       getAccountMeta('vault', accounts.vault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('tokenProgram', accounts.tokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
       getAccountMeta('systemProgram', accounts.systemProgram),
@@ -559,11 +508,8 @@ export function getWithdrawSwappedInstruction<
     TAccountMarket,
     TAccountTradePosition,
     TAccountVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -584,14 +530,11 @@ export type ParsedWithdrawSwappedInstruction<
     market: TAccountMetas[5]
     tradePosition: TAccountMetas[6]
     vault: TAccountMetas[7]
-    bookkeeping: TAccountMetas[8]
-    currentExits: TAccountMetas[9]
-    previousExits: TAccountMetas[10]
-    currentPrices: TAccountMetas[11]
-    previousPrices: TAccountMetas[12]
-    tokenProgram: TAccountMetas[13]
-    associatedTokenProgram: TAccountMetas[14]
-    systemProgram: TAccountMetas[15]
+    currentInterval: TAccountMetas[8]
+    previousInterval: TAccountMetas[9]
+    tokenProgram: TAccountMetas[10]
+    associatedTokenProgram: TAccountMetas[11]
+    systemProgram: TAccountMetas[12]
   }
   data: WithdrawSwappedInstructionData
 }
@@ -604,12 +547,12 @@ export function parseWithdrawSwappedInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedWithdrawSwappedInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 16) {
+  if (instruction.accounts.length < 13) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 16,
+        expectedAccountMetas: 13,
       },
     )
   }
@@ -630,11 +573,8 @@ export function parseWithdrawSwappedInstruction<
       market: getNextAccount(),
       tradePosition: getNextAccount(),
       vault: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),

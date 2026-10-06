@@ -1,104 +1,99 @@
 # Cloudflare deployment
 
-The recovered UI runs on Cloudflare Workers with server rendering and static assets.
-The account is `a47cdd329426d3fe463b84d562f36f45` (thomas.gehrmann@nachtschattenlabs.org).
+The application targets Worker `mato-ui` and `https://mato.markets` on Solana
+mainnet-beta. The separate preview Worker is `mato-ui-preview`. Account:
+`a47cdd329426d3fe463b84d562f36f45`. This checkout must not publish to the historical
+devnet Worker.
 
-| Branch | Worker         | Domain                      | Wallet network      |
-| ------ | -------------- | --------------------------- | ------------------- |
-| main   | mato-ui        | https://mato.markets        | Solana mainnet-beta |
-| v1     | mato-ui-devnet | https://devnet.mato.markets | Solana devnet       |
-
-Both branches use `https://read-api-production-f8ea.up.railway.app` for mainnet
-market data. Every v1 market shows mainnet SOL/USDC as a labeled reference chart.
-Wallet positions and execution estimates use the selected devnet market on
-`CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX`. Closed-position history is
-unsupported; no mainnet history is used as devnet history. See [DEVNET.md](DEVNET.md).
-
-## Configure and validate
+## Prepare a release
 
 ```sh
 nvm use
 pnpm install --frozen-lockfile --ignore-scripts
+# For a new configuration only; preserve any existing provider credentials:
 cp .env.production.example .env.production.local
-cp .env.production.example .env.preview.local
 pnpm check
 pnpm audit --audit-level high
-pnpm rpc:prepare
-pnpm cf:typegen
+pnpm mainnet:verify
 ```
 
-The example uses public endpoints and disables every transaction path. Environment
-files are ignored. All `VITE_*` values are bundled for browsers: do not include
-private keys, wallet seeds, privileged tokens, or Cloudflare credentials.
-Put the provider endpoints in `SOLANA_RPC_URL` and `SOLANA_WS_URL`, without a
-`VITE_` prefix. `pnpm rpc:prepare` reads `.env.production.local` and writes ignored,
-owner-readable `.dev.vars.production` and `.cloudflare/rpc-secrets.json` files.
-The former is used by local production previews; the latter is uploaded as
-Cloudflare secrets. Never commit or share either file. Development/preview builds
-fall back to the branch's public RPC; optionally put server endpoints in ignored
-`.dev.vars` for local development.
+Use a mainnet provider in server-only `SOLANA_RPC_URL` and `SOLANA_WS_URL`.
+Production secrets already stored on `mato-ui` are retained by normal deployment.
+**Do not run `rpc:upload` with the old local devnet configuration.** Only when
+intentionally replacing production RPC secrets, configure the intended endpoints
+and run:
 
-Browsers use same-origin `/rpc` and `/rpc/ws`. The Worker forwards to fixed secret
-endpoints, limits request/response sizes, strips provider errors and redirects,
-restricts methods and program scans, and rate-limits each IP. Limits are approximate
-and per Cloudflare location; they reduce quota abuse but are not authentication.
-Set provider spending limits separately. Production requires both RPC secrets.
-`pnpm security:bundle` checks compiled client and server code for configured RPC
-tokens. Builds reject legacy `VITE_SOLANA_RPC_URL` / `VITE_SOLANA_WS_URL` inputs.
+```sh
+pnpm mainnet:verify
+pnpm rpc:upload
+```
 
-`pnpm check` builds a preview and always disables transactions, even if an
-environment file requests them. Production builds require a secure read API URL.
-The branch fixes its canonical site URL and expected program ID in
-`deployment-target.json`. Custom RPC URLs must be checked independently against
-the intended cluster; URL validation alone does not verify the network.
+`rpc:prepare` writes ignored owner-readable `.dev.vars.production` and
+`.cloudflare/rpc-secrets.json`. The former supports local production previews;
+the latter supports an intentional secret upload. Neither belongs in Git. All
+`VITE_*` variables are public; provider URLs and credentials must not use that
+prefix. Builds reject browser RPC URL overrides.
 
-## Publish
+The public read API is `https://read-api-production-f8ea.up.railway.app`.
+`pnpm mainnet:verify` checks the configured local RPC's genesis hash, observed
+program upgrade slot, market/mints/config/vaults, and the API's market address.
+It does not read Cloudflare secret contents. Existing production RPC secrets must
+be confirmed independently before opening the service.
+
+## Build and publish
+
+Development and preview builds always disable transactions. For a trading-enabled
+production build, set these public values in `.env.production.local`:
+
+```dotenv
+VITE_ENABLE_TRANSACTIONS=true
+VITE_VERIFIED_PROGRAM_ID=TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A
+VITE_MARKET_ID=1
+VITE_READ_API_URL=https://read-api-production-f8ea.up.railway.app
+```
+
+A matching program ID is a deployment configuration check, not proof of program
+integrity. See [MAINNET.md](MAINNET.md) for interface provenance and validation.
 
 ```sh
 pnpm exec wrangler login
-pnpm deploy:preview
-# Check the URL printed by Wrangler, then publish the current branch:
-pnpm rpc:upload
-pnpm deploy:production
+pnpm deploy:preview       # read-only, optional
+pnpm deploy:production    # verifies mainnet, scans source, checks types/tests,
+                         # builds production, scans bundle, then publishes
 ```
 
-Main previews use the existing `mato-ui-preview` Worker. Optional v1 previews use
-`mato-ui-devnet-preview`; this is separate from the public devnet domain.
-`pnpm deploy:production` reruns the source scan, types, tests, and production build before
-publishing to the branch's custom domain. Never reuse another branch's build.
-Cloudflare selects the target during the Vite build; the generated
-`dist/server/wrangler.json` controls the following deployment.
-`pnpm deploy:dry-run` validates the most recent build without uploading it.
+For build-only verification, run `pnpm build`, `pnpm security:bundle`, then
+`pnpm deploy:dry-run`. The Vite build selects the Cloudflare target and generates
+`dist/server/wrangler.json`; never reuse a build from another branch or mode.
+GitHub Actions validates code and builds without deployment credentials. Publication
+remains manual in this checkout; review any separately configured Git integration
+before merging to its deployment branch.
 
-The GitHub workflow checks both branches without deployment credentials. Publishing
-is currently manual. Review any existing Cloudflare Git integration before allowing
-it to publish; it must point at the recovered repository and correct branch.
+## Open the service
 
-## Verify a release
+Deploying `mato-ui` does **not** remove the maintenance page. The
+`mato-maintenance` route `mato.markets/*` takes precedence, including for `/rpc`,
+`/rpc/ws`, and `/healthz`. Keep it until the maker is quoting and launch checks are
+complete. Restoration instructions are in [ops/maintenance/README.md](ops/maintenance/README.md).
 
-- `/healthz` must return HTTP 200 and the intended `tradingEnabled` setting.
-- Open each domain, confirm a current market price/chart and the intended trading controls.
-- On devnet, confirm the mainnet-reference banner and unavailable closed history.
-- Check browser errors, Worker errors, and response security headers.
-- Test wallet reads separately before enabling any signing operation.
+After the authorized removal of that route, check:
 
-Server responses use a per-request script nonce and an endpoint-limited content
-security policy. Dynamic responses are not cached. Hashed assets are cached for a
-year. Preview and devnet HTML are excluded from indexing. Worker observability is
-enabled; `/healthz` checks application availability, not backend or RPC health.
+- `/healthz`: HTTP 200, `cluster: mainnet-beta`, the expected program ID and
+  `tradingEnabled` value. HTTP 503/offline is expected while maintenance is active.
+- Wallet connection targets mainnet; SOL and USDC balances load correctly.
+- Market prices/history load once quoting is active, without browser errors.
+- A small operator order can be paused, resumed, withdrawn, and closed; balances
+  and closed history update. Fork validation does not replace wallet-extension QA.
+- Response security headers and Worker logs are healthy.
 
-To enable production trading, set `VITE_ENABLE_TRANSACTIONS=true` and
-`VITE_VERIFIED_PROGRAM_ID` to this branch's `deployment-target.json` program ID
-in `.env.production.local`, then rebuild and deploy. Previews always disable
-transactions. A configured program ID records operator acceptance of the deployed
-program and matching interface; it is not proof of program integrity. After a
-release the operator should connect a wallet and check an order's full lifecycle.
-No private wallet key is needed by this app or its Cloudflare Worker.
+Browsers use same-origin `/rpc` and `/rpc/ws`. The proxy uses fixed server secrets,
+method restrictions, response limits, and per-IP Cloudflare rate limits. Provider
+spending controls remain separate. `/healthz` reports application configuration,
+not RPC or backend health.
 
 ## Recovery
 
-Record the clean Worker version IDs after each successful release. To restore a
-known-clean version, use `pnpm exec wrangler rollback <version-id> --name <worker>`
-from the appropriate checkout, then repeat the release checks. Do not roll back to
-an unreviewed pre-recovery release. Alternatively rebuild and deploy a known-clean
-Git revision with its matching branch configuration and environment file.
+Record the Worker version ID after release. Restore a known-clean version with
+`pnpm exec wrangler rollback <version-id> --name mato-ui`, then repeat checks.
+Never roll back to an unreviewed pre-recovery release. The standalone maintenance
+Worker can keep the public service offline independently of the application version.

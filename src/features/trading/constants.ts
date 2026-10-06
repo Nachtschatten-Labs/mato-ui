@@ -1,12 +1,13 @@
 import type { Address } from '@solana/kit'
 
-const SUPPORTED_MARKET_IDS = [1, 2, 3, 4] as const
+const SUPPORTED_MARKET_IDS = [1] as const
 
 export type MarketId = (typeof SUPPORTED_MARKET_IDS)[number]
 export type MarketCategory = 'crypto' | 'equities'
 
 export interface MarketDefinition {
   readonly id: MarketId
+  readonly address: Address
   readonly name: string
   readonly category: MarketCategory
   readonly baseSymbol: string
@@ -19,60 +20,19 @@ export interface MarketDefinition {
   readonly minimumQuoteDepositAtoms: bigint
 }
 
-const DEVNET_USDC_MINT =
-  '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' as Address
-
 export const MARKET_DEFINITIONS = [
   {
     id: 1,
+    address: 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3' as Address,
     name: 'Solana',
     category: 'crypto',
     baseSymbol: 'SOL',
     quoteSymbol: 'USDC',
     baseMint: 'So11111111111111111111111111111111111111112' as Address,
-    quoteMint: DEVNET_USDC_MINT,
+    quoteMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' as Address,
     baseDecimals: 9,
     quoteDecimals: 6,
     minimumBaseDepositAtoms: 1_000_000n,
-    minimumQuoteDepositAtoms: 100_000n,
-  },
-  {
-    id: 2,
-    name: 'Mato',
-    category: 'equities',
-    baseSymbol: 'MATO',
-    quoteSymbol: 'USDC',
-    baseMint: '69zmVXSzZptwJo5cy5LfUxmrdE1mRkeRnnEqtYNrKBMc' as Address,
-    quoteMint: DEVNET_USDC_MINT,
-    baseDecimals: 6,
-    quoteDecimals: 6,
-    minimumBaseDepositAtoms: 1_000n,
-    minimumQuoteDepositAtoms: 100_000n,
-  },
-  {
-    id: 3,
-    name: 'Solana Beach',
-    category: 'equities',
-    baseSymbol: 'SB',
-    quoteSymbol: 'USDC',
-    baseMint: '5UodwdrKuvMkpYZqEAoeo5AbeX4fPzSeENEojJLZNUQR' as Address,
-    quoteMint: DEVNET_USDC_MINT,
-    baseDecimals: 6,
-    quoteDecimals: 6,
-    minimumBaseDepositAtoms: 1_000n,
-    minimumQuoteDepositAtoms: 100_000n,
-  },
-  {
-    id: 4,
-    name: 'Staking Facilities',
-    category: 'equities',
-    baseSymbol: 'SF',
-    quoteSymbol: 'USDC',
-    baseMint: 'HxMsRrwZdg6fBVcZ5aqP3x18KVpmNG81kSncrCD7k13N' as Address,
-    quoteMint: DEVNET_USDC_MINT,
-    baseDecimals: 6,
-    quoteDecimals: 6,
-    minimumBaseDepositAtoms: 1_000n,
     minimumQuoteDepositAtoms: 100_000n,
   },
 ] as const satisfies ReadonlyArray<MarketDefinition>
@@ -103,7 +63,7 @@ function readDefaultMarketId(): MarketId {
 
 export const DEFAULT_MARKET_ID = readDefaultMarketId()
 
-export function getMarketDefinition(marketId: MarketId): MarketDefinition {
+export function getMarketDefinition(marketId: number): MarketDefinition {
   const market = MARKET_DEFINITIONS.find(
     (definition) => definition.id === marketId,
   )
@@ -124,9 +84,9 @@ export function parseMarketSearch(value: unknown): { market: MarketId } {
   return { market: parseSupportedMarketId(candidate) ?? DEFAULT_MARKET_ID }
 }
 
-// Must match twob-anchor v1's constants.rs (these are not emitted in the IDL).
-export const ARRAY_LENGTH = 30
-export const END_SLOT_INTERVAL = 7
+// Match the Twob mainnet release constants (not emitted in the IDL).
+export const ARRAY_LENGTH = 16
+export const END_SLOT_INTERVAL = 11
 export const SLOT_DURATION_MS = 400
 export const SLOT_DURATION_SECONDS = SLOT_DURATION_MS / 1000
 export const NATIVE_SOL_DECIMALS = 9
@@ -141,7 +101,7 @@ export const CHART_HISTORY_REQUEST_DEBOUNCE_MS = 450
 export const CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX = 480
 export const CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS = 10
 export const CLOSED_POSITION_BATCH_GAP_SLOTS = 900
-// A v1 close uses 24 account metas; two self-custodied positions fit the wire limit.
+// Keep batch closes within the transaction wire limit, including distinct receivers.
 export const MAX_BATCH_CLOSE_POSITIONS_PER_TRANSACTION = 2
 export const MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION = 10
 export const POSITION_PAGE_SIZE = 10

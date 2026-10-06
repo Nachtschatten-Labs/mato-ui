@@ -74,7 +74,7 @@ export function PositionPriceChart({
           </span>
         </span>
         <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="h-px w-4 bg-accent-strong" /> Mainnet reference
+          <span className="h-px w-4 bg-accent-strong" /> Market price
           {paused && (
             <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px]">
               Stream paused
@@ -86,7 +86,7 @@ export function PositionPriceChart({
         {points.length > 0 && first && last ? (
           <svg
             role="img"
-            aria-label="SOL/USDC mainnet reference price history since this position started"
+            aria-label="SOL/USDC market price history since this position started"
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             preserveAspectRatio="none"
             className="block h-32 w-full touch-pan-y"
@@ -174,7 +174,7 @@ export function PositionPriceChart({
               ? 'Loading price history…'
               : hasError
                 ? 'Reference price history is unavailable.'
-                : 'Waiting for reference prices after this stream started.'}
+                : 'Waiting for market prices after this stream started.'}
           </div>
         )}
         <div className="flex justify-between gap-3 border-t border-border/40 pt-2 pb-3 text-[10px] text-muted-foreground">
@@ -186,7 +186,7 @@ export function PositionPriceChart({
                 : 'Start time unavailable'}
           </span>
           <span className="text-right">
-            {timeLabels ? `Est. end ${dateLabel(end)}` : 'Mainnet reference'}
+            {timeLabels ? `Est. end ${dateLabel(end)}` : 'Market price'}
           </span>
         </div>
       </div>

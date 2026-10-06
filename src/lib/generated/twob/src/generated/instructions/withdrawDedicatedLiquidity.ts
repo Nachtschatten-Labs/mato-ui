@@ -62,11 +62,8 @@ export type WithdrawDedicatedLiquidityInstruction<
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -103,21 +100,12 @@ export type WithdrawDedicatedLiquidityInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -190,11 +178,8 @@ export type WithdrawDedicatedLiquidityAsyncInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -208,11 +193,8 @@ export type WithdrawDedicatedLiquidityAsyncInput<
   market: Address<TAccountMarket>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -231,11 +213,8 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -251,11 +230,8 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -273,11 +249,8 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -303,11 +276,11 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -455,11 +428,8 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -479,11 +449,8 @@ export async function getWithdrawDedicatedLiquidityInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -500,11 +467,8 @@ export type WithdrawDedicatedLiquidityInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -518,11 +482,8 @@ export type WithdrawDedicatedLiquidityInput<
   market: Address<TAccountMarket>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -541,11 +502,8 @@ export function getWithdrawDedicatedLiquidityInstruction<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -561,11 +519,8 @@ export function getWithdrawDedicatedLiquidityInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -582,11 +537,8 @@ export function getWithdrawDedicatedLiquidityInstruction<
   TAccountMarket,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountBookkeeping,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -611,11 +563,11 @@ export function getWithdrawDedicatedLiquidityInstruction<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -659,11 +611,8 @@ export function getWithdrawDedicatedLiquidityInstruction<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -683,11 +632,8 @@ export function getWithdrawDedicatedLiquidityInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -709,15 +655,12 @@ export type ParsedWithdrawDedicatedLiquidityInstruction<
     market: TAccountMetas[5]
     baseVault: TAccountMetas[6]
     quoteVault: TAccountMetas[7]
-    bookkeeping: TAccountMetas[8]
-    currentExits: TAccountMetas[9]
-    previousExits: TAccountMetas[10]
-    currentPrices: TAccountMetas[11]
-    previousPrices: TAccountMetas[12]
-    baseTokenProgram: TAccountMetas[13]
-    quoteTokenProgram: TAccountMetas[14]
-    associatedTokenProgram: TAccountMetas[15]
-    systemProgram: TAccountMetas[16]
+    currentInterval: TAccountMetas[8]
+    previousInterval: TAccountMetas[9]
+    baseTokenProgram: TAccountMetas[10]
+    quoteTokenProgram: TAccountMetas[11]
+    associatedTokenProgram: TAccountMetas[12]
+    systemProgram: TAccountMetas[13]
   }
   data: WithdrawDedicatedLiquidityInstructionData
 }
@@ -730,12 +673,12 @@ export function parseWithdrawDedicatedLiquidityInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedWithdrawDedicatedLiquidityInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 14) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 17,
+        expectedAccountMetas: 14,
       },
     )
   }
@@ -756,11 +699,8 @@ export function parseWithdrawDedicatedLiquidityInstruction<
       market: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

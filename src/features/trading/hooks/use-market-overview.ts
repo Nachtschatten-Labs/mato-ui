@@ -1,7 +1,8 @@
+import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/programs'
+import { tradingQueryRoot } from '../query-keys'
 import { useQuery } from '@tanstack/react-query'
 import { useSolanaClient } from '@solana/react-hooks'
 import { fetchAllMaybeMarket } from '@/lib/generated/twob/src/generated/accounts'
-import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/programs'
 import { MARKET_DEFINITIONS } from '../constants'
 import { findMarketAddress } from '../lib/pdas'
 import { marketPriceFromFlows } from '../lib/market'
@@ -10,7 +11,7 @@ import type { MarketStatsById } from '../lib/market-catalog'
 export function useMarketOverview(enabled: boolean) {
   const client = useSolanaClient()
   return useQuery({
-    queryKey: ['trading', 'market-overview', TWOB_ANCHOR_PROGRAM_ADDRESS],
+    queryKey: [...tradingQueryRoot, 'market-overview'],
     enabled,
     staleTime: 10_000,
     refetchInterval: enabled ? 10_000 : false,
@@ -41,7 +42,7 @@ export function useMarketOverview(enabled: boolean) {
             market.baseDecimals,
             market.quoteDecimals,
           ),
-          // A devnet history service is not available yet.
+          // Historical statistics are unavailable until sufficient market data exists.
           change24h: null,
           volume24h: null,
         }

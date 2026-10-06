@@ -40,17 +40,20 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const UPDATE_BOOKS_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
-  186, 132, 107, 163, 37, 130, 212, 113,
-])
+export const CLOSE_MARKET_INTERVAL_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([220, 103, 218, 126, 157, 102, 70, 29])
 
-export function getUpdateBooksDiscriminatorBytes(): ReadonlyUint8Array {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(UPDATE_BOOKS_DISCRIMINATOR)
+export function getCloseMarketIntervalDiscriminatorBytes(): ReadonlyUint8Array {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(
+    CLOSE_MARKET_INTERVAL_DISCRIMINATOR,
+  )
 }
 
-export type UpdateBooksInstruction<
+export type CloseMarketIntervalInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountSigner extends string | AccountMeta<string> = string,
+  TAccountPayer extends string | AccountMeta<string> = string,
+  TAccountMarketInterval extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountCurrentInterval extends string | AccountMeta<string> = string,
   TAccountPreviousInterval extends string | AccountMeta<string> = string,
@@ -65,6 +68,12 @@ export type UpdateBooksInstruction<
         ? WritableSignerAccount<TAccountSigner> &
             AccountSignerMeta<TAccountSigner>
         : TAccountSigner,
+      TAccountPayer extends string
+        ? WritableAccount<TAccountPayer>
+        : TAccountPayer,
+      TAccountMarketInterval extends string
+        ? WritableAccount<TAccountMarketInterval>
+        : TAccountMarketInterval,
       TAccountMarket extends string
         ? WritableAccount<TAccountMarket>
         : TAccountMarket,
@@ -81,81 +90,89 @@ export type UpdateBooksInstruction<
     ]
   >
 
-export type UpdateBooksInstructionData = {
+export type CloseMarketIntervalInstructionData = {
   discriminator: ReadonlyUint8Array
   referenceIndex: bigint
-  slot: bigint
 }
 
-export type UpdateBooksInstructionDataArgs = {
+export type CloseMarketIntervalInstructionDataArgs = {
   referenceIndex: number | bigint
-  slot: number | bigint
 }
 
-export function getUpdateBooksInstructionDataEncoder(): FixedSizeEncoder<UpdateBooksInstructionDataArgs> {
+export function getCloseMarketIntervalInstructionDataEncoder(): FixedSizeEncoder<CloseMarketIntervalInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['referenceIndex', getU64Encoder()],
-      ['slot', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: UPDATE_BOOKS_DISCRIMINATOR }),
+    (value) => ({
+      ...value,
+      discriminator: CLOSE_MARKET_INTERVAL_DISCRIMINATOR,
+    }),
   )
 }
 
-export function getUpdateBooksInstructionDataDecoder(): FixedSizeDecoder<UpdateBooksInstructionData> {
+export function getCloseMarketIntervalInstructionDataDecoder(): FixedSizeDecoder<CloseMarketIntervalInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['referenceIndex', getU64Decoder()],
-    ['slot', getU64Decoder()],
   ])
 }
 
-export function getUpdateBooksInstructionDataCodec(): FixedSizeCodec<
-  UpdateBooksInstructionDataArgs,
-  UpdateBooksInstructionData
+export function getCloseMarketIntervalInstructionDataCodec(): FixedSizeCodec<
+  CloseMarketIntervalInstructionDataArgs,
+  CloseMarketIntervalInstructionData
 > {
   return combineCodec(
-    getUpdateBooksInstructionDataEncoder(),
-    getUpdateBooksInstructionDataDecoder(),
+    getCloseMarketIntervalInstructionDataEncoder(),
+    getCloseMarketIntervalInstructionDataDecoder(),
   )
 }
 
-export type UpdateBooksInput<
+export type CloseMarketIntervalInput<
   TAccountSigner extends string = string,
+  TAccountPayer extends string = string,
+  TAccountMarketInterval extends string = string,
   TAccountMarket extends string = string,
   TAccountCurrentInterval extends string = string,
   TAccountPreviousInterval extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
+  payer: Address<TAccountPayer>
+  marketInterval: Address<TAccountMarketInterval>
   market: Address<TAccountMarket>
   currentInterval: Address<TAccountCurrentInterval>
   previousInterval: Address<TAccountPreviousInterval>
   systemProgram?: Address<TAccountSystemProgram>
-  referenceIndex: UpdateBooksInstructionDataArgs['referenceIndex']
-  slot: UpdateBooksInstructionDataArgs['slot']
+  referenceIndex: CloseMarketIntervalInstructionDataArgs['referenceIndex']
 }
 
-export function getUpdateBooksInstruction<
+export function getCloseMarketIntervalInstruction<
   TAccountSigner extends string,
+  TAccountPayer extends string,
+  TAccountMarketInterval extends string,
   TAccountMarket extends string,
   TAccountCurrentInterval extends string,
   TAccountPreviousInterval extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: UpdateBooksInput<
+  input: CloseMarketIntervalInput<
     TAccountSigner,
+    TAccountPayer,
+    TAccountMarketInterval,
     TAccountMarket,
     TAccountCurrentInterval,
     TAccountPreviousInterval,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): UpdateBooksInstruction<
+): CloseMarketIntervalInstruction<
   TProgramAddress,
   TAccountSigner,
+  TAccountPayer,
+  TAccountMarketInterval,
   TAccountMarket,
   TAccountCurrentInterval,
   TAccountPreviousInterval,
@@ -167,6 +184,8 @@ export function getUpdateBooksInstruction<
   // Original accounts.
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: true },
+    payer: { value: input.payer ?? null, isWritable: true },
+    marketInterval: { value: input.marketInterval ?? null, isWritable: true },
     market: { value: input.market ?? null, isWritable: true },
     currentInterval: { value: input.currentInterval ?? null, isWritable: true },
     previousInterval: {
@@ -193,18 +212,22 @@ export function getUpdateBooksInstruction<
   return Object.freeze({
     accounts: [
       getAccountMeta('signer', accounts.signer),
+      getAccountMeta('payer', accounts.payer),
+      getAccountMeta('marketInterval', accounts.marketInterval),
       getAccountMeta('market', accounts.market),
       getAccountMeta('currentInterval', accounts.currentInterval),
       getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
-    data: getUpdateBooksInstructionDataEncoder().encode(
-      args as UpdateBooksInstructionDataArgs,
+    data: getCloseMarketIntervalInstructionDataEncoder().encode(
+      args as CloseMarketIntervalInstructionDataArgs,
     ),
     programAddress,
-  } as UpdateBooksInstruction<
+  } as CloseMarketIntervalInstruction<
     TProgramAddress,
     TAccountSigner,
+    TAccountPayer,
+    TAccountMarketInterval,
     TAccountMarket,
     TAccountCurrentInterval,
     TAccountPreviousInterval,
@@ -212,35 +235,37 @@ export function getUpdateBooksInstruction<
   >)
 }
 
-export type ParsedUpdateBooksInstruction<
+export type ParsedCloseMarketIntervalInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>
   accounts: {
     signer: TAccountMetas[0]
-    market: TAccountMetas[1]
-    currentInterval: TAccountMetas[2]
-    previousInterval: TAccountMetas[3]
-    systemProgram: TAccountMetas[4]
+    payer: TAccountMetas[1]
+    marketInterval: TAccountMetas[2]
+    market: TAccountMetas[3]
+    currentInterval: TAccountMetas[4]
+    previousInterval: TAccountMetas[5]
+    systemProgram: TAccountMetas[6]
   }
-  data: UpdateBooksInstructionData
+  data: CloseMarketIntervalInstructionData
 }
 
-export function parseUpdateBooksInstruction<
+export function parseCloseMarketIntervalInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedUpdateBooksInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedCloseMarketIntervalInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 7) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 5,
+        expectedAccountMetas: 7,
       },
     )
   }
@@ -254,11 +279,15 @@ export function parseUpdateBooksInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       signer: getNextAccount(),
+      payer: getNextAccount(),
+      marketInterval: getNextAccount(),
       market: getNextAccount(),
       currentInterval: getNextAccount(),
       previousInterval: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getUpdateBooksInstructionDataDecoder().decode(instruction.data),
+    data: getCloseMarketIntervalInstructionDataDecoder().decode(
+      instruction.data,
+    ),
   }
 }

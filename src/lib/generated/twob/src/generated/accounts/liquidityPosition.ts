@@ -66,8 +66,6 @@ export type LiquidityPosition = {
   basePerQuoteSnapshot: bigint
   /** Bookkeeping snapshot at last update slot */
   quotePerBaseSnapshot: bigint
-  /** Snapshot of slots without trades in this market when this order was created */
-  slotsWithoutTradeSnapshot: number
   /** Base flow, no extra flow precision needed, since flow are set manually */
   baseFlowAtoms: bigint
   /** Quote flow, no extra flow precision needed, since flow are set manually */
@@ -78,7 +76,10 @@ export type LiquidityPosition = {
   quoteDebt: bigint
   /** Slot when position was last updated */
   lastUpdateSlot: bigint
+  /** Snapshot of slots without trades in this market when this order was created */
+  slotsWithoutTradeSnapshot: number
   bump: number
+  padding: ReadonlyUint8Array
 }
 
 export type LiquidityPositionArgs = {
@@ -94,8 +95,6 @@ export type LiquidityPositionArgs = {
   basePerQuoteSnapshot: number | bigint
   /** Bookkeeping snapshot at last update slot */
   quotePerBaseSnapshot: number | bigint
-  /** Snapshot of slots without trades in this market when this order was created */
-  slotsWithoutTradeSnapshot: number
   /** Base flow, no extra flow precision needed, since flow are set manually */
   baseFlowAtoms: number | bigint
   /** Quote flow, no extra flow precision needed, since flow are set manually */
@@ -106,7 +105,10 @@ export type LiquidityPositionArgs = {
   quoteDebt: number | bigint
   /** Slot when position was last updated */
   lastUpdateSlot: number | bigint
+  /** Snapshot of slots without trades in this market when this order was created */
+  slotsWithoutTradeSnapshot: number
   bump: number
+  padding: ReadonlyUint8Array
 }
 
 /** Gets the encoder for {@link LiquidityPositionArgs} account data. */
@@ -120,13 +122,14 @@ export function getLiquidityPositionEncoder(): FixedSizeEncoder<LiquidityPositio
       ['quoteBalance', getU128Encoder()],
       ['basePerQuoteSnapshot', getU128Encoder()],
       ['quotePerBaseSnapshot', getU128Encoder()],
-      ['slotsWithoutTradeSnapshot', getU32Encoder()],
       ['baseFlowAtoms', getU64Encoder()],
       ['quoteFlowAtoms', getU64Encoder()],
       ['baseDebt', getU64Encoder()],
       ['quoteDebt', getU64Encoder()],
       ['lastUpdateSlot', getU64Encoder()],
+      ['slotsWithoutTradeSnapshot', getU32Encoder()],
       ['bump', getU8Encoder()],
+      ['padding', fixEncoderSize(getBytesEncoder(), 3)],
     ]),
     (value) => ({ ...value, discriminator: LIQUIDITY_POSITION_DISCRIMINATOR }),
   )
@@ -142,13 +145,14 @@ export function getLiquidityPositionDecoder(): FixedSizeDecoder<LiquidityPositio
     ['quoteBalance', getU128Decoder()],
     ['basePerQuoteSnapshot', getU128Decoder()],
     ['quotePerBaseSnapshot', getU128Decoder()],
-    ['slotsWithoutTradeSnapshot', getU32Decoder()],
     ['baseFlowAtoms', getU64Decoder()],
     ['quoteFlowAtoms', getU64Decoder()],
     ['baseDebt', getU64Decoder()],
     ['quoteDebt', getU64Decoder()],
     ['lastUpdateSlot', getU64Decoder()],
+    ['slotsWithoutTradeSnapshot', getU32Decoder()],
     ['bump', getU8Decoder()],
+    ['padding', fixDecoderSize(getBytesDecoder(), 3)],
   ])
 }
 
@@ -227,5 +231,5 @@ export async function fetchAllMaybeLiquidityPosition(
 }
 
 export function getLiquidityPositionSize(): number {
-  return 181
+  return 184
 }
