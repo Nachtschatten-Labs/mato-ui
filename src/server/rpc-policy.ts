@@ -1,3 +1,11 @@
+import {
+  SOLANA_ERROR__INSTRUCTION_ERROR__UNKNOWN,
+  SOLANA_ERROR__TRANSACTION_ERROR__UNKNOWN,
+  getSolanaErrorFromInstructionError,
+  getSolanaErrorFromTransactionError,
+  isSolanaError,
+} from '@solana/kit'
+
 const READ_METHODS = new Set([
   'getAccountInfo',
   'getMultipleAccounts',
@@ -72,7 +80,80 @@ export function validateRpcPayload(
   })
 }
 
-// Provider errors can contain private endpoint details. Preserve RPC codes only.
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isUnsignedInteger(value: unknown, max: number): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= max
+  )
+}
+
+// Reconstruct only known Solana enum variants and numeric fields. Never forward
+// arbitrary provider strings, logs, or metadata from error.data.
+function sanitizeTransactionError(value: unknown): unknown {
+  if (typeof value === 'string') {
+    if (
+      [
+        'InstructionError',
+        'DuplicateInstruction',
+        'InsufficientFundsForRent',
+        'ProgramExecutionTemporarilyRestricted',
+      ].includes(value)
+    )
+      return null
+    return isSolanaError(
+      getSolanaErrorFromTransactionError(value),
+      SOLANA_ERROR__TRANSACTION_ERROR__UNKNOWN,
+    )
+      ? null
+      : value
+  }
+  if (!isRecord(value) || Object.keys(value).length !== 1) return null
+
+  const instruction = value.InstructionError
+  if (
+    Array.isArray(instruction) &&
+    instruction.length === 2 &&
+    isUnsignedInteger(instruction[0], 255)
+  ) {
+    const [index, detail] = instruction
+    if (typeof detail === 'string' && detail !== 'Custom') {
+      return isSolanaError(
+        getSolanaErrorFromInstructionError(index, detail),
+        SOLANA_ERROR__INSTRUCTION_ERROR__UNKNOWN,
+      )
+        ? null
+        : { InstructionError: [index, detail] }
+    }
+    if (isRecord(detail) && Object.keys(detail).length === 1) {
+      if (isUnsignedInteger(detail.Custom, 0xffffffff))
+        return { InstructionError: [index, { Custom: detail.Custom }] }
+      if (typeof detail.BorshIoError === 'string')
+        return { InstructionError: [index, 'BorshIoError'] }
+    }
+    return null
+  }
+
+  if (isUnsignedInteger(value.DuplicateInstruction, 255))
+    return { DuplicateInstruction: value.DuplicateInstruction }
+  for (const name of [
+    'InsufficientFundsForRent',
+    'ProgramExecutionTemporarilyRestricted',
+  ]) {
+    const detail = value[name]
+    if (isRecord(detail) && isUnsignedInteger(detail.account_index, 255))
+      return { [name]: { account_index: detail.account_index } }
+  }
+  return null
+}
+
+// Provider messages can contain private endpoint details. Preflight failures
+// also need a data object: Solana Kit destructures data.err for code -32002.
 export function sanitizeRpcResponse(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sanitizeRpcResponse)
   if (!value || typeof value !== 'object')
@@ -87,6 +168,15 @@ export function sanitizeRpcResponse(value: unknown): unknown {
       error: {
         code: typeof error.code === 'number' ? error.code : -32000,
         message: 'Solana RPC request failed',
+        ...(error.code === -32002
+          ? {
+              data: {
+                err: sanitizeTransactionError(
+                  isRecord(error.data) ? error.data.err : null,
+                ),
+              },
+            }
+          : {}),
       },
     }
   }
