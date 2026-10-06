@@ -1,3 +1,12 @@
+import target from '../../../deployment-target.json'
+import { getMarketDefinition } from './constants'
+
+export const tradingQueryRoot = [
+  'trading',
+  target.cluster,
+  target.programId,
+] as const
+
 function normalizeKeyPart(value: bigint | number | string | null | undefined) {
   if (value === null || value === undefined || value === '') return 'none'
   return typeof value === 'bigint' ? value.toString() : String(value)
@@ -12,79 +21,115 @@ export const tradingQueryKeys = {
     baseMint: string
     quoteMint: string
     id: number
-  }) => ['trading', 'market-address', baseMint, quoteMint, id] as const,
+  }) =>
+    [...tradingQueryRoot, 'market-address', baseMint, quoteMint, id] as const,
   marketConfig: (marketId: number) =>
-    ['trading', 'market-config', marketId] as const,
+    [
+      ...tradingQueryRoot,
+      'market-config',
+      getMarketDefinition(marketId).address,
+    ] as const,
   marketUpdates: (marketId: number, limit: number) =>
-    ['trading', 'market-updates', marketId, limit] as const,
+    [
+      ...tradingQueryRoot,
+      'market-updates',
+      getMarketDefinition(marketId).address,
+      limit,
+    ] as const,
   marketUpdateRange: (
     marketId: number,
     startSlot: number | null,
     endSlot: number | null,
   ) =>
     [
-      'trading',
+      ...tradingQueryRoot,
       'market-updates',
       'range',
-      marketId,
+      getMarketDefinition(marketId).address,
       normalizeKeyPart(startSlot),
       normalizeKeyPart(endSlot),
     ] as const,
   marketPrice: (marketId: number) =>
-    ['trading', 'market-price', marketId] as const,
+    [
+      ...tradingQueryRoot,
+      'market-price',
+      getMarketDefinition(marketId).address,
+    ] as const,
   marketPriceChange24h: (marketId: number) =>
-    ['trading', 'market-price-change-24h', marketId] as const,
+    [
+      ...tradingQueryRoot,
+      'market-price-change-24h',
+      getMarketDefinition(marketId).address,
+    ] as const,
   tradePositions: (
     authority: string | null | undefined,
     marketAddress: string | undefined,
   ) =>
     [
-      'trading',
+      ...tradingQueryRoot,
       'trade-positions',
       normalizeKeyPart(authority),
       normalizeKeyPart(marketAddress),
     ] as const,
   tradePositionsForAuthority: (authority: string | null | undefined) =>
-    ['trading', 'trade-positions', normalizeKeyPart(authority)] as const,
+    [
+      ...tradingQueryRoot,
+      'trade-positions',
+      normalizeKeyPart(authority),
+    ] as const,
   marketTradePositions: (marketAddress: string | null | undefined) =>
     [
-      'trading',
+      ...tradingQueryRoot,
       'market-trade-positions',
       normalizeKeyPart(marketAddress),
     ] as const,
-  ownedPricesAccounts: (authority: string | null | undefined) =>
-    ['trading', 'owned-prices-accounts', normalizeKeyPart(authority)] as const,
-  ownedExitsAccounts: (authority: string | null | undefined) =>
-    ['trading', 'owned-exits-accounts', normalizeKeyPart(authority)] as const,
+  ownedMarketIntervals: (authority: string | null | undefined) =>
+    [
+      ...tradingQueryRoot,
+      'owned-market-intervals',
+      normalizeKeyPart(authority),
+    ] as const,
   closedPositions: (
     authority: string | null | undefined,
     marketId: number | undefined,
     limit: number,
-    createdAfter?: string,
+    beforeSlot?: number,
   ) =>
     [
-      'trading',
+      ...tradingQueryRoot,
       'closed-positions',
       normalizeKeyPart(authority),
-      normalizeKeyPart(marketId),
+      normalizeKeyPart(
+        marketId === undefined
+          ? undefined
+          : getMarketDefinition(marketId).address,
+      ),
       limit,
-      normalizeKeyPart(createdAfter),
+      normalizeKeyPart(beforeSlot),
     ] as const,
   closedPositionsForAuthority: (authority: string | null | undefined) =>
-    ['trading', 'closed-positions', normalizeKeyPart(authority)] as const,
+    [
+      ...tradingQueryRoot,
+      'closed-positions',
+      normalizeKeyPart(authority),
+    ] as const,
   streamingMarket: (marketAddress: string | null | undefined) =>
-    ['trading', 'streaming-market', normalizeKeyPart(marketAddress)] as const,
+    [
+      ...tradingQueryRoot,
+      'streaming-market',
+      normalizeKeyPart(marketAddress),
+    ] as const,
   endSlotSnapshot: (
     marketAddress: string,
-    pricesAccountIndex: number | null,
+    intervalIndex: number | null,
     snapshotIndex: number | null,
     isBuy: boolean,
   ) =>
     [
-      'trading',
+      ...tradingQueryRoot,
       'end-slot-snapshot',
       marketAddress,
-      normalizeKeyPart(pricesAccountIndex),
+      normalizeKeyPart(intervalIndex),
       normalizeKeyPart(snapshotIndex),
       isBuy ? 'buy' : 'sell',
     ] as const,

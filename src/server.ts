@@ -1,3 +1,4 @@
+import target from '../deployment-target.json'
 import handler from '@tanstack/react-start/server-entry'
 import { secureResponse } from './server/security'
 import { handleRpcProxy } from './server/rpc-proxy'
@@ -15,6 +16,8 @@ export default {
         return secureResponse(
           Response.json({
             status: 'ok',
+            cluster: target.cluster,
+            programId: target.programId,
             tradingEnabled: import.meta.env.VITE_ENABLE_TRANSACTIONS === 'true',
           }),
         )

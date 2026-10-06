@@ -2,10 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useSolanaClient, useWalletSession } from '@solana/react-hooks'
 import { Wallet } from 'lucide-react'
-import type {
-  OwnedExitsAccount,
-  OwnedPricesAccount,
-} from '@/features/trading/api/rent-accounts'
+import type { OwnedMarketInterval } from '@/features/trading/api/rent-accounts'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -30,16 +27,9 @@ type AccountRow = {
   payer: string
 }
 
-function mapPricesRows(accounts: Array<OwnedPricesAccount>): Array<AccountRow> {
-  return accounts.map((account) => ({
-    address: account.address.toString(),
-    index: account.data.index,
-    market: account.data.market.toString(),
-    payer: account.data.payer.toString(),
-  }))
-}
-
-function mapExitsRows(accounts: Array<OwnedExitsAccount>): Array<AccountRow> {
+function mapIntervalRows(
+  accounts: Array<OwnedMarketInterval>,
+): Array<AccountRow> {
   return accounts.map((account) => ({
     address: account.address.toString(),
     index: account.data.index,
@@ -54,29 +44,16 @@ function RentPage() {
   const session = useWalletSession()
   const ownerAddress = session?.account.address.toString() ?? null
 
-  const pricesQuery = useQuery({
-    ...tradingQueries.ownedPricesAccounts({ authority: ownerAddress, client }),
+  const intervalsQuery = useQuery({
+    ...tradingQueries.ownedMarketIntervals({ authority: ownerAddress, client }),
     enabled: Boolean(ownerAddress),
   })
-  const exitsQuery = useQuery({
-    ...tradingQueries.ownedExitsAccounts({ authority: ownerAddress, client }),
-    enabled: Boolean(ownerAddress),
-  })
-
-  const pricesRows = mapPricesRows(pricesQuery.data ?? [])
-  const exitsRows = mapExitsRows(exitsQuery.data ?? [])
-  const totalAccounts = pricesRows.length + exitsRows.length
-  const isPricesLoading = ownerAddress !== null && pricesQuery.isPending
-  const isExitsLoading = ownerAddress !== null && exitsQuery.isPending
+  const intervalRows = mapIntervalRows(intervalsQuery.data ?? [])
+  const totalAccounts = intervalRows.length
+  const isLoading = ownerAddress !== null && intervalsQuery.isPending
+  const isRefreshing = ownerAddress !== null && intervalsQuery.isFetching
   const errorMessage =
-    pricesQuery.error instanceof Error
-      ? pricesQuery.error.message
-      : exitsQuery.error instanceof Error
-        ? exitsQuery.error.message
-        : null
-  const isLoading = isPricesLoading || isExitsLoading
-  const isRefreshing =
-    ownerAddress !== null && (pricesQuery.isFetching || exitsQuery.isFetching)
+    intervalsQuery.error instanceof Error ? intervalsQuery.error.message : null
 
   return (
     <div className="relative min-h-[calc(100dvh-3.5rem)] bg-[color:var(--color-page-bg)] text-foreground">
@@ -92,9 +69,9 @@ function RentPage() {
         </div>
 
         <p className="mb-8 max-w-2xl text-sm leading-6 text-muted-foreground">
-          View the price and exit accounts funded by your wallet. Once an
-          account pair is no longer in use, you can close it to reclaim its SOL
-          rent from the wallet menu.
+          View the market interval accounts funded by your wallet. Once an
+          interval is no longer in use, you can close it to reclaim its SOL rent
+          from the wallet menu.
         </p>
 
         {!ownerAddress ? (
@@ -108,7 +85,7 @@ function RentPage() {
           </Alert>
         ) : (
           <>
-            <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            <div className="mb-6 grid gap-3">
               <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
                 <CardContent className="space-y-3 p-5">
                   <p className="text-xs text-muted-foreground">
@@ -116,24 +93,6 @@ function RentPage() {
                   </p>
                   <p className="text-2xl font-medium tabular-nums leading-none">
                     {totalAccounts}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
-                <CardContent className="space-y-3 p-5">
-                  <p className="text-xs text-muted-foreground">
-                    Price accounts
-                  </p>
-                  <p className="text-2xl font-medium tabular-nums leading-none">
-                    {pricesRows.length}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-[20px] border-white/6 bg-white/[0.015] shadow-none">
-                <CardContent className="space-y-3 p-5">
-                  <p className="text-xs text-muted-foreground">Exit accounts</p>
-                  <p className="text-2xl font-medium tabular-nums leading-none">
-                    {exitsRows.length}
                   </p>
                 </CardContent>
               </Card>
@@ -151,21 +110,14 @@ function RentPage() {
               </Alert>
             ) : null}
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6">
               <OwnedAccountCard
-                description="Price snapshot accounts funded by this wallet."
-                emptyLabel="No funded prices accounts found."
-                isLoading={isPricesLoading}
-                rows={pricesRows}
-                title="Price accounts"
-              />
-              <OwnedAccountCard
-                description="Exit flow accounts funded by this wallet."
-                emptyLabel="No funded exits accounts found."
-                isLoading={isExitsLoading}
-                rows={exitsRows}
+                description="Market intervals funded by this wallet, holding settlement snapshots and scheduled exits."
+                emptyLabel="No funded market intervals found."
+                isLoading={isLoading}
+                rows={intervalRows}
                 showOpenPositions
-                title="Exit accounts"
+                title="Market intervals"
               />
             </div>
           </>

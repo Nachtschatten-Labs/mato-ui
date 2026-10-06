@@ -56,12 +56,9 @@ export type PauseTradePositionInstruction<
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountTradePosition extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountFutureExits extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountFutureInterval extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -89,24 +86,15 @@ export type PauseTradePositionInstruction<
       TAccountTradePosition extends string
         ? WritableAccount<TAccountTradePosition>
         : TAccountTradePosition,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountFutureExits extends string
-        ? WritableAccount<TAccountFutureExits>
-        : TAccountFutureExits,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountFutureInterval extends string
+        ? WritableAccount<TAccountFutureInterval>
+        : TAccountFutureInterval,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -168,12 +156,9 @@ export type PauseTradePositionInput<
   TAccountQuoteMint extends string = string,
   TAccountMarket extends string = string,
   TAccountTradePosition extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountFutureExits extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountFutureInterval extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -184,12 +169,9 @@ export type PauseTradePositionInput<
   quoteMint: Address<TAccountQuoteMint>
   market: Address<TAccountMarket>
   tradePosition: Address<TAccountTradePosition>
-  bookkeeping: Address<TAccountBookkeeping>
-  futureExits: Address<TAccountFutureExits>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  futureInterval: Address<TAccountFutureInterval>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -203,12 +185,9 @@ export function getPauseTradePositionInstruction<
   TAccountQuoteMint extends string,
   TAccountMarket extends string,
   TAccountTradePosition extends string,
-  TAccountBookkeeping extends string,
-  TAccountFutureExits extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountFutureInterval extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -221,12 +200,9 @@ export function getPauseTradePositionInstruction<
     TAccountQuoteMint,
     TAccountMarket,
     TAccountTradePosition,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -240,12 +216,9 @@ export function getPauseTradePositionInstruction<
   TAccountQuoteMint,
   TAccountMarket,
   TAccountTradePosition,
-  TAccountBookkeeping,
-  TAccountFutureExits,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountFutureInterval,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -261,12 +234,12 @@ export function getPauseTradePositionInstruction<
     quoteMint: { value: input.quoteMint ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
     tradePosition: { value: input.tradePosition ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    futureExits: { value: input.futureExits ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    futureInterval: { value: input.futureInterval ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -307,12 +280,9 @@ export function getPauseTradePositionInstruction<
       getAccountMeta('quoteMint', accounts.quoteMint),
       getAccountMeta('market', accounts.market),
       getAccountMeta('tradePosition', accounts.tradePosition),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('futureExits', accounts.futureExits),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('futureInterval', accounts.futureInterval),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -329,12 +299,9 @@ export function getPauseTradePositionInstruction<
     TAccountQuoteMint,
     TAccountMarket,
     TAccountTradePosition,
-    TAccountBookkeeping,
-    TAccountFutureExits,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountFutureInterval,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -353,16 +320,13 @@ export type ParsedPauseTradePositionInstruction<
     quoteMint: TAccountMetas[2]
     market: TAccountMetas[3]
     tradePosition: TAccountMetas[4]
-    bookkeeping: TAccountMetas[5]
-    futureExits: TAccountMetas[6]
-    currentExits: TAccountMetas[7]
-    previousExits: TAccountMetas[8]
-    currentPrices: TAccountMetas[9]
-    previousPrices: TAccountMetas[10]
-    baseTokenProgram: TAccountMetas[11]
-    quoteTokenProgram: TAccountMetas[12]
-    associatedTokenProgram: TAccountMetas[13]
-    systemProgram: TAccountMetas[14]
+    futureInterval: TAccountMetas[5]
+    currentInterval: TAccountMetas[6]
+    previousInterval: TAccountMetas[7]
+    baseTokenProgram: TAccountMetas[8]
+    quoteTokenProgram: TAccountMetas[9]
+    associatedTokenProgram: TAccountMetas[10]
+    systemProgram: TAccountMetas[11]
   }
   data: PauseTradePositionInstructionData
 }
@@ -375,12 +339,12 @@ export function parsePauseTradePositionInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedPauseTradePositionInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 15) {
+  if (instruction.accounts.length < 12) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 15,
+        expectedAccountMetas: 12,
       },
     )
   }
@@ -398,12 +362,9 @@ export function parsePauseTradePositionInstruction<
       quoteMint: getNextAccount(),
       market: getNextAccount(),
       tradePosition: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      futureExits: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      futureInterval: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

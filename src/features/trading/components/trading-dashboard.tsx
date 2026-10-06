@@ -58,6 +58,8 @@ import {
   buildTradingDashboardViewModel,
   formatDashboardPrice,
 } from '../view-models/trading-dashboard'
+import { ClosedPositionsList } from './closed-positions-list'
+import { isReadApiConfigured } from '../api/read-api'
 import { MarketPriceChart } from './market-price-chart'
 import { OrderEntryCard, formatDuration } from './order-entry-card'
 import { OrderBookTable } from './order-book-table'
@@ -94,9 +96,6 @@ const CHART_DISPLAY_MODES = [
   { icon: ChartCandlestick, label: 'Candles', mode: 'candles' },
   { icon: ChartLine, label: 'Line', mode: 'line' },
 ] as const
-const REFERENCE_PRICE_MARKET_ID: MarketId = 1
-const REFERENCE_PRICE_MARKET = getMarketDefinition(REFERENCE_PRICE_MARKET_ID)
-const REFERENCE_CHART_LABEL = 'SOL/USDC · Mainnet reference'
 const MARKET_PANEL_TABS = [
   { icon: ChartCandlestick, label: 'Chart', tab: 'chart' },
   { icon: ListOrdered, label: 'Order book', tab: 'order-book' },
@@ -120,13 +119,11 @@ export function TradingDashboard({
 
   const marketAddressQuery = useMarketAddress(marketId)
   const marketAddress = marketAddressQuery.data
-  const marketPriceQuery = useMarketPrice(REFERENCE_PRICE_MARKET_ID)
-  const marketPriceChange24hQuery = useMarketPriceChange24h(
-    REFERENCE_PRICE_MARKET_ID,
-  )
+  const marketPriceQuery = useMarketPrice(marketId)
+  const marketPriceChange24hQuery = useMarketPriceChange24h(marketId)
   const marketUpdates = useMarketUpdates({
     limit: DEFAULT_MARKET_UPDATES_LIMIT,
-    marketId: REFERENCE_PRICE_MARKET_ID,
+    marketId: marketId,
   })
   const streamingStateQuery = useStreamingMarketState(marketAddress)
   const tradePositionsQuery = useTradePositions(address, marketAddress)
@@ -173,7 +170,7 @@ export function TradingDashboard({
   } = selectedMarket
   const marketChartHistory = useMarketChartHistory({
     latestPrice: marketPriceQuery.data ?? null,
-    marketId: REFERENCE_PRICE_MARKET_ID,
+    marketId: marketId,
     timeframe: chartTimeframe,
   })
 
@@ -301,9 +298,9 @@ export function TradingDashboard({
       ? tradePositionsQuery.error.message
       : null
   const marketRuntimeError = marketConfigurationMismatch
-    ? `Market #${marketId} does not match the verified devnet configuration.`
+    ? `Market #${marketId} does not match the verified mainnet configuration.`
     : !onChainMarket && streamingStateQuery.error instanceof Error
-      ? streamingStateQuery.error.message
+      ? 'Unable to reach the mainnet RPC. Please try again shortly.'
       : null
   const chartPositionOverlays: Array<ChartPositionOverlay> = []
   const endedPositions = useMemo(
@@ -343,13 +340,13 @@ export function TradingDashboard({
       quoteDecimals,
       quoteTicker,
       referencePricing: {
-        baseDecimals: REFERENCE_PRICE_MARKET.baseDecimals,
+        baseDecimals: selectedMarket.baseDecimals,
         chartCandles: marketChartHistory.candles,
         crosshairData,
         marketPrice: marketPriceQuery.data ?? undefined,
         marketUpdates: marketUpdates.events,
         priceChangeHistory: marketPriceChange24hQuery.data ?? [],
-        quoteDecimals: REFERENCE_PRICE_MARKET.quoteDecimals,
+        quoteDecimals: selectedMarket.quoteDecimals,
       },
       side,
       streamingState: isMarketReady ? onChainMarket : null,
@@ -844,7 +841,7 @@ export function TradingDashboard({
                     />
                     <div className="space-y-1">
                       <p className="text-[10px] text-muted-foreground">
-                        {REFERENCE_CHART_LABEL}
+                        {`${baseTicker}/${quoteTicker}`}
                       </p>
                       <div className="flex items-center gap-3">
                         <span className="text-sm tabular-nums">
@@ -884,7 +881,7 @@ export function TradingDashboard({
                     }
                     positionOverlayError={null}
                     positionOverlays={chartPositionOverlays}
-                    referenceLabel={REFERENCE_CHART_LABEL}
+                    referenceLabel={`${baseTicker}/${quoteTicker}`}
                     resetSignal={chartResetSignal}
                   />
                 ) : (
@@ -1119,8 +1116,19 @@ export function TradingDashboard({
                 ) : (
                   <EmptyState copy="No streams running. Start one and it shows up here." />
                 )
+              ) : address ? (
+                <ClosedPositionsList
+                  key={`${address}:${marketId}`}
+                  positionAuthority={address}
+                  marketId={marketId}
+                  baseDecimals={baseDecimals}
+                  quoteDecimals={quoteDecimals}
+                  baseTicker={baseTicker}
+                  quoteTicker={quoteTicker}
+                  priceHistoryAvailable={isReadApiConfigured()}
+                />
               ) : (
-                <EmptyState copy="Devnet closed-position history is unavailable. The connected data service contains mainnet history only." />
+                <EmptyState copy="Connect your wallet to view closed positions." />
               )}
             </section>
           </div>

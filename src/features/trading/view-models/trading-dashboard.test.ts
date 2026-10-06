@@ -17,7 +17,7 @@ describe('deriveMarketIdentity', () => {
       base_ticker: 'sol',
       created_at: '2026-03-20T00:00:00Z',
       id: 1,
-      market_id: 1,
+      market_address: 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3',
       quote_decimals: 6,
       quote_mint: 'QuoteMint111111111111111111111111111111111',
       quote_ticker: 'usdc',
@@ -58,7 +58,7 @@ function dashboardInputs(): Parameters<
           base_flow: 1_000_000_000n,
           created_at: '2026-03-20T00:00:00Z',
           id: 2,
-          market_id: 1,
+          market_address: 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3',
           quote_flow: 149_000_000n,
           signature: 'newer',
           slot: 11,
@@ -67,7 +67,7 @@ function dashboardInputs(): Parameters<
           base_flow: 1_000_000_000n,
           created_at: '2026-03-19T23:59:00Z',
           id: 1,
-          market_id: 1,
+          market_address: 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3',
           quote_flow: 148_000_000n,
           signature: 'older',
           slot: 10,
@@ -107,7 +107,7 @@ function dashboardInputs(): Parameters<
 
 describe('buildTradingDashboardViewModel', () => {
   it.each(MARKET_DEFINITIONS)(
-    'keeps the mainnet reference separate from execution in devnet market $id ($baseSymbol)',
+    'keeps historical prices separate from live execution estimates for market $id ($baseSymbol)',
     (market) => {
       const inputs = dashboardInputs()
       inputs.baseDecimals = market.baseDecimals
@@ -173,7 +173,7 @@ describe('buildTradingDashboardViewModel', () => {
     },
   )
 
-  it('does not display devnet prices as mainnet prices when the reference is unavailable', () => {
+  it('keeps history unavailable when only an execution estimate exists', () => {
     const inputs = dashboardInputs()
     inputs.referencePricing = {
       baseDecimals: 9,

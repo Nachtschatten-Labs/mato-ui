@@ -37,6 +37,7 @@ function createPosition(overrides: Partial<TradePosition> = {}): TradePosition {
     amount: 100n,
     authority: 'authority1111111111111111111111111111111111' as Address,
     baseReceiver: 'baseReceiver111111111111111111111111111111' as Address,
+    padding: new Uint8Array(9),
     bookkeepingSnapshot: 0n,
     bump: 0,
     discriminator: new Uint8Array(8),
@@ -195,6 +196,7 @@ describe('getActivePositionMetrics', () => {
       endSlotBookkeepingSnapshot: null,
       market: 'market111111111111111111111111111111111111' as Address,
       position: createPosition({
+        padding: new Uint8Array(9),
         bookkeepingSnapshot: 2_000_000_000_000_000n,
         swappedAmountAtSnapshot: 20n,
         withdrawnAmount: 20n,
@@ -227,6 +229,7 @@ describe('getActivePositionMetrics', () => {
     const afterWithdrawal = getActivePositionMetrics({
       ...input,
       position: createPosition({
+        padding: new Uint8Array(9),
         bookkeepingSnapshot: 9_000_000_000_000_000n,
         swappedAmountAtSnapshot: 90n,
         withdrawnAmount: 90n,

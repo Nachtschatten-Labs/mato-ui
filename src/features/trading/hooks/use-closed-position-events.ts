@@ -2,19 +2,19 @@ import { useQuery } from '@tanstack/react-query'
 import { tradingQueries } from '../queries'
 
 export function useClosedPositionEvents({
-  createdAfter,
+  beforeSlot,
   positionAuthority,
   marketId,
   limit = 50,
 }: {
-  createdAfter?: string
+  beforeSlot?: number
   positionAuthority: string
   marketId?: number
   limit?: number
 }) {
   return useQuery({
     ...tradingQueries.closedPositions({
-      createdAfter,
+      beforeSlot,
       limit,
       marketId,
       positionAuthority,

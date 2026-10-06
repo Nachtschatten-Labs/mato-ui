@@ -32,9 +32,9 @@ const LEGACY_TOKEN_PROGRAM =
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address
 const TOKEN_2022_PROGRAM =
   'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address
-const MARKET_ADDRESS = '32MAZ37ysSgJYgPeB9Qj3dMtkD7AyuMBrDjKxN37RNfj' as Address
+const MARKET_ADDRESS = 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3' as Address
 const PROGRAM_CONFIG_ADDRESS =
-  '9zQGyHTCCg3fLS2AcWQ1F76QN8NThAcWbadjpMyLyyef' as Address
+  'BKgwxz23KWsrp9BSgAuCngfUCrpQm6jprgYUbwmyNd2X' as Address
 
 type ProgramAccountsConfig = NonNullable<
   Parameters<TwobRpcClient['getProgramAccounts']>[1]
@@ -45,6 +45,7 @@ function encodeTradePosition(market: Address, id: number) {
     amount: 100n,
     authority: BASE_RECEIVER,
     baseReceiver: BASE_RECEIVER,
+    padding: new Uint8Array(9),
     bookkeepingSnapshot: 0n,
     bump: 0,
     flow: 10n,
@@ -89,21 +90,20 @@ function createProgramAccountsRpc(
 }
 
 describe('twob v1 client helpers', () => {
-  it('uses the deployed devnet program and its configuration PDA', async () => {
+  it('uses the deployed mainnet program and its configuration PDA', async () => {
     expect(TWOB_ANCHOR_PROGRAM_ADDRESS).toBe(
-      'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX',
+      'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A',
     )
     await expect(deriveProgramConfigAddress()).resolves.toBe(
       PROGRAM_CONFIG_ADDRESS,
     )
     const instruction = await getInitializeProgramConfigInstructionAsync({
+      authority: createNoopSigner(BASE_RECEIVER),
       payer: createNoopSigner(BASE_RECEIVER),
       authorityTransferDelaySlots: 100,
     })
     expect(instruction.programAddress).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
-    expect(instruction.accounts[0].address).toBe(
-      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
-    )
+    expect(instruction.accounts[0].address).toBe(BASE_RECEIVER)
     expect(instruction.accounts[2].address).toBe(PROGRAM_CONFIG_ADDRESS)
   })
 
@@ -117,7 +117,7 @@ describe('twob v1 client helpers', () => {
     ).resolves.toBe(MARKET_ADDRESS)
     await expect(
       findMarketPda({ baseMint: BASE_MINT, quoteMint: QUOTE_MINT, id: 1 }),
-    ).resolves.toEqual([MARKET_ADDRESS, 253])
+    ).resolves.toEqual([MARKET_ADDRESS, expect.any(Number)])
     await expect(
       deriveMarketAddress({
         baseMint: QUOTE_MINT,
@@ -239,7 +239,7 @@ describe('twob v1 client helpers', () => {
 
   it('places the market immediately after authority in serialized positions', () => {
     const bytes = Buffer.from(encodeTradePosition(MARKET_ADDRESS, 1), 'base64')
-    expect(bytes.length).toBe(303)
+    expect(bytes.length).toBe(312)
     expect(getAddressDecoder().decode(bytes.subarray(40, 72))).toBe(
       MARKET_ADDRESS,
     )
@@ -251,26 +251,26 @@ describe('twob v1 client helpers', () => {
   })
 
   it('keeps the current account when bookkeeping is still in the previous window', () => {
-    expect(getApprovalSafeReferenceIndex(500, 400n, END_SLOT_INTERVAL)).toBe(2n)
+    expect(getApprovalSafeReferenceIndex(500, 300n, END_SLOT_INTERVAL)).toBe(2n)
   })
 
   it('advances at the account boundary', () => {
     expect(getApprovalSafeReferenceIndex(630, 630n, END_SLOT_INTERVAL)).toBe(4n)
   })
 
-  it('uses 30 seven-slot snapshots and rolls over at slot 210', () => {
-    expect(ARRAY_LENGTH).toBe(30)
-    expect(END_SLOT_INTERVAL).toBe(7)
-    expect(alignEndSlot(199, 7, END_SLOT_INTERVAL)).toBe(203n)
-    expect(alignEndSlot(200, 7, END_SLOT_INTERVAL)).toBe(210n)
-    expect(getFutureIndex(203n, END_SLOT_INTERVAL)).toBe(0n)
-    expect(getFutureIndex(210n, END_SLOT_INTERVAL)).toBe(1n)
-    expect(resolveSnapshotLocation(203, END_SLOT_INTERVAL)).toEqual({
-      pricesAccountIndex: 0,
-      snapshotIndex: 29,
+  it('uses 16 eleven-slot snapshots and rolls over at slot 176', () => {
+    expect(ARRAY_LENGTH).toBe(16)
+    expect(END_SLOT_INTERVAL).toBe(11)
+    expect(alignEndSlot(154, 11, END_SLOT_INTERVAL)).toBe(165n)
+    expect(alignEndSlot(160, 11, END_SLOT_INTERVAL)).toBe(176n)
+    expect(getFutureIndex(165n, END_SLOT_INTERVAL)).toBe(0n)
+    expect(getFutureIndex(176n, END_SLOT_INTERVAL)).toBe(1n)
+    expect(resolveSnapshotLocation(165, END_SLOT_INTERVAL)).toEqual({
+      intervalIndex: 0,
+      snapshotIndex: 15,
     })
-    expect(resolveSnapshotLocation(210, END_SLOT_INTERVAL)).toEqual({
-      pricesAccountIndex: 1,
+    expect(resolveSnapshotLocation(176, END_SLOT_INTERVAL)).toEqual({
+      intervalIndex: 1,
       snapshotIndex: 0,
     })
   })

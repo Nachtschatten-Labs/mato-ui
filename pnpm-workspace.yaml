@@ -10,6 +10,8 @@ minimumReleaseAgeIgnoreMissingTime: false
 
 # Patch Miniflare's pinned dependencies until the Cloudflare toolchain is updated.
 overrides:
+  # GHSA-68fv-2mgg-jv7q (indexed source-map denial of service).
+  source-map-js: 1.2.2
   # GHSA-rgj7-g3m4-5g8c (libheif vulnerabilities).
   'miniflare>sharp': 0.35.4
   # GHSA-rfgv-xxqx-mfg5 and GHSA-w293-vg96-wgc3 (WebSocket and TLS issues).

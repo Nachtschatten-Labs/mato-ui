@@ -19,8 +19,6 @@ import {
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
   getU16Decoder,
@@ -34,16 +32,14 @@ import {
   transformEncoder,
   type Account,
   type Address,
-  type Codec,
-  type Decoder,
   type EncodedAccount,
-  type Encoder,
   type FetchAccountConfig,
   type FetchAccountsConfig,
+  type FixedSizeCodec,
+  type FixedSizeDecoder,
+  type FixedSizeEncoder,
   type MaybeAccount,
   type MaybeEncodedAccount,
-  type Option,
-  type OptionOrNullable,
   type ReadonlyUint8Array,
 } from '@solana/kit'
 
@@ -61,10 +57,8 @@ export type ProgramConfig = {
   discriminator: ReadonlyUint8Array
   /** The authority can call admin instruction */
   authority: Address
-  /** Two step authority change: 1. Nominate pending authority, 2. Accept authority */
-  pendingAuthority: Option<Address>
-  /** Slot at which nomination was made */
-  pendingAuthoritySlot: Option<bigint>
+  /** Slot at which nomination was made; cleared to zero when no authority is pending. */
+  pendingAuthoritySlot: bigint
   /** Required cooldown before accept */
   authorityTransferDelaySlots: number
   /**
@@ -72,18 +66,19 @@ export type ProgramConfig = {
    * the fee itself. The program authority may update this globally.
    */
   dedicatedMakerFeeShareBps: number
+  /** Two-step transfer nominee. The default address means no nomination is pending. */
+  pendingAuthority: Address
   bump: number
   /** Reserved for future fields */
   reserved: ReadonlyUint8Array
+  padding: ReadonlyUint8Array
 }
 
 export type ProgramConfigArgs = {
   /** The authority can call admin instruction */
   authority: Address
-  /** Two step authority change: 1. Nominate pending authority, 2. Accept authority */
-  pendingAuthority: OptionOrNullable<Address>
-  /** Slot at which nomination was made */
-  pendingAuthoritySlot: OptionOrNullable<number | bigint>
+  /** Slot at which nomination was made; cleared to zero when no authority is pending. */
+  pendingAuthoritySlot: number | bigint
   /** Required cooldown before accept */
   authorityTransferDelaySlots: number
   /**
@@ -91,44 +86,49 @@ export type ProgramConfigArgs = {
    * the fee itself. The program authority may update this globally.
    */
   dedicatedMakerFeeShareBps: number
+  /** Two-step transfer nominee. The default address means no nomination is pending. */
+  pendingAuthority: Address
   bump: number
   /** Reserved for future fields */
   reserved: ReadonlyUint8Array
+  padding: ReadonlyUint8Array
 }
 
 /** Gets the encoder for {@link ProgramConfigArgs} account data. */
-export function getProgramConfigEncoder(): Encoder<ProgramConfigArgs> {
+export function getProgramConfigEncoder(): FixedSizeEncoder<ProgramConfigArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['authority', getAddressEncoder()],
-      ['pendingAuthority', getOptionEncoder(getAddressEncoder())],
-      ['pendingAuthoritySlot', getOptionEncoder(getU64Encoder())],
+      ['pendingAuthoritySlot', getU64Encoder()],
       ['authorityTransferDelaySlots', getU32Encoder()],
       ['dedicatedMakerFeeShareBps', getU16Encoder()],
+      ['pendingAuthority', getAddressEncoder()],
       ['bump', getU8Encoder()],
       ['reserved', fixEncoderSize(getBytesEncoder(), 62)],
+      ['padding', fixEncoderSize(getBytesEncoder(), 3)],
     ]),
     (value) => ({ ...value, discriminator: PROGRAM_CONFIG_DISCRIMINATOR }),
   )
 }
 
 /** Gets the decoder for {@link ProgramConfig} account data. */
-export function getProgramConfigDecoder(): Decoder<ProgramConfig> {
+export function getProgramConfigDecoder(): FixedSizeDecoder<ProgramConfig> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['authority', getAddressDecoder()],
-    ['pendingAuthority', getOptionDecoder(getAddressDecoder())],
-    ['pendingAuthoritySlot', getOptionDecoder(getU64Decoder())],
+    ['pendingAuthoritySlot', getU64Decoder()],
     ['authorityTransferDelaySlots', getU32Decoder()],
     ['dedicatedMakerFeeShareBps', getU16Decoder()],
+    ['pendingAuthority', getAddressDecoder()],
     ['bump', getU8Decoder()],
     ['reserved', fixDecoderSize(getBytesDecoder(), 62)],
+    ['padding', fixDecoderSize(getBytesDecoder(), 3)],
   ])
 }
 
 /** Gets the codec for {@link ProgramConfig} account data. */
-export function getProgramConfigCodec(): Codec<
+export function getProgramConfigCodec(): FixedSizeCodec<
   ProgramConfigArgs,
   ProgramConfig
 > {
@@ -186,4 +186,8 @@ export async function fetchAllMaybeProgramConfig(
 ): Promise<MaybeAccount<ProgramConfig>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config)
   return maybeAccounts.map((maybeAccount) => decodeProgramConfig(maybeAccount))
+}
+
+export function getProgramConfigSize(): number {
+  return 152
 }

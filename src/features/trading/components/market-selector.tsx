@@ -538,7 +538,7 @@ export function MarketSelector({
           <p>
             {hasError
               ? 'Prices could not be loaded.'
-              : 'Indicative devnet prices in USDC. 24h statistics are not available yet.'}
+              : 'Market prices in USDC. 24h statistics are not available yet.'}
             {hasError && onRetry && (
               <button
                 type="button"

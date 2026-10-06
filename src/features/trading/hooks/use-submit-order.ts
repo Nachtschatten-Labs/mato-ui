@@ -77,10 +77,7 @@ export function useSubmitOrder() {
               tradingQueryKeys.tradePositionsForAuthority(connectedAddress),
           }),
           queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.ownedExitsAccounts(connectedAddress),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: tradingQueryKeys.ownedPricesAccounts(connectedAddress),
+            queryKey: tradingQueryKeys.ownedMarketIntervals(connectedAddress),
           }),
         ])
         return true

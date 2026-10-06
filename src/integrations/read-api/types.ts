@@ -3,7 +3,7 @@ export interface ClosePositionEvent {
   signature: string
   slot: number
   position_authority: string
-  market_id: number
+  market_address: string
   deposit_amount: bigint
   swapped_amount: bigint
   remaining_amount: bigint
@@ -18,7 +18,7 @@ export interface MarketUpdateEvent {
   id: number
   signature: string
   slot: number
-  market_id: number
+  market_address: string
   base_flow: bigint
   quote_flow: bigint
   created_at: string
@@ -29,7 +29,7 @@ export interface ClosePositionEventRow {
   signature: string
   slot: number
   position_authority: string
-  market_id: number
+  market_address: string
   deposit_amount: string
   swapped_amount: string
   remaining_amount: string
@@ -44,7 +44,7 @@ export interface MarketUpdateEventRow {
   id: number
   signature: string
   slot: number
-  market_id: number
+  market_address: string
   base_flow: string
   quote_flow: string
   created_at: string
@@ -52,7 +52,7 @@ export interface MarketUpdateEventRow {
 
 export interface MarketConfigRow {
   id?: number
-  market_id: number
+  market_address: string
   base_ticker: string
   quote_ticker: string
   base_mint: string

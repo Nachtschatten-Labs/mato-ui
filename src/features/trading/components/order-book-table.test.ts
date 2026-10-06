@@ -11,6 +11,7 @@ function position(pausedAtSlot = 0n): TradePositionRecord {
       amount: 100n,
       authority: '11111111111111111111111111111111' as Address,
       baseReceiver: '11111111111111111111111111111111' as Address,
+      padding: new Uint8Array(9),
       bookkeepingSnapshot: 0n,
       bump: 255,
       discriminator: new Uint8Array(8),

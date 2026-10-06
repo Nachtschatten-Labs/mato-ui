@@ -52,8 +52,7 @@ export function getInitializeProgramConfigDiscriminatorBytes(): ReadonlyUint8Arr
 
 export type InitializeProgramConfigInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
-  TAccountAuthority extends string | AccountMeta<string> =
-    '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN',
+  TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
   TAccountProgramConfig extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
@@ -130,7 +129,7 @@ export type InitializeProgramConfigAsyncInput<
    * Pinned to the deployer so the first caller after a deployment cannot claim the program.
    * Hand it over afterwards with `nominate_program_authority` and `accept_program_authority`
    */
-  authority?: TransactionSigner<TAccountAuthority>
+  authority: TransactionSigner<TAccountAuthority>
   payer: TransactionSigner<TAccountPayer>
   programConfig?: Address<TAccountProgramConfig>
   systemProgram?: Address<TAccountSystemProgram>
@@ -179,10 +178,6 @@ export async function getInitializeProgramConfigInstructionAsync<
   const args = { ...input }
 
   // Resolve default values.
-  if (!accounts.authority.value) {
-    accounts.authority.value =
-      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
-  }
   if (!accounts.programConfig.value) {
     accounts.programConfig.value = await findProgramConfigPda({
       programAddress,
@@ -224,7 +219,7 @@ export type InitializeProgramConfigInput<
    * Pinned to the deployer so the first caller after a deployment cannot claim the program.
    * Hand it over afterwards with `nominate_program_authority` and `accept_program_authority`
    */
-  authority?: TransactionSigner<TAccountAuthority>
+  authority: TransactionSigner<TAccountAuthority>
   payer: TransactionSigner<TAccountPayer>
   programConfig: Address<TAccountProgramConfig>
   systemProgram?: Address<TAccountSystemProgram>
@@ -271,10 +266,6 @@ export function getInitializeProgramConfigInstruction<
   const args = { ...input }
 
   // Resolve default values.
-  if (!accounts.authority.value) {
-    accounts.authority.value =
-      '8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN' as Address<'8pAXoQJYKJoZejheXwirXjUi1MdRrLkqKBydkv967KnN'>
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>

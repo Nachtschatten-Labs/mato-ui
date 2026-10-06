@@ -9,12 +9,12 @@ describe('Explorer links', () => {
     'http://localhost:3000/rpc',
     'http://127.0.0.1:3000/rpc',
     'https://devnet.mato.markets/rpc',
-  ])('links to devnet when using the RPC facade at %s', (endpoint) => {
+  ])('links to mainnet when using the RPC facade at %s', (endpoint) => {
     expect(formatExplorerTransactionUrl('signature', endpoint)).toBe(
-      'https://explorer.solana.com/tx/signature?cluster=devnet',
+      'https://explorer.solana.com/tx/signature?cluster=mainnet-beta',
     )
     expect(formatExplorerAddressUrl('address', endpoint)).toBe(
-      'https://explorer.solana.com/address/address?cluster=devnet',
+      'https://explorer.solana.com/address/address?cluster=mainnet-beta',
     )
   })
 })

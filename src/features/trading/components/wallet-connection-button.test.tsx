@@ -58,8 +58,8 @@ describe('WalletConnectionButton', () => {
 
     expect(mocks.useReclaimRent).toHaveBeenLastCalledWith(false, 1)
 
-    view.rerender(<WalletConnectionButton marketId={4} />)
+    view.rerender(<WalletConnectionButton marketId={1} />)
 
-    expect(mocks.useReclaimRent).toHaveBeenLastCalledWith(false, 4)
+    expect(mocks.useReclaimRent).toHaveBeenLastCalledWith(false, 1)
   })
 })

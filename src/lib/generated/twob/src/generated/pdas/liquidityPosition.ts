@@ -24,7 +24,7 @@ export async function findLiquidityPositionPda(
   config: { programAddress?: Address | undefined } = {},
 ): Promise<ProgramDerivedAddress> {
   const {
-    programAddress = 'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX' as Address<'CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX'>,
+    programAddress = 'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A' as Address<'TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A'>,
   } = config
   return await getProgramDerivedAddress({
     programAddress,

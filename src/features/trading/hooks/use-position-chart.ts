@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSolanaClient } from '@solana/react-hooks'
 import { fetchMarketCandles } from '../api/market-repository'
-import { SLOT_DURATION_MS } from '../constants'
+import { tradingQueryRoot } from '../query-keys'
+import { SLOT_DURATION_MS, getMarketDefinition } from '../constants'
 import { buildPositionChartPoints } from '../lib/position-chart'
 import type { MarketPriceSnapshot } from '../domain/models'
 
@@ -19,7 +20,11 @@ export function usePositionChart({
 }) {
   const client = useSolanaClient()
   const startTime = useQuery({
-    queryKey: ['trading', 'position-start-time', startSlot.toString()],
+    queryKey: [
+      ...tradingQueryRoot,
+      'position-start-time',
+      startSlot.toString(),
+    ],
     enabled: enabled && currentSlot !== null,
     staleTime: Infinity,
     retry: false,
@@ -50,7 +55,13 @@ export function usePositionChart({
   const intervalMs =
     interval === '1h' ? 3_600_000 : interval === '5m' ? 300_000 : 60_000
   const history = useQuery({
-    queryKey: ['trading', 'position-reference-history', startTimeMs, interval],
+    queryKey: [
+      ...tradingQueryRoot,
+      'position-history',
+      getMarketDefinition(1).address,
+      startTimeMs,
+      interval,
+    ],
     enabled: enabled && startTimeMs !== null && startTimeMs <= Date.now(),
     staleTime: 30_000,
     refetchInterval: enabled ? 30_000 : false,

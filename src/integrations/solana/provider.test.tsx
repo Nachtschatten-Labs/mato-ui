@@ -114,7 +114,7 @@ describe('SolanaProvider', () => {
     vi.clearAllMocks()
   })
 
-  it('targets devnet for initially discovered and newly registered wallets that list mainnet first', async () => {
+  it('targets mainnet for initially discovered and newly registered wallets that list mainnet first', async () => {
     const { createWalletStandardConnector } =
       await vi.importActual<typeof import('@solana/client')>('@solana/client')
     const walletAddress = address('11111111111111111111111111111111')
@@ -176,7 +176,7 @@ describe('SolanaProvider', () => {
         >[0],
       )
       expect(signAndSend).toHaveBeenLastCalledWith(
-        expect.objectContaining({ chain: 'solana:devnet' }),
+        expect.objectContaining({ chain: 'solana:mainnet-beta' }),
       )
     }
     expect(signAndSend).toHaveBeenCalledTimes(2)

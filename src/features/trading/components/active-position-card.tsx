@@ -514,7 +514,7 @@ export function ActivePositionCardView({
               View position <ExternalLink className="size-3" />
             </a>
             <span>
-              Devnet fill estimates · {quoteTicker}/{baseTicker}
+              Fill estimates · {quoteTicker}/{baseTicker}
             </span>
           </div>
         </div>

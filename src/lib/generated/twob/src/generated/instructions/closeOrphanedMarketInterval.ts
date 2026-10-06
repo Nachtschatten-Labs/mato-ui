@@ -38,21 +38,20 @@ import {
 } from '@solana/program-client-core'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
-export const CLOSE_ORPHANED_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR: ReadonlyUint8Array =
-  new Uint8Array([163, 65, 215, 45, 115, 163, 107, 216])
+export const CLOSE_ORPHANED_MARKET_INTERVAL_DISCRIMINATOR: ReadonlyUint8Array =
+  new Uint8Array([248, 156, 98, 135, 236, 61, 195, 180])
 
-export function getCloseOrphanedExitsAndPricesAccountDiscriminatorBytes(): ReadonlyUint8Array {
+export function getCloseOrphanedMarketIntervalDiscriminatorBytes(): ReadonlyUint8Array {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CLOSE_ORPHANED_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR,
+    CLOSE_ORPHANED_MARKET_INTERVAL_DISCRIMINATOR,
   )
 }
 
-export type CloseOrphanedExitsAndPricesAccountInstruction<
+export type CloseOrphanedMarketIntervalInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountSigner extends string | AccountMeta<string> = string,
   TAccountPayer extends string | AccountMeta<string> = string,
-  TAccountExits extends string | AccountMeta<string> = string,
-  TAccountPrices extends string | AccountMeta<string> = string,
+  TAccountMarketInterval extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
@@ -66,12 +65,9 @@ export type CloseOrphanedExitsAndPricesAccountInstruction<
       TAccountPayer extends string
         ? WritableAccount<TAccountPayer>
         : TAccountPayer,
-      TAccountExits extends string
-        ? WritableAccount<TAccountExits>
-        : TAccountExits,
-      TAccountPrices extends string
-        ? WritableAccount<TAccountPrices>
-        : TAccountPrices,
+      TAccountMarketInterval extends string
+        ? WritableAccount<TAccountMarketInterval>
+        : TAccountMarketInterval,
       TAccountMarket extends string
         ? ReadonlyAccount<TAccountMarket>
         : TAccountMarket,
@@ -79,75 +75,70 @@ export type CloseOrphanedExitsAndPricesAccountInstruction<
     ]
   >
 
-export type CloseOrphanedExitsAndPricesAccountInstructionData = {
+export type CloseOrphanedMarketIntervalInstructionData = {
   discriminator: ReadonlyUint8Array
 }
 
-export type CloseOrphanedExitsAndPricesAccountInstructionDataArgs = {}
+export type CloseOrphanedMarketIntervalInstructionDataArgs = {}
 
-export function getCloseOrphanedExitsAndPricesAccountInstructionDataEncoder(): FixedSizeEncoder<CloseOrphanedExitsAndPricesAccountInstructionDataArgs> {
+export function getCloseOrphanedMarketIntervalInstructionDataEncoder(): FixedSizeEncoder<CloseOrphanedMarketIntervalInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({
       ...value,
-      discriminator: CLOSE_ORPHANED_EXITS_AND_PRICES_ACCOUNT_DISCRIMINATOR,
+      discriminator: CLOSE_ORPHANED_MARKET_INTERVAL_DISCRIMINATOR,
     }),
   )
 }
 
-export function getCloseOrphanedExitsAndPricesAccountInstructionDataDecoder(): FixedSizeDecoder<CloseOrphanedExitsAndPricesAccountInstructionData> {
+export function getCloseOrphanedMarketIntervalInstructionDataDecoder(): FixedSizeDecoder<CloseOrphanedMarketIntervalInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
   ])
 }
 
-export function getCloseOrphanedExitsAndPricesAccountInstructionDataCodec(): FixedSizeCodec<
-  CloseOrphanedExitsAndPricesAccountInstructionDataArgs,
-  CloseOrphanedExitsAndPricesAccountInstructionData
+export function getCloseOrphanedMarketIntervalInstructionDataCodec(): FixedSizeCodec<
+  CloseOrphanedMarketIntervalInstructionDataArgs,
+  CloseOrphanedMarketIntervalInstructionData
 > {
   return combineCodec(
-    getCloseOrphanedExitsAndPricesAccountInstructionDataEncoder(),
-    getCloseOrphanedExitsAndPricesAccountInstructionDataDecoder(),
+    getCloseOrphanedMarketIntervalInstructionDataEncoder(),
+    getCloseOrphanedMarketIntervalInstructionDataDecoder(),
   )
 }
 
-export type CloseOrphanedExitsAndPricesAccountInput<
+export type CloseOrphanedMarketIntervalInput<
   TAccountSigner extends string = string,
   TAccountPayer extends string = string,
-  TAccountExits extends string = string,
-  TAccountPrices extends string = string,
+  TAccountMarketInterval extends string = string,
   TAccountMarket extends string = string,
 > = {
   signer: TransactionSigner<TAccountSigner>
   payer: Address<TAccountPayer>
-  exits: Address<TAccountExits>
-  prices: Address<TAccountPrices>
+  marketInterval: Address<TAccountMarketInterval>
   /** live account; otherwise callers must use the normal bookkeeping-aware close instruction. */
   market: Address<TAccountMarket>
 }
 
-export function getCloseOrphanedExitsAndPricesAccountInstruction<
+export function getCloseOrphanedMarketIntervalInstruction<
   TAccountSigner extends string,
   TAccountPayer extends string,
-  TAccountExits extends string,
-  TAccountPrices extends string,
+  TAccountMarketInterval extends string,
   TAccountMarket extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
-  input: CloseOrphanedExitsAndPricesAccountInput<
+  input: CloseOrphanedMarketIntervalInput<
     TAccountSigner,
     TAccountPayer,
-    TAccountExits,
-    TAccountPrices,
+    TAccountMarketInterval,
     TAccountMarket
   >,
   config?: { programAddress?: TProgramAddress },
-): CloseOrphanedExitsAndPricesAccountInstruction<
+): CloseOrphanedMarketIntervalInstruction<
   TProgramAddress,
   TAccountSigner,
   TAccountPayer,
-  TAccountExits,
-  TAccountPrices,
+  TAccountMarketInterval,
   TAccountMarket
 > {
   // Program address.
@@ -157,8 +148,7 @@ export function getCloseOrphanedExitsAndPricesAccountInstruction<
   const originalAccounts = {
     signer: { value: input.signer ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
-    exits: { value: input.exits ?? null, isWritable: true },
-    prices: { value: input.prices ?? null, isWritable: true },
+    marketInterval: { value: input.marketInterval ?? null, isWritable: true },
     market: { value: input.market ?? null, isWritable: false },
   }
   const accounts = originalAccounts as Record<
@@ -171,25 +161,21 @@ export function getCloseOrphanedExitsAndPricesAccountInstruction<
     accounts: [
       getAccountMeta('signer', accounts.signer),
       getAccountMeta('payer', accounts.payer),
-      getAccountMeta('exits', accounts.exits),
-      getAccountMeta('prices', accounts.prices),
+      getAccountMeta('marketInterval', accounts.marketInterval),
       getAccountMeta('market', accounts.market),
     ],
-    data: getCloseOrphanedExitsAndPricesAccountInstructionDataEncoder().encode(
-      {},
-    ),
+    data: getCloseOrphanedMarketIntervalInstructionDataEncoder().encode({}),
     programAddress,
-  } as CloseOrphanedExitsAndPricesAccountInstruction<
+  } as CloseOrphanedMarketIntervalInstruction<
     TProgramAddress,
     TAccountSigner,
     TAccountPayer,
-    TAccountExits,
-    TAccountPrices,
+    TAccountMarketInterval,
     TAccountMarket
   >)
 }
 
-export type ParsedCloseOrphanedExitsAndPricesAccountInstruction<
+export type ParsedCloseOrphanedMarketIntervalInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -197,31 +183,27 @@ export type ParsedCloseOrphanedExitsAndPricesAccountInstruction<
   accounts: {
     signer: TAccountMetas[0]
     payer: TAccountMetas[1]
-    exits: TAccountMetas[2]
-    prices: TAccountMetas[3]
+    marketInterval: TAccountMetas[2]
     /** live account; otherwise callers must use the normal bookkeeping-aware close instruction. */
-    market: TAccountMetas[4]
+    market: TAccountMetas[3]
   }
-  data: CloseOrphanedExitsAndPricesAccountInstructionData
+  data: CloseOrphanedMarketIntervalInstructionData
 }
 
-export function parseCloseOrphanedExitsAndPricesAccountInstruction<
+export function parseCloseOrphanedMarketIntervalInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedCloseOrphanedExitsAndPricesAccountInstruction<
-  TProgram,
-  TAccountMetas
-> {
-  if (instruction.accounts.length < 5) {
+): ParsedCloseOrphanedMarketIntervalInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 5,
+        expectedAccountMetas: 4,
       },
     )
   }
@@ -236,11 +218,10 @@ export function parseCloseOrphanedExitsAndPricesAccountInstruction<
     accounts: {
       signer: getNextAccount(),
       payer: getNextAccount(),
-      exits: getNextAccount(),
-      prices: getNextAccount(),
+      marketInterval: getNextAccount(),
       market: getNextAccount(),
     },
-    data: getCloseOrphanedExitsAndPricesAccountInstructionDataDecoder().decode(
+    data: getCloseOrphanedMarketIntervalInstructionDataDecoder().decode(
       instruction.data,
     ),
   }

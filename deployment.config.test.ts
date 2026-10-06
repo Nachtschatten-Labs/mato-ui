@@ -8,7 +8,7 @@ describe('deployment configuration', () => {
   it('uses the same program for server RPC scans and the generated client', () => {
     expect(target.programId).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
   })
-  it.each(['production', 'development'])(
+  it.each(['production'])(
     'allows %s trading with the verified dedicated-market program',
     (mode) => {
       const result = deploymentEnvironment(mode, {
@@ -24,7 +24,7 @@ describe('deployment configuration', () => {
     const result = deploymentEnvironment('development', configured)
     expect(result.VITE_ENABLE_TRANSACTIONS).toBe('false')
   })
-  it('limits development trading to the devnet target', () => {
+  it('keeps development read-only even with mainnet opt-in', () => {
     const originalCluster = target.cluster
     try {
       target.cluster = 'mainnet-beta'
@@ -39,7 +39,7 @@ describe('deployment configuration', () => {
       target.cluster = originalCluster
     }
   })
-  it.each(['production', 'development'])(
+  it.each(['production'])(
     'rejects the previous program when enabling %s trading',
     (mode) => {
       expect(() =>
@@ -83,7 +83,7 @@ describe('deployment configuration', () => {
       }),
     ).toThrow('server-only SOLANA_RPC_URL')
   })
-  it.each(['production', 'development'])(
+  it.each(['production'])(
     'requires a matching program before allowing %s trading',
     (mode) => {
       expect(() =>

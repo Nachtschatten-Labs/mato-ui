@@ -46,7 +46,7 @@ import {
   getNonNullResolvedInstructionInput,
   type ResolvedInstructionAccount,
 } from '@solana/program-client-core'
-import { findBookkeepingPda, findMarketPda } from '../pdas'
+import { findMarketPda } from '../pdas'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../programs'
 
 export const INITIALIZE_MARKET_DISCRIMINATOR: ReadonlyUint8Array =
@@ -68,7 +68,6 @@ export type InitializeMarketInstruction<
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -106,9 +105,6 @@ export type InitializeMarketInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -198,7 +194,6 @@ export type InitializeMarketAsyncInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -212,7 +207,6 @@ export type InitializeMarketAsyncInput<
   market?: Address<TAccountMarket>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping?: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -236,7 +230,6 @@ export async function getInitializeMarketInstructionAsync<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -252,7 +245,6 @@ export async function getInitializeMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -270,7 +262,6 @@ export async function getInitializeMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -290,7 +281,6 @@ export async function getInitializeMarketInstructionAsync<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -382,17 +372,6 @@ export async function getInitializeMarketInstructionAsync<
       ],
     })
   }
-  if (!accounts.bookkeeping.value) {
-    accounts.bookkeeping.value = await findBookkeepingPda(
-      {
-        market: getAddressFromResolvedInstructionAccount(
-          'market',
-          accounts.market.value,
-        ),
-      },
-      { programAddress },
-    )
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>
@@ -413,7 +392,6 @@ export async function getInitializeMarketInstructionAsync<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -433,7 +411,6 @@ export async function getInitializeMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -450,7 +427,6 @@ export type InitializeMarketInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -464,7 +440,6 @@ export type InitializeMarketInput<
   market: Address<TAccountMarket>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -488,7 +463,6 @@ export function getInitializeMarketInstruction<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -504,7 +478,6 @@ export function getInitializeMarketInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -521,7 +494,6 @@ export function getInitializeMarketInstruction<
   TAccountMarket,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountBookkeeping,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -540,7 +512,6 @@ export function getInitializeMarketInstruction<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -584,7 +555,6 @@ export function getInitializeMarketInstruction<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -604,7 +574,6 @@ export function getInitializeMarketInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -626,11 +595,10 @@ export type ParsedInitializeMarketInstruction<
     market: TAccountMetas[5]
     baseVault: TAccountMetas[6]
     quoteVault: TAccountMetas[7]
-    bookkeeping: TAccountMetas[8]
-    baseTokenProgram: TAccountMetas[9]
-    quoteTokenProgram: TAccountMetas[10]
-    associatedTokenProgram: TAccountMetas[11]
-    systemProgram: TAccountMetas[12]
+    baseTokenProgram: TAccountMetas[8]
+    quoteTokenProgram: TAccountMetas[9]
+    associatedTokenProgram: TAccountMetas[10]
+    systemProgram: TAccountMetas[11]
   }
   data: InitializeMarketInstructionData
 }
@@ -643,12 +611,12 @@ export function parseInitializeMarketInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedInitializeMarketInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 13) {
+  if (instruction.accounts.length < 12) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 13,
+        expectedAccountMetas: 12,
       },
     )
   }
@@ -669,7 +637,6 @@ export function parseInitializeMarketInstruction<
       market: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      bookkeeping: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

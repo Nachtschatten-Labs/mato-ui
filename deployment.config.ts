@@ -5,8 +5,7 @@ type Env = Record<string, string | undefined>
 export function deploymentEnvironment(mode: string, input: Env) {
   const production = mode === 'production'
   const development = mode === 'development'
-  const configurableTrading =
-    production || (development && target.cluster === 'devnet')
+  const configurableTrading = production
   const env: Record<string, string> = {
     VITE_SITE_URL: target.siteUrl,
     VITE_DEPLOYMENT_MODE: production
@@ -74,7 +73,7 @@ export function deploymentEnvironment(mode: string, input: Env) {
     !/^\d+$/.test(env.VITE_MARKET_ID) ||
     Number(env.VITE_MARKET_ID) < 1 ||
     !Number.isSafeInteger(Number(env.VITE_MARKET_ID)) ||
-    (target.branch === 'v1' && Number(env.VITE_MARKET_ID) > 4)
+    Number(env.VITE_MARKET_ID) !== 1
   ) {
     throw new Error('VITE_MARKET_ID is not supported by this branch')
   }

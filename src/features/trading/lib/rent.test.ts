@@ -1,162 +1,62 @@
 import { describe, expect, it } from 'vitest'
-import { ARRAY_LENGTH } from '../constants'
+import type { Address } from '@solana/kit'
 import {
-  collectCloseableRentAccountPairs,
+  collectCloseableMarketIntervals,
   isRentAccountIndexStale,
 } from './rent'
-import type { Address } from '@solana/kit'
-
-function asAddress(value: string) {
-  return value as Address
-}
-
-describe('rent eligibility', () => {
-  it('closes a pair only after the full prices/exits account horizon', () => {
-    const index = 3n
-    const endSlotInterval = 5n
-    const closableAfterSlot =
-      (index + 1n) * BigInt(ARRAY_LENGTH) * endSlotInterval
-
+const market = 'market' as Address
+const payer = 'payer' as Address
+const account = (index: bigint, overrides = {}) => ({
+  address: `interval-${index}` as Address,
+  market,
+  payer,
+  index,
+  lamports: 1n,
+  openPositions: 0,
+  ...overrides,
+})
+describe('interval rent eligibility', () => {
+  it('waits until after the full 16 x 11 slot horizon', () => {
     expect(
       isRentAccountIndexStale({
-        currentSlot: closableAfterSlot,
-        endSlotInterval,
-        index,
+        currentSlot: 704n,
+        endSlotInterval: 11,
+        index: 3n,
       }),
     ).toBe(false)
-
     expect(
       isRentAccountIndexStale({
-        currentSlot: closableAfterSlot + 1n,
-        endSlotInterval,
-        index,
+        currentSlot: 705n,
+        endSlotInterval: 11,
+        index: 3n,
       }),
     ).toBe(true)
   })
-
-  it('collects matching pairs and caps them by their two-account cost', () => {
-    const market = asAddress('market')
-    const payer = asAddress('payer')
-    const pairs = collectCloseableRentAccountPairs({
-      currentSlot: 10_000n,
-      endSlotInterval: 5n,
-      exitsAccounts: [
-        {
-          address: asAddress('exits-0'),
-          index: 0n,
-          lamports: 1_000_000n,
-          market,
-          openPositions: 0,
-          payer,
-        },
-        {
-          address: asAddress('exits-1'),
-          index: 1n,
-          lamports: 3_000_000n,
-          market,
-          openPositions: 0,
-          payer,
-        },
-      ],
+  it('caps single interval accounts and sorts oldest first', () => {
+    const result = collectCloseableMarketIntervals({
+      currentSlot: 10000,
+      endSlotInterval: 11,
       market,
-      maxAccounts: 3,
       payer,
-      pricesAccounts: [
-        {
-          address: asAddress('prices-0'),
-          index: 0n,
-          lamports: 2_000_000n,
-          market,
-          payer,
-        },
-        {
-          address: asAddress('prices-1'),
-          index: 1n,
-          lamports: 4_000_000n,
-          market,
-          payer,
-        },
-      ],
+      maxAccounts: 2,
+      intervalAccounts: [account(2n), account(0n), account(1n)],
     })
-
-    expect(pairs).toHaveLength(1)
-    expect(pairs[0]).toMatchObject({
-      exits: { address: asAddress('exits-0') },
-      index: 0n,
-      prices: { address: asAddress('prices-0') },
-    })
+    expect(result.map((a) => a.index)).toEqual([0n, 1n])
   })
-
-  it('requires a zero-position exits account with the selected market and payer', () => {
-    const market = asAddress('selected-market')
-    const payer = asAddress('selected-payer')
-    const otherMarket = asAddress('other-market')
-    const otherPayer = asAddress('other-payer')
-    const pairs = collectCloseableRentAccountPairs({
-      currentSlot: 10_000n,
-      endSlotInterval: 5n,
-      exitsAccounts: [
-        {
-          address: asAddress('open-exits'),
-          index: 0n,
-          lamports: 1n,
-          market,
-          openPositions: 1,
-          payer,
-        },
-        {
-          address: asAddress('wrong-market-exits'),
-          index: 1n,
-          lamports: 1n,
-          market: otherMarket,
-          openPositions: 0,
-          payer,
-        },
-        {
-          address: asAddress('wrong-payer-exits'),
-          index: 2n,
-          lamports: 1n,
-          market,
-          openPositions: 0,
-          payer: otherPayer,
-        },
-        {
-          address: asAddress('unpaired-exits'),
-          index: 3n,
-          lamports: 1n,
-          market,
-          openPositions: 0,
-          payer,
-        },
-      ],
+  it('excludes live intervals, referenced positions, and other markets or payers', () => {
+    const result = collectCloseableMarketIntervals({
+      currentSlot: 352,
+      endSlotInterval: 11,
       market,
-      maxAccounts: 10,
       payer,
-      pricesAccounts: [
-        {
-          address: asAddress('prices-0'),
-          index: 0n,
-          lamports: 1n,
-          market,
-          payer,
-        },
-        {
-          address: asAddress('prices-1'),
-          index: 1n,
-          lamports: 1n,
-          market: otherMarket,
-          payer,
-        },
-        {
-          address: asAddress('prices-2'),
-          index: 2n,
-          lamports: 1n,
-          market,
-          payer: otherPayer,
-        },
+      intervalAccounts: [
+        account(0n, { openPositions: 1 }),
+        account(0n, { market: 'other' }),
+        account(0n, { payer: 'other' }),
+        account(1n),
+        account(2n),
       ],
     })
-
-    expect(pairs).toEqual([])
+    expect(result).toEqual([])
   })
 })

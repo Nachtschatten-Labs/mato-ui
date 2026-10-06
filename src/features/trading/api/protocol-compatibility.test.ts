@@ -1,3 +1,4 @@
+import mainnetMarket from './fixtures/mainnet-market.json'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   AccountRole,
@@ -18,7 +19,7 @@ import { getMarketUpdateEventEventDecoder } from '@/lib/generated/twob/src/gener
 import { Side } from '@/lib/generated/twob/src/generated/types'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '@/lib/generated/twob/src/generated/programs'
 import {
-  deriveBookkeepingAddress,
+  deriveMarketIntervalAddress,
   deriveProgramConfigAddress,
   fetchStreamingMarketState,
   sendClosePositions,
@@ -28,7 +29,7 @@ import {
 } from './twob-client'
 
 const WALLET = '11111111111111111111111111111111' as Address
-const MARKET = '5qtZReDA5y8K7nq6FX9qKqYwmG1gWkRWdkWZnuUGTaQx' as Address
+const MARKET = 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3' as Address
 const BASE = 'So11111111111111111111111111111111111111112' as Address
 const QUOTE = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' as Address
 const TOKEN_PROGRAM = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address
@@ -64,7 +65,22 @@ function createMarket(kind = 0) {
       isPaused: 0,
       bump: 255,
       makerAuthority: WALLET,
-      pendingMakerAuthority: null,
+      pendingMakerAuthority: WALLET,
+      padding0: new Uint8Array(5),
+      padding1: new Uint8Array(4),
+      bookkeeping: {
+        basePerQuote: 1n,
+        quotePerBase: 2n,
+        previousBasePerQuote: 0n,
+        previousQuotePerBase: 0n,
+        windowBasePerQuote: 0n,
+        windowQuotePerBase: 0n,
+        lastUpdateSlot: 490n,
+        previousUpdateSlot: 480n,
+        windowStartSlot: 470n,
+        slotsWithoutTrade: 0,
+        padding: new Uint8Array(4),
+      },
       quoteOperator: WALLET,
       makerBaseInventory: -1n,
       makerQuoteInventory: 10n,
@@ -93,6 +109,7 @@ function createPosition(overrides: Partial<accounts.TradePositionArgs> = {}) {
       lastUpdateSlot: 400n,
       remainingSlots: 300,
       flow: 3_000_000_000n,
+      padding: new Uint8Array(9),
       bookkeepingSnapshot: 0n,
       slotsWithoutTradesSnapshot: 0,
       pausedAtSlot: 0n,
@@ -114,14 +131,9 @@ function createContext(kind = 0) {
   vi.spyOn(accounts, 'fetchTradePosition').mockResolvedValue({
     data: createPosition(),
   } as Awaited<ReturnType<typeof accounts.fetchTradePosition>>)
-  vi.spyOn(accounts, 'fetchBookkeeping').mockResolvedValue({
-    data: {
-      market: MARKET,
-      basePerQuote: 1n,
-      quotePerBase: 2n,
-      lastUpdateSlot: 490n,
-    },
-  } as Awaited<ReturnType<typeof accounts.fetchBookkeeping>>)
+  vi.spyOn(accounts, 'fetchMarketInterval').mockResolvedValue({
+    data: { market: MARKET, index: 3n },
+  } as Awaited<ReturnType<typeof accounts.fetchMarketInterval>>)
   const client = {
     runtime: {
       rpc: {
@@ -156,22 +168,40 @@ afterEach(() => {
 })
 
 describe('v1 protocol compatibility', () => {
-  it('decodes all 30 interval entries and the updated exits counter offset', () => {
-    // Rust layout: discriminator + market + index + payer + two [u128; 30] arrays.
-    const exits = Buffer.alloc(1045)
-    exits.set(accounts.getExitsDiscriminatorBytes())
-    exits.writeBigUInt64LE(123n, 80 + 29 * 16)
-    exits.writeUInt32LE(7, 1040)
-    expect(accounts.getExitsDecoder().decode(exits)).toMatchObject({
-      openPositions: 7,
+  it('decodes the observed mainnet market at slot 453870292', () => {
+    expect(mainnetMarket.account.owner).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+    const market = accounts
+      .getMarketDecoder()
+      .decode(Buffer.from(mainnetMarket.account.data[0], 'base64'))
+    expect(market).toMatchObject({
+      id: 1,
+      baseMint: BASE,
+      quoteMint: QUOTE,
+      kind: 1,
+      isPaused: 0,
+      minimumBaseDepositAtoms: 1000000n,
+      minimumQuoteDepositAtoms: 100000n,
+      makerAuthority: 'LPv1AZNbdrL2y516aUofpqZ9xgDaH73h9t6WhB9KWna',
     })
-    expect(accounts.getExitsDecoder().decode(exits).baseExits[29]).toBe(123n)
-    const prices = Buffer.alloc(1161)
-    prices.set(accounts.getPricesDiscriminatorBytes())
-    prices.writeBigUInt64LE(456n, 80 + 30 * 16 + 29 * 16)
-    expect(
-      accounts.getPricesDecoder().decode(prices).quotePerBaseSnapshot[29],
-    ).toBe(456n)
+    expect(market.bookkeeping.lastUpdateSlot).toBeGreaterThan(453860000n)
+    expect(market.bookkeeping.lastUpdateSlot).toBeLessThanOrEqual(
+      BigInt(mainnetMarket.slot),
+    )
+  })
+  it('decodes 16 zero-copy interval entries at their deployed offsets', () => {
+    const bytes = Buffer.alloc(1176)
+    bytes.set(accounts.getMarketIntervalDiscriminatorBytes())
+    bytes.writeUInt32LE(7, 144)
+    bytes.writeBigUInt64LE(123n, 152 + 15 * 16)
+    bytes.writeBigUInt64LE(456n, 152 + 3 * 16 * 16 + 15 * 16)
+    const interval = accounts.getMarketIntervalDecoder().decode(bytes)
+    expect(interval.openPositions).toBe(7)
+    expect(interval.baseExits).toHaveLength(16)
+    expect(interval.baseExits[15]).toBe(123n)
+    expect(interval.quotePerBaseSnapshot[15]).toBe(456n)
+    expect(accounts.getMarketSize()).toBe(488)
+    expect(accounts.getMarketIntervalSize()).toBe(1176)
+    expect(accounts.getTradePositionSize()).toBe(312)
   })
 
   it('decodes market-address events with flows larger than u64', () => {
@@ -195,27 +225,27 @@ describe('v1 protocol compatibility', () => {
       expect(
         await fetchStreamingMarketState(client.runtime.rpc, MARKET),
       ).toMatchObject({
-        endSlotInterval: 7,
+        endSlotInterval: 11,
         marketBaseFlow: 1_000_000_000n,
         marketQuoteFlow: 2_000_000_000n,
       })
     },
   )
 
-  it('passes explicit bookkeeping accounts for pause and resume', async () => {
+  it('passes canonical interval accounts for pause and resume', async () => {
     const context = createContext()
     const request = { marketAddress: MARKET, tradePositionAddress: QUOTE }
     await sendPauseTradePosition({ ...context, request })
     expect(
       context.send.mock.calls[0][0].instructions[0].accounts?.[5].address,
-    ).toBe(await deriveBookkeepingAddress(MARKET))
+    ).toBe(await deriveMarketIntervalAddress(MARKET, 3n))
     vi.mocked(accounts.fetchTradePosition).mockResolvedValue({
       data: createPosition({ pausedAtSlot: 490n }),
     } as Awaited<ReturnType<typeof accounts.fetchTradePosition>>)
     await sendUnpauseTradePosition({ ...context, request })
     expect(
       context.send.mock.calls[1][0].instructions[0].accounts?.[5].address,
-    ).toBe(await deriveBookkeepingAddress(MARKET))
+    ).toBe(await deriveMarketIntervalAddress(MARKET, 3n))
   })
 
   it('supplies the canonical fee configuration to swapped-fund withdrawals', async () => {
@@ -230,7 +260,7 @@ describe('v1 protocol compatibility', () => {
       role: AccountRole.READONLY,
     })
     expect(instruction.accounts?.[8].address).toBe(
-      await deriveBookkeepingAddress(MARKET),
+      await deriveMarketIntervalAddress(MARKET, 3n),
     )
   })
 
@@ -243,13 +273,13 @@ describe('v1 protocol compatibility', () => {
     const instructions = context.send.mock.calls[0][0].instructions
     expect(instructions).toHaveLength(2)
     for (const instruction of instructions) {
-      expect(instruction.accounts).toHaveLength(24)
+      expect(instruction.accounts).toHaveLength(20)
       expect(instruction.accounts?.[1]).toEqual({
         address: await deriveProgramConfigAddress(),
         role: AccountRole.READONLY,
       })
-      expect(instruction.accounts?.[13].address).toBe(
-        await deriveBookkeepingAddress(MARKET),
+      expect(instruction.accounts?.[14].address).toBe(
+        await deriveMarketIntervalAddress(MARKET, 3n),
       )
     }
     const message = appendTransactionMessageInstructions(

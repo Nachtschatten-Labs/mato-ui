@@ -1,3 +1,4 @@
+import { getMarketDefinition } from '../constants'
 import { readApiUrl } from './read-api'
 import type {
   MarketConfigRow,
@@ -18,7 +19,7 @@ const FNV64_MASK = 0xffffffffffffffffn
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER)
 
 interface ReadApiPriceResponse {
-  market_id: number
+  market_address: string
   slot: number
   event_time: string
   price: number
@@ -33,7 +34,7 @@ interface ReadApiCandleItem {
 }
 
 interface ReadApiCandleResponse {
-  market_id: number
+  market_address: string
   interval: string
   from: string
   to: string
@@ -46,14 +47,14 @@ interface ReadApiMarketHistoryItem {
   signature: string
   event_index: number
   slot: number
-  market_id: number
+  market_address: string
   base_flow: string
   quote_flow: string
   created_at: string
 }
 
 interface ReadApiMarketHistoryResponse {
-  market_id: number
+  market_address: string
   start_slot: number
   end_slot: number
   points: number
@@ -61,7 +62,7 @@ interface ReadApiMarketHistoryResponse {
 }
 
 interface ReadApiMarketUpdatesResponse {
-  market_id: number
+  market_address: string
   before_slot: number | null
   has_more: boolean
   limit: number
@@ -73,7 +74,7 @@ interface ReadApiClosedPositionItem {
   signature: string
   event_index: number
   slot: number
-  market_id: number
+  market_address: string
   start_slot: number | null
   end_slot: number | null
   deposit_amount: string
@@ -86,7 +87,7 @@ interface ReadApiClosedPositionItem {
 
 interface ReadApiClosedPositionsResponse {
   authority: string
-  market_id: number | null
+  market_address: string | null
   before_slot: number | null
   has_more: boolean
   limit: number
@@ -100,7 +101,7 @@ interface ReadApiClosedPositionMiniChartItem {
 }
 
 interface ReadApiClosedPositionMiniChartResponse {
-  market_id: number
+  market_address: string
   start_slot: number
   end_slot: number
   points: number
@@ -119,6 +120,15 @@ export interface MarketCandle {
 export interface ClosedPositionMiniChartPoint {
   slot: number
   price: number
+}
+
+function assertMarket(
+  payload: { market_address: string | null },
+  marketId: number,
+) {
+  if (payload.market_address !== getMarketDefinition(marketId).address) {
+    throw new Error('Market data returned a different market address')
+  }
 }
 
 const MIN_VALID_UNIX_TIME_SECONDS = 946684800 // 2000-01-01T00:00:00Z
@@ -194,7 +204,9 @@ export function dedupeMarketUpdatesById(events: Array<MarketUpdateEvent>) {
 }
 
 export async function fetchMarketConfig(marketId: number) {
-  const url = readApiUrl(`/v1/markets/${marketId}/config`)
+  const url = readApiUrl(
+    `/v1/markets/${getMarketDefinition(marketId).address}/config`,
+  )
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -208,7 +220,20 @@ export async function fetchMarketConfig(marketId: number) {
     )
   }
 
-  return (await response.json()) as MarketConfigRow
+  const config = (await response.json()) as MarketConfigRow
+  assertMarket(config, marketId)
+  const expected = getMarketDefinition(marketId)
+  if (
+    config.base_mint !== expected.baseMint ||
+    config.quote_mint !== expected.quoteMint ||
+    config.base_decimals !== expected.baseDecimals ||
+    config.quote_decimals !== expected.quoteDecimals
+  ) {
+    throw new Error(
+      'Market data configuration does not match the deployed market',
+    )
+  }
+  return config
 }
 
 export async function fetchMarketUpdatesPage({
@@ -228,7 +253,9 @@ export async function fetchMarketUpdatesPage({
   }
 
   const response = await fetch(
-    readApiUrl(`/v1/markets/${marketId}/updates?${query.toString()}`),
+    readApiUrl(
+      `/v1/markets/${getMarketDefinition(marketId).address}/updates?${query.toString()}`,
+    ),
     {
       headers: {
         Accept: 'application/json',
@@ -244,6 +271,8 @@ export async function fetchMarketUpdatesPage({
   }
 
   const payload = (await response.json()) as ReadApiMarketUpdatesResponse
+  assertMarket(payload, marketId)
+  payload.items.forEach((item) => assertMarket(item, marketId))
   return parseReadApiMarketUpdateItems(payload.items)
 }
 
@@ -256,11 +285,17 @@ export async function fetchLatestMarketUpdate(marketId: number) {
 }
 
 export async function fetchMarketPrice({ marketId }: { marketId: number }) {
-  const response = await fetch(readApiUrl(`/v1/markets/${marketId}/price`), {
-    headers: {
-      Accept: 'application/json',
+  const response = await fetch(
+    readApiUrl(`/v1/markets/${getMarketDefinition(marketId).address}/price`),
+    {
+      headers: {
+        Accept: 'application/json',
+      },
     },
-  })
+  )
+
+  if (response.status === 404)
+    return { eventTimeMs: null, price: null, slot: null }
 
   if (!response.ok) {
     const body = await response.text()
@@ -271,6 +306,7 @@ export async function fetchMarketPrice({ marketId }: { marketId: number }) {
 
   const data = (await response.json()) as ReadApiPriceResponse
 
+  assertMarket(data, marketId)
   return parseReadApiPrice(data)
 }
 
@@ -295,7 +331,9 @@ export async function fetchMarketCandles({
   })
 
   const response = await fetch(
-    readApiUrl(`/v1/markets/${marketId}/candles?${query.toString()}`),
+    readApiUrl(
+      `/v1/markets/${getMarketDefinition(marketId).address}/candles?${query.toString()}`,
+    ),
     {
       headers: {
         Accept: 'application/json',
@@ -311,6 +349,7 @@ export async function fetchMarketCandles({
   }
 
   const payload = (await response.json()) as ReadApiCandleResponse
+  assertMarket(payload, marketId)
   const candles = payload.items
     .map<MarketCandle | null>((item) => {
       const time = normalizeUnixTimeSeconds(item.time)
@@ -406,7 +445,7 @@ export async function fetchClosedPositionMiniChart({
   })
   const response = await fetch(
     readApiUrl(
-      `/v1/markets/${marketId}/closed-position-mini-chart?${query.toString()}`,
+      `/v1/markets/${getMarketDefinition(marketId).address}/closed-position-mini-chart?${query.toString()}`,
     ),
     {
       headers: {
@@ -424,6 +463,7 @@ export async function fetchClosedPositionMiniChart({
 
   const payload =
     (await response.json()) as ReadApiClosedPositionMiniChartResponse
+  assertMarket(payload, marketId)
   const points = payload.items
     .filter(
       (item) =>
@@ -468,7 +508,9 @@ async function fetchMarketUpdateRangeFromReadApi({
   })
 
   const response = await fetch(
-    readApiUrl(`/v1/markets/${marketId}/history?${query.toString()}`),
+    readApiUrl(
+      `/v1/markets/${getMarketDefinition(marketId).address}/history?${query.toString()}`,
+    ),
     {
       headers: {
         Accept: 'application/json',
@@ -484,26 +526,28 @@ async function fetchMarketUpdateRangeFromReadApi({
   }
 
   const payload = (await response.json()) as ReadApiMarketHistoryResponse
+  assertMarket(payload, marketId)
+  payload.items.forEach((item) => assertMarket(item, marketId))
   return parseReadApiMarketUpdateItems(payload.items)
 }
 
 export async function fetchClosedPositionEvents({
-  createdAfter,
+  beforeSlot,
   limit = 50,
   marketId,
   positionAuthority,
 }: {
-  createdAfter?: string
+  beforeSlot?: number
   limit?: number
   marketId?: number
   positionAuthority: string
 }) {
   const query = new URLSearchParams({ limit: String(limit) })
   if (marketId !== undefined) {
-    query.set('market_id', String(marketId))
+    query.set('market_address', getMarketDefinition(marketId).address)
   }
-  if (createdAfter !== undefined) {
-    query.set('created_after', createdAfter)
+  if (beforeSlot !== undefined) {
+    query.set('before_slot', String(beforeSlot))
   }
 
   const response = await fetch(
@@ -525,6 +569,12 @@ export async function fetchClosedPositionEvents({
   }
 
   const payload = (await response.json()) as ReadApiClosedPositionsResponse
+  if (payload.authority !== positionAuthority)
+    throw new Error('Market data returned a different authority')
+  if (marketId !== undefined) {
+    assertMarket(payload, marketId)
+    payload.items.forEach((item) => assertMarket(item, marketId))
+  }
   return payload.items.map((item) =>
     parseClosePositionEvent({
       created_at: item.event_time,
@@ -533,7 +583,7 @@ export async function fetchClosedPositionEvents({
       fee_amount: item.fee_amount,
       id: stableEventIdFromUid(`${item.signature}:${item.event_index}`),
       is_buy: item.is_buy ? 1 : 0,
-      market_id: item.market_id,
+      market_address: item.market_address,
       position_authority: payload.authority,
       remaining_amount: item.remaining_amount,
       signature: item.signature,
@@ -551,7 +601,9 @@ export function subscribeToMarketPriceStream({
   marketId: number
   onPriceUpdate: (payload: MarketPriceSnapshot) => void
 }) {
-  const stream = new EventSource(readApiUrl(`/v1/markets/${marketId}/stream`))
+  const stream = new EventSource(
+    readApiUrl(`/v1/markets/${getMarketDefinition(marketId).address}/stream`),
+  )
 
   const listener = (event: MessageEvent) => {
     try {
@@ -560,6 +612,7 @@ export function subscribeToMarketPriceStream({
         return
       }
 
+      assertMarket(payload, marketId)
       onPriceUpdate(parseReadApiPrice(payload))
     } catch (error) {
       console.error('Failed to parse market price stream payload', error)
@@ -576,7 +629,7 @@ function parseReadApiMarketUpdateItems(items: Array<ReadApiMarketHistoryItem>) {
       base_flow: item.base_flow,
       created_at: item.created_at,
       id: stableEventIdFromUid(item.event_uid),
-      market_id: item.market_id,
+      market_address: item.market_address,
       quote_flow: item.quote_flow,
       signature: item.signature,
       slot: item.slot,

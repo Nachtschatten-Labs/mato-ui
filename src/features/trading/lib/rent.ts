@@ -4,27 +4,13 @@ import {
 } from '../constants'
 import type { Address } from '@solana/kit'
 
-export type ExitsRentAccount = {
+export type IntervalRentAccount = {
   address: Address
   index: bigint
   lamports: bigint
   market: Address
   openPositions: number
   payer: Address
-}
-
-export type PricesRentAccount = {
-  address: Address
-  index: bigint
-  lamports: bigint
-  market: Address
-  payer: Address
-}
-
-export type CloseableRentAccountPair = {
-  exits: ExitsRentAccount
-  index: bigint
-  prices: PricesRentAccount
 }
 
 function toBigInt(value: bigint | number) {
@@ -50,31 +36,22 @@ export function isRentAccountIndexStale({
   )
 }
 
-export function collectCloseableRentAccountPairs({
+export function collectCloseableMarketIntervals({
   currentSlot,
   endSlotInterval,
-  exitsAccounts,
+  intervalAccounts,
   market,
   maxAccounts = MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION,
   payer,
-  pricesAccounts,
 }: {
   currentSlot: bigint | number
   endSlotInterval: bigint | number
-  exitsAccounts: Array<ExitsRentAccount>
+  intervalAccounts: Array<IntervalRentAccount>
   market: Address
   maxAccounts?: number
   payer: Address
-  pricesAccounts: Array<PricesRentAccount>
-}): Array<CloseableRentAccountPair> {
-  const matchingPricesByIndex = new Map(
-    pricesAccounts
-      .filter((account) => account.market === market && account.payer === payer)
-      .map((account) => [account.index, account] as const),
-  )
-  const maxPairs = Math.max(0, Math.floor(maxAccounts / 2))
-
-  return exitsAccounts
+}): Array<IntervalRentAccount> {
+  return intervalAccounts
     .filter(
       (account) =>
         account.market === market &&
@@ -86,13 +63,8 @@ export function collectCloseableRentAccountPairs({
           index: account.index,
         }),
     )
-    .flatMap((exits) => {
-      const prices = matchingPricesByIndex.get(exits.index)
-      return prices ? [{ exits, index: exits.index, prices }] : []
-    })
-    .sort((left, right) => {
-      if (left.index === right.index) return 0
-      return left.index < right.index ? -1 : 1
-    })
-    .slice(0, maxPairs)
+    .sort((left, right) =>
+      left.index === right.index ? 0 : left.index < right.index ? -1 : 1,
+    )
+    .slice(0, Math.max(0, Math.floor(maxAccounts)))
 }

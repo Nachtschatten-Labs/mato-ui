@@ -15,7 +15,7 @@ function marketEvent(
     base_flow: 1_000_000_000n,
     created_at: new Date(createdAtMs).toISOString(),
     id: slot,
-    market_id: 1,
+    market_address: 'FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3',
     quote_flow: BigInt(price * 1_000_000_000),
     signature: `sig-${slot}`,
     slot,

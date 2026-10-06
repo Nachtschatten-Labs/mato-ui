@@ -7,10 +7,7 @@ import {
   fetchMarketUpdateRange,
   fetchMarketUpdatesPage,
 } from './api/market-repository'
-import {
-  fetchOwnedExitsAccounts,
-  fetchOwnedPricesAccounts,
-} from './api/rent-accounts'
+import { fetchOwnedMarketIntervals } from './api/rent-accounts'
 import {
   deriveMarketAddress,
   fetchEndSlotBookkeepingSnapshot,
@@ -127,7 +124,7 @@ export const tradingQueries = {
         return fetchMarketTradePositions(client.runtime.rpc, marketAddress)
       },
     }),
-  ownedPricesAccounts: ({
+  ownedMarketIntervals: ({
     authority,
     client,
   }: {
@@ -135,37 +132,21 @@ export const tradingQueries = {
     client: SolanaClient
   }) =>
     queryOptions({
-      queryKey: tradingQueryKeys.ownedPricesAccounts(authority),
+      queryKey: tradingQueryKeys.ownedMarketIntervals(authority),
       queryFn: async () => {
         if (!authority) return []
-        return fetchOwnedPricesAccounts(client.runtime.rpc, authority)
-      },
-      refetchInterval: 10_000,
-      refetchIntervalInBackground: true,
-    }),
-  ownedExitsAccounts: ({
-    authority,
-    client,
-  }: {
-    authority: string | null | undefined
-    client: SolanaClient
-  }) =>
-    queryOptions({
-      queryKey: tradingQueryKeys.ownedExitsAccounts(authority),
-      queryFn: async () => {
-        if (!authority) return []
-        return fetchOwnedExitsAccounts(client.runtime.rpc, authority)
+        return fetchOwnedMarketIntervals(client.runtime.rpc, authority)
       },
       refetchInterval: 10_000,
       refetchIntervalInBackground: true,
     }),
   closedPositions: ({
-    createdAfter,
+    beforeSlot,
     limit = 50,
     marketId,
     positionAuthority,
   }: {
-    createdAfter?: string
+    beforeSlot?: number
     limit?: number
     marketId?: number
     positionAuthority: string
@@ -175,11 +156,11 @@ export const tradingQueries = {
         positionAuthority,
         marketId,
         limit,
-        createdAfter,
+        beforeSlot,
       ),
       queryFn: () =>
         fetchClosedPositionEvents({
-          createdAfter,
+          beforeSlot,
           limit,
           marketId,
           positionAuthority,
@@ -226,7 +207,7 @@ export const tradingQueries = {
     return queryOptions({
       queryKey: tradingQueryKeys.endSlotSnapshot(
         marketAddress,
-        snapshotLocation?.pricesAccountIndex ?? null,
+        snapshotLocation?.intervalIndex ?? null,
         snapshotLocation?.snapshotIndex ?? null,
         isBuy,
       ),

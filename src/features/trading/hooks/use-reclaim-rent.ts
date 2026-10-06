@@ -11,7 +11,7 @@ import {
 } from '../constants'
 import { sendReclaimRent } from '../api/twob-client'
 import { formatTransactionError } from '../lib/transaction-errors'
-import { collectCloseableRentAccountPairs } from '../lib/rent'
+import { collectCloseableMarketIntervals } from '../lib/rent'
 import { tradingQueryKeys } from '../query-keys'
 import { tradingQueries } from '../queries'
 import { useMarketAddress } from './use-market-address'
@@ -38,14 +38,8 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
   const [signature, setSignature] = useState<string | null>(null)
   const [reclaimedLamports, setReclaimedLamports] = useState(0n)
 
-  const exitsQuery = useQuery({
-    ...tradingQueries.ownedExitsAccounts({ authority: ownerAddress, client }),
-    enabled: shouldFetch,
-    refetchInterval: shouldFetch ? 10_000 : false,
-    refetchIntervalInBackground: true,
-  })
-  const pricesQuery = useQuery({
-    ...tradingQueries.ownedPricesAccounts({ authority: ownerAddress, client }),
+  const intervalsQuery = useQuery({
+    ...tradingQueries.ownedMarketIntervals({ authority: ownerAddress, client }),
     enabled: shouldFetch,
     refetchInterval: shouldFetch ? 10_000 : false,
     refetchIntervalInBackground: true,
@@ -73,9 +67,9 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
     refetchIntervalInBackground: true,
   })
 
-  const exitsAccounts = useMemo(
+  const intervalAccounts = useMemo(
     () =>
-      (exitsQuery.data ?? []).map((account) => ({
+      (intervalsQuery.data ?? []).map((account) => ({
         address: account.address,
         index: account.data.index,
         lamports: account.lamports,
@@ -83,41 +77,17 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
         openPositions: account.data.openPositions,
         payer: account.data.payer,
       })),
-    [exitsQuery.data],
+    [intervalsQuery.data],
   )
-  const pricesAccounts = useMemo(
-    () =>
-      (pricesQuery.data ?? []).map((account) => ({
-        address: account.address,
-        index: account.data.index,
-        lamports: account.lamports,
-        market: account.data.market,
-        payer: account.data.payer,
-      })),
-    [pricesQuery.data],
-  )
-
   const closeableCount = useMemo(() => {
     if (!marketAddress || !runtimeContextQuery.data || !session) return 0
-
-    const pairs = collectCloseableRentAccountPairs({
-      currentSlot: runtimeContextQuery.data.currentSlot,
-      endSlotInterval: runtimeContextQuery.data.endSlotInterval,
-      exitsAccounts,
+    return collectCloseableMarketIntervals({
+      ...runtimeContextQuery.data,
+      intervalAccounts,
       market: marketAddress,
-      maxAccounts: exitsAccounts.length + pricesAccounts.length,
       payer: session.account.address,
-      pricesAccounts,
-    })
-
-    return Math.min(pairs.length * 2, MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION)
-  }, [
-    exitsAccounts,
-    marketAddress,
-    pricesAccounts,
-    runtimeContextQuery.data,
-    session,
-  ])
+    }).length
+  }, [intervalAccounts, marketAddress, runtimeContextQuery.data, session])
 
   const reclaimRent = useCallback(async () => {
     if (!session) {
@@ -154,10 +124,7 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
       const connectedAddress = session.account.address.toString()
       void Promise.all([
         queryClient.invalidateQueries({
-          queryKey: tradingQueryKeys.ownedExitsAccounts(connectedAddress),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: tradingQueryKeys.ownedPricesAccounts(connectedAddress),
+          queryKey: tradingQueryKeys.ownedMarketIntervals(connectedAddress),
         }),
         queryClient.invalidateQueries({
           queryKey: [RENT_RUNTIME_QUERY_KEY, marketAddress],
@@ -192,9 +159,7 @@ export function useReclaimRent(enabled: boolean, marketId: MarketId) {
     error,
     isLoadingEligibility:
       shouldFetch &&
-      (exitsQuery.isPending ||
-        pricesQuery.isPending ||
-        runtimeContextQuery.isPending),
+      (intervalsQuery.isPending || runtimeContextQuery.isPending),
     isReclaiming: status === 'building' || status === 'submitting',
     reclaimRent,
     reclaimedLamports,

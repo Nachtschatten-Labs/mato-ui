@@ -1,3 +1,5 @@
+> Historical devnet release. This checkout now targets mainnet; use [MAINNET.md](MAINNET.md) for the current deployment.
+
 # September 2026 devnet connection
 
 The UI targets `CCAdkkosRFpzrb1BAWHnrzVGHMg4nNmurFCQefn7JtLX` on Solana devnet.

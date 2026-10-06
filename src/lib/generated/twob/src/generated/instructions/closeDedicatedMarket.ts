@@ -60,7 +60,6 @@ export type CloseDedicatedMarketInstruction<
   TAccountMarket extends string | AccountMeta<string> = string,
   TAccountBaseVault extends string | AccountMeta<string> = string,
   TAccountQuoteVault extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
   TAccountBaseTokenProgram extends string | AccountMeta<string> = string,
   TAccountQuoteTokenProgram extends string | AccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -97,9 +96,6 @@ export type CloseDedicatedMarketInstruction<
       TAccountQuoteVault extends string
         ? WritableAccount<TAccountQuoteVault>
         : TAccountQuoteVault,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
       TAccountBaseTokenProgram extends string
         ? ReadonlyAccount<TAccountBaseTokenProgram>
         : TAccountBaseTokenProgram,
@@ -157,7 +153,6 @@ export type CloseDedicatedMarketAsyncInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -171,7 +166,6 @@ export type CloseDedicatedMarketAsyncInput<
   market: Address<TAccountMarket>
   baseVault?: Address<TAccountBaseVault>
   quoteVault?: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -187,7 +181,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -203,7 +196,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -221,7 +213,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -247,7 +238,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -392,7 +382,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -410,7 +399,6 @@ export async function getCloseDedicatedMarketInstructionAsync<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -427,7 +415,6 @@ export type CloseDedicatedMarketInput<
   TAccountMarket extends string = string,
   TAccountBaseVault extends string = string,
   TAccountQuoteVault extends string = string,
-  TAccountBookkeeping extends string = string,
   TAccountBaseTokenProgram extends string = string,
   TAccountQuoteTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -441,7 +428,6 @@ export type CloseDedicatedMarketInput<
   market: Address<TAccountMarket>
   baseVault: Address<TAccountBaseVault>
   quoteVault: Address<TAccountQuoteVault>
-  bookkeeping: Address<TAccountBookkeeping>
   baseTokenProgram: Address<TAccountBaseTokenProgram>
   quoteTokenProgram: Address<TAccountQuoteTokenProgram>
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>
@@ -457,7 +443,6 @@ export function getCloseDedicatedMarketInstruction<
   TAccountMarket extends string,
   TAccountBaseVault extends string,
   TAccountQuoteVault extends string,
-  TAccountBookkeeping extends string,
   TAccountBaseTokenProgram extends string,
   TAccountQuoteTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -473,7 +458,6 @@ export function getCloseDedicatedMarketInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -490,7 +474,6 @@ export function getCloseDedicatedMarketInstruction<
   TAccountMarket,
   TAccountBaseVault,
   TAccountQuoteVault,
-  TAccountBookkeeping,
   TAccountBaseTokenProgram,
   TAccountQuoteTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -515,7 +498,6 @@ export function getCloseDedicatedMarketInstruction<
     market: { value: input.market ?? null, isWritable: true },
     baseVault: { value: input.baseVault ?? null, isWritable: true },
     quoteVault: { value: input.quoteVault ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
     baseTokenProgram: {
       value: input.baseTokenProgram ?? null,
       isWritable: false,
@@ -556,7 +538,6 @@ export function getCloseDedicatedMarketInstruction<
       getAccountMeta('market', accounts.market),
       getAccountMeta('baseVault', accounts.baseVault),
       getAccountMeta('quoteVault', accounts.quoteVault),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
       getAccountMeta('baseTokenProgram', accounts.baseTokenProgram),
       getAccountMeta('quoteTokenProgram', accounts.quoteTokenProgram),
       getAccountMeta('associatedTokenProgram', accounts.associatedTokenProgram),
@@ -574,7 +555,6 @@ export function getCloseDedicatedMarketInstruction<
     TAccountMarket,
     TAccountBaseVault,
     TAccountQuoteVault,
-    TAccountBookkeeping,
     TAccountBaseTokenProgram,
     TAccountQuoteTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -596,11 +576,10 @@ export type ParsedCloseDedicatedMarketInstruction<
     market: TAccountMetas[5]
     baseVault: TAccountMetas[6]
     quoteVault: TAccountMetas[7]
-    bookkeeping: TAccountMetas[8]
-    baseTokenProgram: TAccountMetas[9]
-    quoteTokenProgram: TAccountMetas[10]
-    associatedTokenProgram: TAccountMetas[11]
-    systemProgram: TAccountMetas[12]
+    baseTokenProgram: TAccountMetas[8]
+    quoteTokenProgram: TAccountMetas[9]
+    associatedTokenProgram: TAccountMetas[10]
+    systemProgram: TAccountMetas[11]
   }
   data: CloseDedicatedMarketInstructionData
 }
@@ -613,12 +592,12 @@ export function parseCloseDedicatedMarketInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCloseDedicatedMarketInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 13) {
+  if (instruction.accounts.length < 12) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 13,
+        expectedAccountMetas: 12,
       },
     )
   }
@@ -639,7 +618,6 @@ export function parseCloseDedicatedMarketInstruction<
       market: getNextAccount(),
       baseVault: getNextAccount(),
       quoteVault: getNextAccount(),
-      bookkeeping: getNextAccount(),
       baseTokenProgram: getNextAccount(),
       quoteTokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

@@ -53,11 +53,8 @@ export type UpdateDedicatedFlowsInstruction<
   TProgram extends string = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
   TAccountAuthority extends string | AccountMeta<string> = string,
   TAccountMarket extends string | AccountMeta<string> = string,
-  TAccountBookkeeping extends string | AccountMeta<string> = string,
-  TAccountCurrentExits extends string | AccountMeta<string> = string,
-  TAccountPreviousExits extends string | AccountMeta<string> = string,
-  TAccountCurrentPrices extends string | AccountMeta<string> = string,
-  TAccountPreviousPrices extends string | AccountMeta<string> = string,
+  TAccountCurrentInterval extends string | AccountMeta<string> = string,
+  TAccountPreviousInterval extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     '11111111111111111111111111111111',
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
@@ -72,21 +69,12 @@ export type UpdateDedicatedFlowsInstruction<
       TAccountMarket extends string
         ? WritableAccount<TAccountMarket>
         : TAccountMarket,
-      TAccountBookkeeping extends string
-        ? WritableAccount<TAccountBookkeeping>
-        : TAccountBookkeeping,
-      TAccountCurrentExits extends string
-        ? ReadonlyAccount<TAccountCurrentExits>
-        : TAccountCurrentExits,
-      TAccountPreviousExits extends string
-        ? ReadonlyAccount<TAccountPreviousExits>
-        : TAccountPreviousExits,
-      TAccountCurrentPrices extends string
-        ? WritableAccount<TAccountCurrentPrices>
-        : TAccountCurrentPrices,
-      TAccountPreviousPrices extends string
-        ? WritableAccount<TAccountPreviousPrices>
-        : TAccountPreviousPrices,
+      TAccountCurrentInterval extends string
+        ? WritableAccount<TAccountCurrentInterval>
+        : TAccountCurrentInterval,
+      TAccountPreviousInterval extends string
+        ? WritableAccount<TAccountPreviousInterval>
+        : TAccountPreviousInterval,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -144,20 +132,14 @@ export function getUpdateDedicatedFlowsInstructionDataCodec(): FixedSizeCodec<
 export type UpdateDedicatedFlowsInput<
   TAccountAuthority extends string = string,
   TAccountMarket extends string = string,
-  TAccountBookkeeping extends string = string,
-  TAccountCurrentExits extends string = string,
-  TAccountPreviousExits extends string = string,
-  TAccountCurrentPrices extends string = string,
-  TAccountPreviousPrices extends string = string,
+  TAccountCurrentInterval extends string = string,
+  TAccountPreviousInterval extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   authority: TransactionSigner<TAccountAuthority>
   market: Address<TAccountMarket>
-  bookkeeping: Address<TAccountBookkeeping>
-  currentExits: Address<TAccountCurrentExits>
-  previousExits: Address<TAccountPreviousExits>
-  currentPrices: Address<TAccountCurrentPrices>
-  previousPrices: Address<TAccountPreviousPrices>
+  currentInterval: Address<TAccountCurrentInterval>
+  previousInterval: Address<TAccountPreviousInterval>
   systemProgram?: Address<TAccountSystemProgram>
   referenceIndex: UpdateDedicatedFlowsInstructionDataArgs['referenceIndex']
   baseFlowAtoms: UpdateDedicatedFlowsInstructionDataArgs['baseFlowAtoms']
@@ -167,22 +149,16 @@ export type UpdateDedicatedFlowsInput<
 export function getUpdateDedicatedFlowsInstruction<
   TAccountAuthority extends string,
   TAccountMarket extends string,
-  TAccountBookkeeping extends string,
-  TAccountCurrentExits extends string,
-  TAccountPreviousExits extends string,
-  TAccountCurrentPrices extends string,
-  TAccountPreviousPrices extends string,
+  TAccountCurrentInterval extends string,
+  TAccountPreviousInterval extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof TWOB_ANCHOR_PROGRAM_ADDRESS,
 >(
   input: UpdateDedicatedFlowsInput<
     TAccountAuthority,
     TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
@@ -190,11 +166,8 @@ export function getUpdateDedicatedFlowsInstruction<
   TProgramAddress,
   TAccountAuthority,
   TAccountMarket,
-  TAccountBookkeeping,
-  TAccountCurrentExits,
-  TAccountPreviousExits,
-  TAccountCurrentPrices,
-  TAccountPreviousPrices,
+  TAccountCurrentInterval,
+  TAccountPreviousInterval,
   TAccountSystemProgram
 > {
   // Program address.
@@ -204,11 +177,11 @@ export function getUpdateDedicatedFlowsInstruction<
   const originalAccounts = {
     authority: { value: input.authority ?? null, isWritable: false },
     market: { value: input.market ?? null, isWritable: true },
-    bookkeeping: { value: input.bookkeeping ?? null, isWritable: true },
-    currentExits: { value: input.currentExits ?? null, isWritable: false },
-    previousExits: { value: input.previousExits ?? null, isWritable: false },
-    currentPrices: { value: input.currentPrices ?? null, isWritable: true },
-    previousPrices: { value: input.previousPrices ?? null, isWritable: true },
+    currentInterval: { value: input.currentInterval ?? null, isWritable: true },
+    previousInterval: {
+      value: input.previousInterval ?? null,
+      isWritable: true,
+    },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   }
   const accounts = originalAccounts as Record<
@@ -230,11 +203,8 @@ export function getUpdateDedicatedFlowsInstruction<
     accounts: [
       getAccountMeta('authority', accounts.authority),
       getAccountMeta('market', accounts.market),
-      getAccountMeta('bookkeeping', accounts.bookkeeping),
-      getAccountMeta('currentExits', accounts.currentExits),
-      getAccountMeta('previousExits', accounts.previousExits),
-      getAccountMeta('currentPrices', accounts.currentPrices),
-      getAccountMeta('previousPrices', accounts.previousPrices),
+      getAccountMeta('currentInterval', accounts.currentInterval),
+      getAccountMeta('previousInterval', accounts.previousInterval),
       getAccountMeta('systemProgram', accounts.systemProgram),
     ],
     data: getUpdateDedicatedFlowsInstructionDataEncoder().encode(
@@ -245,11 +215,8 @@ export function getUpdateDedicatedFlowsInstruction<
     TProgramAddress,
     TAccountAuthority,
     TAccountMarket,
-    TAccountBookkeeping,
-    TAccountCurrentExits,
-    TAccountPreviousExits,
-    TAccountCurrentPrices,
-    TAccountPreviousPrices,
+    TAccountCurrentInterval,
+    TAccountPreviousInterval,
     TAccountSystemProgram
   >)
 }
@@ -262,12 +229,9 @@ export type ParsedUpdateDedicatedFlowsInstruction<
   accounts: {
     authority: TAccountMetas[0]
     market: TAccountMetas[1]
-    bookkeeping: TAccountMetas[2]
-    currentExits: TAccountMetas[3]
-    previousExits: TAccountMetas[4]
-    currentPrices: TAccountMetas[5]
-    previousPrices: TAccountMetas[6]
-    systemProgram: TAccountMetas[7]
+    currentInterval: TAccountMetas[2]
+    previousInterval: TAccountMetas[3]
+    systemProgram: TAccountMetas[4]
   }
   data: UpdateDedicatedFlowsInstructionData
 }
@@ -280,12 +244,12 @@ export function parseUpdateDedicatedFlowsInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedUpdateDedicatedFlowsInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 5) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 8,
+        expectedAccountMetas: 5,
       },
     )
   }
@@ -300,11 +264,8 @@ export function parseUpdateDedicatedFlowsInstruction<
     accounts: {
       authority: getNextAccount(),
       market: getNextAccount(),
-      bookkeeping: getNextAccount(),
-      currentExits: getNextAccount(),
-      previousExits: getNextAccount(),
-      currentPrices: getNextAccount(),
-      previousPrices: getNextAccount(),
+      currentInterval: getNextAccount(),
+      previousInterval: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getUpdateDedicatedFlowsInstructionDataDecoder().decode(

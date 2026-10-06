@@ -71,6 +71,7 @@ function createPosition(paused: boolean): TradePositionRecord {
       amount: 100n,
       authority: '11111111111111111111111111111111' as Address,
       baseReceiver: '11111111111111111111111111111111' as Address,
+      padding: new Uint8Array(9),
       bookkeepingSnapshot: 0n,
       bump: 255,
       discriminator: new Uint8Array(8),
@@ -213,14 +214,14 @@ describe('ActivePositionCard controls', () => {
   it('shows the chart and details initially and can collapse them', () => {
     renderCard()
     expect(
-      screen.getByRole('img', { name: /mainnet reference price history/ }),
+      screen.getByRole('img', { name: /market price history/ }),
     ).toBeTruthy()
     expect(screen.getByText('Available after fee')).toBeTruthy()
     fireEvent.click(
       screen.getByRole('button', { name: 'Collapse SOL position' }),
     )
     expect(
-      screen.queryByRole('img', { name: /mainnet reference price history/ }),
+      screen.queryByRole('img', { name: /market price history/ }),
     ).toBeNull()
     expect(screen.getByRole('button', { name: 'Pause position' })).toBeTruthy()
   })
