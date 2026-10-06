@@ -114,73 +114,109 @@ describe('SolanaProvider', () => {
     vi.clearAllMocks()
   })
 
-  it('targets mainnet for initially discovered and newly registered wallets that list mainnet first', async () => {
-    const { createWalletStandardConnector } =
-      await vi.importActual<typeof import('@solana/client')>('@solana/client')
-    const walletAddress = address('11111111111111111111111111111111')
-    const account = {
-      address: walletAddress,
-      publicKey: new Uint8Array(32),
-      chains: ['solana:mainnet-beta', 'solana:devnet'] as const,
-      features: ['solana:signAndSendTransaction'] as const,
-    }
-    const signAndSend = vi
-      .fn()
-      .mockResolvedValue([{ signature: new Uint8Array(64) }])
-    const wallet = {
-      version: '1.0.0',
-      name: 'Multi-chain wallet',
-      icon: 'data:image/svg+xml;base64,',
-      accounts: [account],
-      chains: account.chains,
-      features: {
-        'standard:connect': {
-          version: '1.0.0',
-          connect: vi.fn().mockResolvedValue({ accounts: [account] }),
+  it.each([
+    ['solana:mainnet', 'solana:devnet'],
+    ['solana:devnet', 'solana:mainnet'],
+  ] as const)(
+    'uses Wallet Standard mainnet for signing and sending when %s is listed first',
+    async (...chains) => {
+      const { createWalletStandardConnector } =
+        await vi.importActual<typeof import('@solana/client')>('@solana/client')
+      const walletAddress = address('11111111111111111111111111111111')
+      const account = {
+        address: walletAddress,
+        publicKey: new Uint8Array(32),
+        chains,
+        features: [
+          'solana:signTransaction',
+          'solana:signAndSendTransaction',
+        ] as const,
+      }
+      function validateChain(chain: string | undefined) {
+        if (!account.chains.some((supported) => supported === chain)) {
+          throw new Error('Invalid chain')
+        }
+      }
+      const signAndSend = vi.fn(async ({ chain }: { chain: string }) => {
+        validateChain(chain)
+        return [{ signature: new Uint8Array(64) }]
+      })
+      const sign = vi.fn(
+        async ({
+          chain,
+          transaction,
+        }: {
+          chain?: string
+          transaction: Uint8Array
+        }) => {
+          validateChain(chain)
+          return [{ signedTransaction: transaction }]
         },
-        'solana:signAndSendTransaction': {
-          version: '1.0.0',
-          supportedTransactionVersions: ['legacy', 0],
-          signAndSendTransaction: signAndSend,
+      )
+      const wallet = {
+        version: '1.0.0',
+        name: 'Multi-chain wallet',
+        icon: 'data:image/svg+xml;base64,',
+        accounts: [account],
+        chains: account.chains,
+        features: {
+          'standard:connect': {
+            version: '1.0.0',
+            connect: vi.fn().mockResolvedValue({ accounts: [account] }),
+          },
+          'solana:signAndSendTransaction': {
+            version: '1.0.0',
+            supportedTransactionVersions: ['legacy', 0],
+            signAndSendTransaction: signAndSend,
+          },
+          'solana:signTransaction': {
+            version: '1.0.0',
+            supportedTransactionVersions: ['legacy', 0],
+            signTransaction: sign,
+          },
         },
-      },
-    } as const
-    const transaction = compileTransaction(
-      setTransactionMessageLifetimeUsingBlockhash(
-        {
-          blockhash: blockhash('11111111111111111111111111111111'),
-          lastValidBlockHeight: 1n,
-        },
-        setTransactionMessageFeePayer(
-          walletAddress,
-          createTransactionMessage({ version: 0 }),
+      } as const
+      const transaction = compileTransaction(
+        setTransactionMessageLifetimeUsingBlockhash(
+          {
+            blockhash: blockhash('11111111111111111111111111111111'),
+            lastValidBlockHeight: 1n,
+          },
+          setTransactionMessageFeePayer(
+            walletAddress,
+            createTransactionMessage({ version: 0 }),
+          ),
         ),
-      ),
-    )
+      )
 
-    render(<SolanaProvider>child</SolanaProvider>)
-    await waitFor(() => expect(mocks.watcher).toBeTruthy())
+      render(<SolanaProvider>child</SolanaProvider>)
+      await waitFor(() => expect(mocks.watcher).toBeTruthy())
 
-    const discoveries = [
-      vi.mocked(getWalletStandardConnectors).mock.calls[0][0],
-      vi.mocked(watchWalletStandardConnectors).mock.calls[0][1],
-    ]
-    for (const options of discoveries) {
-      const session = await createWalletStandardConnector(
-        wallet,
-        options?.overrides?.(wallet),
-      ).connect()
-      await session.sendTransaction!(
-        transaction as unknown as Parameters<
+      const discoveries = [
+        vi.mocked(getWalletStandardConnectors).mock.calls[0][0],
+        vi.mocked(watchWalletStandardConnectors).mock.calls[0][1],
+      ]
+      for (const options of discoveries) {
+        const session = await createWalletStandardConnector(
+          wallet,
+          options?.overrides?.(wallet),
+        ).connect()
+        const signableTransaction = transaction as unknown as Parameters<
           NonNullable<typeof session.sendTransaction>
-        >[0],
-      )
-      expect(signAndSend).toHaveBeenLastCalledWith(
-        expect.objectContaining({ chain: 'solana:mainnet-beta' }),
-      )
-    }
-    expect(signAndSend).toHaveBeenCalledTimes(2)
-  })
+        >[0]
+        await session.sendTransaction!(signableTransaction)
+        expect(signAndSend).toHaveBeenLastCalledWith(
+          expect.objectContaining({ chain: 'solana:mainnet' }),
+        )
+        await session.signTransaction!(signableTransaction)
+        expect(sign).toHaveBeenLastCalledWith(
+          expect.objectContaining({ chain: 'solana:mainnet' }),
+        )
+      }
+      expect(signAndSend).toHaveBeenCalledTimes(2)
+      expect(sign).toHaveBeenCalledTimes(2)
+    },
+  )
 
   it('refreshes the client registry when wallets register after mount', async () => {
     const phantom = createConnector('Phantom')

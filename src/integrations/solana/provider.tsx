@@ -16,9 +16,14 @@ import type { SolanaClient, WalletConnector } from '@solana/client'
 const endpoint = getBrowserSolanaRpcEndpoint()
 const websocketEndpoint = getBrowserSolanaWebsocketEndpoint(endpoint)
 const browserRpc = createSolanaRpcWithRateLimitRetry(endpoint)
+// Wallet Standard calls mainnet "solana:mainnet", unlike the RPC cluster name.
+const walletChain =
+  target.cluster === 'mainnet-beta'
+    ? 'solana:mainnet'
+    : (`solana:${target.cluster}` as const)
 const walletDiscoveryOptions = {
   // The app's RPC origin does not identify its Solana cluster to wallets.
-  overrides: () => ({ defaultChain: `solana:${target.cluster}` as const }),
+  overrides: () => ({ defaultChain: walletChain }),
 }
 
 function getInitialWalletConnectors() {
