@@ -10,6 +10,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
 import { OrderEntryCard } from './order-entry-card'
+import { DURATION_OPTIONS } from '../constants'
 
 afterEach(cleanup)
 
@@ -105,16 +106,16 @@ describe('OrderEntryCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Customize duration' }))
     await screen.findByRole('dialog', { name: 'Customize duration' })
 
-    fireEvent.click(screen.getByRole('button', { name: '1 day' }))
+    fireEvent.click(screen.getByRole('button', { name: '20 seconds' }))
     expect(props.onDurationChange).not.toHaveBeenCalled()
     expect(screen.getByText('Current estimate · 1 hour')).toBeTruthy()
     expect(
       screen
         .getByRole('slider', { name: 'Order duration' })
         .getAttribute('aria-valuetext'),
-    ).toBe('1 day')
-    fireEvent.click(screen.getByRole('button', { name: 'Use 1 day' }))
-    expect(props.onDurationChange).toHaveBeenCalledWith(86400)
+    ).toBe('20 seconds')
+    fireEvent.click(screen.getByRole('button', { name: 'Use 20 seconds' }))
+    expect(props.onDurationChange).toHaveBeenCalledWith(20)
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
@@ -124,7 +125,11 @@ describe('OrderEntryCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Customize duration' }))
     await screen.findByRole('dialog')
     fireEvent.change(screen.getByRole('slider', { name: 'Order duration' }), {
-      target: { value: '10' },
+      target: {
+        value: String(
+          DURATION_OPTIONS.findIndex((option) => option.label === '1w'),
+        ),
+      },
     })
     expect(screen.getByRole('button', { name: 'Use 1 week' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))

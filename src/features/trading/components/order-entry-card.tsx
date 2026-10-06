@@ -333,8 +333,8 @@ export function OrderEntryCard({
               value={draftDurationIndex}
             />
             <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>1 minute</span>
-              <span>1 year</span>
+              <span>{formatDuration(DURATION_OPTIONS[0].seconds)}</span>
+              <span>{formatDuration(DURATION_OPTIONS.at(-1)!.seconds)}</span>
             </div>
             <div className="mt-5 grid grid-cols-5 gap-2">
               {DURATION_OPTIONS.map((option) => (
@@ -403,6 +403,7 @@ export function formatDuration(seconds: number) {
     { seconds: 24 * 60 * 60, label: 'day' },
     { seconds: 60 * 60, label: 'hour' },
     { seconds: 60, label: 'minute' },
+    { seconds: 1, label: 'second' },
   ]
   const unit =
     units.find((candidate) => seconds >= candidate.seconds) ??
