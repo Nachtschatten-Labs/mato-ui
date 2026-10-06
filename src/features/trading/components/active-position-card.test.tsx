@@ -14,11 +14,15 @@ import type { Address } from '@solana/kit'
 import type {
   StreamingMarketState,
   TradePositionRecord,
+  TradeSettlementSnapshot,
 } from '../domain/models'
 import { Side } from '@/lib/generated/twob/src/generated/types'
 
+const snapshotState = vi.hoisted(() => ({
+  data: null as TradeSettlementSnapshot | null,
+}))
 vi.mock('../hooks/use-end-slot-bookkeeping-snapshot', () => ({
-  useEndSlotBookkeepingSnapshot: () => ({ data: null }),
+  useEndSlotBookkeepingSnapshot: () => snapshotState,
 }))
 vi.mock('../hooks/use-position-chart', () => ({
   usePositionChart: () => ({
@@ -54,6 +58,7 @@ vi.mock('../hooks/use-close-position-preview', () => ({
   }),
 }))
 beforeEach(() => {
+  snapshotState.data = null
   previewState.isError = false
   previewState.isFetching = false
 })
@@ -99,6 +104,7 @@ const STREAMING_STATE: StreamingMarketState = {
   baseMint: 'So11111111111111111111111111111111111111112' as Address,
   bookkeepingBasePerQuote: 0n,
   bookkeepingLastUpdateSlot: 2,
+  bookkeepingSlotsWithoutTrades: 0,
   bookkeepingQuotePerBase: 0n,
   currentSlot: 2,
   endSlotInterval: 5,
@@ -115,10 +121,14 @@ function renderCard({
   isControlDisabled = false,
   isResuming = false,
   paused = false,
+  position = createPosition(paused),
+  streamingState = STREAMING_STATE,
 }: {
   isControlDisabled?: boolean
   isResuming?: boolean
   paused?: boolean
+  position?: TradePositionRecord
+  streamingState?: StreamingMarketState
 } = {}) {
   const onClose = vi.fn().mockResolvedValue(true)
   const onPauseToggle = vi.fn()
@@ -138,10 +148,10 @@ function renderCard({
       onClose={onClose}
       onPauseToggle={onPauseToggle}
       onWithdraw={onWithdraw}
-      position={createPosition(paused)}
+      position={position}
       quoteDecimals={0}
       quoteTicker="USDC"
-      streamingState={STREAMING_STATE}
+      streamingState={streamingState}
     />,
   )
 
@@ -149,6 +159,40 @@ function renderCard({
 }
 
 describe('ActivePositionCard controls', () => {
+  it('shows an ended order as partially filled when some slots did not trade', () => {
+    snapshotState.data = {
+      slot: 10,
+      bookkeeping: 8_000_000_000_000_000n,
+      slotsWithoutTrades: 2,
+    }
+    const position = createPosition(false)
+    position.data.swappedAmountAtSnapshot = 0n
+    renderCard({
+      position,
+      streamingState: { ...STREAMING_STATE, currentSlot: 20 },
+    })
+    expect(screen.getByTitle('80 of 100 USDC')).toBeTruthy()
+    expect(screen.getByText('80.0% filled')).toBeTruthy()
+    expect(screen.getAllByText('Ended').length).toBeGreaterThan(0)
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(
+      '80',
+    )
+  })
+
+  it('waits for an ended order’s snapshot instead of displaying 100% filled', () => {
+    renderCard({
+      streamingState: {
+        ...STREAMING_STATE,
+        currentSlot: 20,
+        bookkeepingLastUpdateSlot: 20,
+      },
+    })
+    expect(screen.getByTitle('— of 100 USDC')).toBeTruthy()
+    expect(screen.getByText('Updating fill…')).toBeTruthy()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText('100.0% filled')).toBeNull()
+  })
+
   it('offers pause and withdraw actions for an active position', () => {
     const { onPauseToggle, onWithdraw } = renderCard()
 

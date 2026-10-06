@@ -94,7 +94,7 @@ export function ActivePositionCard(props: ActivePositionCardProps) {
     enabled: Boolean(
       !isPaused &&
       streamingState &&
-      streamingState.currentSlot > positionEndSlot,
+      streamingState.currentSlot >= positionEndSlot,
     ),
     endSlot: positionEndSlot,
     endSlotInterval: streamingState?.endSlotInterval ?? null,
@@ -308,6 +308,10 @@ export function ActivePositionCardView({
       : 'Streaming'
   const amount = (atoms: bigint, decimals: number) =>
     formatAtoms(atoms, decimals)
+  const spentAmount =
+    metrics.consumedAtoms === null
+      ? '—'
+      : amount(metrics.consumedAtoms, metrics.depositedDecimals)
   const actionClass =
     'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border/60 text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40'
   return (
@@ -374,23 +378,25 @@ export function ActivePositionCardView({
           </p>
           <p
             className="truncate text-[13px] tabular-nums"
-            title={`${amount(metrics.consumedAtoms, metrics.depositedDecimals)} of ${amount(metrics.amountAtoms, metrics.depositedDecimals)} ${metrics.depositedToken}`}
+            title={`${spentAmount} of ${amount(metrics.amountAtoms, metrics.depositedDecimals)} ${metrics.depositedToken}`}
           >
-            <span>
-              {amount(metrics.consumedAtoms, metrics.depositedDecimals)}
-            </span>
+            <span>{spentAmount}</span>
             <span className="text-muted-foreground">
               {' '}
               / {amount(metrics.amountAtoms, metrics.depositedDecimals)}
             </span>
           </p>
-          <Progress
-            animated={!metrics.isPaused && !metrics.hasPositionEnded}
-            ariaLabel={`${metrics.sideLabel} position progress`}
-            value={metrics.progressPercent}
-            className="mt-2 h-1 bg-secondary"
-            indicatorClassName="bg-accent-strong"
-          />
+          {metrics.progressPercent === null ? (
+            <div className="mt-2 h-1 rounded-full bg-secondary" />
+          ) : (
+            <Progress
+              animated={!metrics.isPaused && !metrics.hasPositionEnded}
+              ariaLabel={`${metrics.sideLabel} position progress`}
+              value={metrics.progressPercent}
+              className="mt-2 h-1 bg-secondary"
+              indicatorClassName="bg-accent-strong"
+            />
+          )}
         </div>
         <div className="col-start-2 row-start-2 min-w-0 text-right sm:col-start-3 sm:row-start-1 sm:text-left">
           <p className="mb-2 text-[11px] text-muted-foreground">
@@ -402,7 +408,9 @@ export function ActivePositionCardView({
               : formatPrice(metrics.averagePrice)}
           </p>
           <p className="mt-1 text-[10px] text-muted-foreground">
-            {metrics.progressPercent.toFixed(1)}% filled
+            {metrics.progressPercent === null
+              ? 'Updating fill…'
+              : `${metrics.progressPercent.toFixed(1)}% filled`}
           </p>
         </div>
         <div className="col-start-2 row-start-1 flex items-center gap-2 self-start sm:col-start-4 sm:mt-7">

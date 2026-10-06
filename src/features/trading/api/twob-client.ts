@@ -44,6 +44,7 @@ import type { UseSendTransactionReturnType } from '@solana/react-hooks'
 import type { Address, TransactionSigner } from '@solana/kit'
 import type {
   StreamingMarketState,
+  TradeSettlementSnapshot,
   TradePositionRecord,
 } from '../domain/models'
 import type { IntervalRentAccount } from '../lib/rent'
@@ -290,6 +291,8 @@ export async function fetchStreamingMarketState(
       marketAccount.data.bookkeeping.lastUpdateSlot,
     ),
     bookkeepingQuotePerBase: marketAccount.data.bookkeeping.quotePerBase,
+    bookkeepingSlotsWithoutTrades:
+      marketAccount.data.bookkeeping.slotsWithoutTrade,
     currentSlot: Number(currentSlot),
     endSlotInterval: END_SLOT_INTERVAL,
     isPaused: marketAccount.data.isPaused !== 0,
@@ -398,7 +401,7 @@ export async function fetchEndSlotBookkeepingSnapshot({
   isBuy: boolean
   marketAddress: Address
   rpcClient: TwobRpcClient
-}) {
+}): Promise<TradeSettlementSnapshot | null> {
   const snapshotLocation =
     endSlotInterval === null
       ? null
@@ -431,7 +434,11 @@ export async function fetchEndSlotBookkeepingSnapshot({
   const snapshots = isBuy
     ? interval.data.basePerQuoteSnapshot
     : interval.data.quotePerBaseSnapshot
-  return snapshots[snapshotLocation.snapshotIndex] ?? null
+  const bookkeeping = snapshots[snapshotLocation.snapshotIndex]
+  const slotsWithoutTrades =
+    interval.data.slotsWithoutTradesSnapshot[snapshotLocation.snapshotIndex]
+  if (bookkeeping === undefined || slotsWithoutTrades === undefined) return null
+  return { slot: endSlot, bookkeeping, slotsWithoutTrades }
 }
 
 export async function sendSubmitOrder({

@@ -219,7 +219,7 @@ it.skipIf(!enabled)(
       isBuy: true,
       bookkeepingLastUpdateSlot: Number(state.data.bookkeeping.lastUpdateSlot),
     })
-    expect(snapshot).toBeGreaterThan(0n)
+    expect(snapshot?.bookkeeping).toBeGreaterThan(0n)
     await sendClosePositions({
       ...context,
       request: {

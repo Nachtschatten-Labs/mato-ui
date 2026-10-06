@@ -53,6 +53,13 @@ The API routes use full market addresses. Empty quote history is an expected sta
 before quoting starts; the UI does not fabricate prices. Closed history is available
 from the same mainnet API and is filtered by wallet and market address.
 
+Position spending follows settlement accounting: unelapsed slots and slots without
+opposing flow remain refundable. Live estimates include the market's cumulative
+inactive-slot counter and stop advancing while either flow is zero. Ended positions
+use the price and inactive-slot counters at their own end slot; until that snapshot
+is available, the card shows “Updating fill…” instead of assuming a complete fill.
+Confirmed settlement replaces earlier estimates, including lower or zero fills.
+
 ## Production preview
 
 Prepare `.env.production.local` using the example, then:

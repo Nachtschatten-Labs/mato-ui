@@ -90,6 +90,7 @@ function dashboardInputs(): Parameters<
       baseMint: 'So11111111111111111111111111111111111111112' as Address,
       bookkeepingBasePerQuote: 0n,
       bookkeepingLastUpdateSlot: 11,
+      bookkeepingSlotsWithoutTrades: 0,
       bookkeepingQuotePerBase: 0n,
       currentSlot: 11,
       endSlotInterval: 7,
