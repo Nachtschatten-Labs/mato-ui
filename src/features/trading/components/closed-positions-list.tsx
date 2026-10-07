@@ -114,7 +114,7 @@ function ClosedPositionRow({
   return (
     <Fragment>
       <tr
-        className={`cursor-pointer transition-colors hover:bg-white/[0.025] focus-within:bg-white/[0.025] ${expanded ? '' : 'border-b border-border/60'}`}
+        className={`cursor-pointer transition-colors [clip-path:inset(0_round_var(--radius-sm))] hover:bg-white/[0.025] focus-within:bg-white/[0.025] ${expanded ? '' : 'border-b border-border/60'}`}
         onClick={() => setExpanded((previous) => !previous)}
       >
         <td className="py-4 pr-2 align-top">
@@ -175,7 +175,7 @@ function ClosedPositionRow({
       </tr>
       {expanded ? (
         <tr className="border-b border-border/60">
-          <td colSpan={3} className="pb-5 sm:pl-10">
+          <td colSpan={3} className="pt-2 pb-5 sm:pl-10">
             <div id={detailsId}>
               <ClosedPositionDetails
                 event={event}
