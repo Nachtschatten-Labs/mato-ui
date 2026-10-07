@@ -40,6 +40,7 @@ import {
 } from '../lib/format'
 import { clampPage, getPageCount, getPageItems } from '../lib/pagination'
 import { isHighPriceImpact } from '../lib/price-impact'
+import { formatSmartDuration } from '../lib/duration-label'
 import { useMarketAddress } from '../hooks/use-market-address'
 import { useMarketChartHistory } from '../hooks/use-market-chart-history'
 import { useMarketPrice } from '../hooks/use-market-price'
@@ -62,7 +63,7 @@ import {
 import { ClosedPositionsList } from './closed-positions-list'
 import { isReadApiConfigured } from '../api/read-api'
 import { MarketPriceChart } from './market-price-chart'
-import { OrderEntryCard, formatDuration } from './order-entry-card'
+import { OrderEntryCard } from './order-entry-card'
 import { OrderBookTable } from './order-book-table'
 import { ActivePositionCard } from './active-position-card'
 import { BatchCloseReview } from './batch-close-review'
@@ -449,7 +450,7 @@ export function TradingDashboard({
                         ? 'Smart fill unavailable'
                         : hasHighPriceImpact
                           ? 'Review price impact'
-                          : `Stream over ${formatDuration(durationSeconds)}`
+                          : `${side === 'buy' ? 'Buy' : 'Sell'} over the next ${formatSmartDuration(durationSeconds)}`
 
   useEffect(() => {
     setAmountInput('')
