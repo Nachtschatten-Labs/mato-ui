@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react'
+import { SLOT_DURATION_MS } from '@/features/trading/constants'
 import type { ActivePositionProps } from '@/lib/types/position'
 
 function formatAmount(amount: bigint, decimals: number): string {
@@ -10,7 +11,7 @@ function formatAmount(amount: bigint, decimals: number): string {
 }
 
 function formatTime(slots: bigint): string {
-  const ms = Number(slots) * 400
+  const ms = Number(slots) * SLOT_DURATION_MS
   const seconds = Math.floor(ms / 1000)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)

@@ -3,7 +3,7 @@ import { getConservativePriceImpactInputs } from './price-impact'
 import type { PriceImpactInputs } from './price-impact'
 
 export const MIN_DURATION_SLOTS = 25
-export const SLOTS_PER_MINUTE = 150
+export const SLOTS_PER_MINUTE = 60 / SLOT_DURATION_SECONDS
 // One year at the assumed slot duration, within the program's 160M-slot limit.
 export const MAX_DURATION_SLOTS =
   MAX_ORDER_DURATION_SECONDS / SLOT_DURATION_SECONDS

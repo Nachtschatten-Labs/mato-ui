@@ -109,6 +109,7 @@ export const POSITION_PAGE_SIZE = 10
 export const HIGH_PRICE_IMPACT_WARNING_THRESHOLD_PERCENT = 1
 
 export const DURATION_OPTIONS = [
+  { label: '5s', seconds: 5 },
   { label: '10s', seconds: 10 },
   { label: '20s', seconds: 20 },
   { label: '30s', seconds: 30 },

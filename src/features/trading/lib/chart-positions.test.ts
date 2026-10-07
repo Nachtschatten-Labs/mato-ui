@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SLOT_DURATION_MS } from '../constants'
 import {
   buildChartPositionSlotRanges,
   estimateTimeMsForSlot,
@@ -100,7 +101,7 @@ describe('estimateTimeMsForSlot', () => {
 
   it('falls back to the default slot duration when only one anchor is known', () => {
     expect(estimateTimeMsForSlot([{ slot: 100, timeMs: 10_000 }], 105)).toBe(
-      12_000,
+      10_000 + 5 * SLOT_DURATION_MS,
     )
   })
 })

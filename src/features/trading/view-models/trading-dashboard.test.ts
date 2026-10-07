@@ -5,7 +5,7 @@ import {
   deriveMarketIdentity,
   formatDashboardPriceChangePercent,
 } from './trading-dashboard'
-import { MARKET_DEFINITIONS } from '../constants'
+import { MARKET_DEFINITIONS, SLOT_DURATION_SECONDS } from '../constants'
 import type { Address } from '@solana/kit'
 import type { TradingViewAggregatedCandle } from '../lib/market'
 
@@ -109,7 +109,8 @@ function dashboardInputs(): Parameters<
 describe('buildTradingDashboardViewModel', () => {
   it('uses the conservative effective duration for impact and execution estimates', () => {
     const viewModel = buildTradingDashboardViewModel(dashboardInputs())
-    const expectedImpact = (1_000_000 / (150 - 7 / 2) / 2_500_000) * 100
+    const expectedImpact =
+      (1_000_000 / (60 / SLOT_DURATION_SECONDS - 7 / 2) / 2_500_000) * 100
 
     expect(viewModel.priceImpactPercent).toBeCloseTo(expectedImpact, 12)
     expect(viewModel.executionPrice).toBeCloseTo(

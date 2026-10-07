@@ -4,9 +4,14 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Address } from '@solana/kit'
 import type { StreamingMarketState } from '../domain/models'
-import { MAX_DURATION_SLOTS } from '../lib/duration'
+import {
+  MAX_DURATION_SLOTS,
+  MIN_DURATION_SLOTS,
+  SLOTS_PER_MINUTE,
+} from '../lib/duration'
 import { SLOT_DURATION_SECONDS } from '../constants'
 import { useOrderDuration } from './use-order-duration'
+import { formatSmartDuration } from '../lib/duration-label'
 
 afterEach(cleanup)
 
@@ -45,15 +50,27 @@ function createInputs(
 }
 
 describe('useOrderDuration', () => {
+  it('shows few seconds for the minimum 25-slot order at 200 ms per slot', () => {
+    const { result } = renderHook(useOrderDuration, {
+      initialProps: createInputs({ amountAtoms: 30n }),
+    })
+    expect(result.current.durationSeconds).toBe(5)
+    expect(formatSmartDuration(result.current.durationSeconds!)).toBe(
+      'few seconds',
+    )
+  })
+
   it('keeps the automatic duration at one year as oversized orders grow', () => {
-    const inputs = createInputs({ amountAtoms: 1_000_000_000n })
+    const inputs = createInputs({
+      amountAtoms: BigInt(MAX_DURATION_SLOTS) * 20n,
+    })
     const { result, rerender } = renderHook(useOrderDuration, {
       initialProps: inputs,
     })
 
     expect(result.current.durationSeconds).toBe(365 * 24 * 60 * 60)
     expect(result.current.isCustomDuration).toBe(false)
-    rerender({ ...inputs, amountAtoms: 2_000_000_000n })
+    rerender({ ...inputs, amountAtoms: inputs.amountAtoms! * 2n })
     expect(result.current.durationSeconds).toBe(365 * 24 * 60 * 60)
     expect(result.current.recommendedDurationSeconds).toBe(
       result.current.durationSeconds,
@@ -65,20 +82,25 @@ describe('useOrderDuration', () => {
     const { result, rerender } = renderHook(useOrderDuration, {
       initialProps: inputs,
     })
-    expect(result.current.durationSeconds).toBe(12.4)
+    expect(result.current.durationSeconds).toBeCloseTo(
+      31 * SLOT_DURATION_SECONDS,
+    )
     expect(result.current.isCustomDuration).toBe(false)
 
-    rerender({ ...inputs, amountAtoms: 1450n })
+    const largerAmount = BigInt(SLOTS_PER_MINUTE - 5) * 10n
+    rerender({ ...inputs, amountAtoms: largerAmount })
     expect(result.current.durationSeconds).toBe(120)
 
     rerender({
       ...inputs,
-      amountAtoms: 1450n,
+      amountAtoms: largerAmount,
       streamingState: createStreamingState({
         marketQuoteFlow: 200_000_000_000_000n,
       }),
     })
-    expect(result.current.durationSeconds).toBeCloseTo(31.2)
+    expect(result.current.durationSeconds).toBeCloseTo(
+      (SLOTS_PER_MINUTE / 2 + 3) * SLOT_DURATION_SECONDS,
+    )
   })
 
   it('retains a manual choice while the amount and recommendation change, then restores smart fill', () => {
@@ -89,7 +111,7 @@ describe('useOrderDuration', () => {
     act(() => result.current.onDurationChange(60))
     expect(result.current.isCustomDuration).toBe(true)
 
-    rerender({ ...inputs, amountAtoms: 2950n })
+    rerender({ ...inputs, amountAtoms: BigInt(2 * SLOTS_PER_MINUTE - 5) * 10n })
     expect(result.current.durationSeconds).toBe(60)
     expect(result.current.recommendedDurationSeconds).toBe(180)
 
@@ -113,7 +135,9 @@ describe('useOrderDuration', () => {
       act(() => result.current.onDurationChange(120))
 
       rerender(inputs)
-      expect(result.current.durationSeconds).toBe(12.4)
+      expect(result.current.durationSeconds).toBeCloseTo(
+        31 * SLOT_DURATION_SECONDS,
+      )
       expect(result.current.isCustomDuration).toBe(false)
     },
   )
@@ -134,15 +158,17 @@ describe('useOrderDuration', () => {
 
       rerender(inputs)
       expect(result.current.isCustomDuration).toBe(false)
-      expect(result.current.durationSeconds).toBe(12.4)
+      expect(result.current.durationSeconds).toBeCloseTo(
+        31 * SLOT_DURATION_SECONDS,
+      )
     },
   )
 
   it.each([
-    [0.1, 10],
-    [10.1, 10.4],
-    [13.2, 13.2],
-    [59.8, 60],
+    [0.1, MIN_DURATION_SLOTS * SLOT_DURATION_SECONDS],
+    [50.5 * SLOT_DURATION_SECONDS, 51 * SLOT_DURATION_SECONDS],
+    [66 * SLOT_DURATION_SECONDS, 66 * SLOT_DURATION_SECONDS],
+    [60 - SLOT_DURATION_SECONDS / 2, 60],
     [60, 60],
     [60.1, 120],
     [61, 120],
@@ -168,7 +194,7 @@ describe('useOrderDuration', () => {
     -1,
     Number.NaN,
     Number.POSITIVE_INFINITY,
-    MAX_DURATION_SLOTS * SLOT_DURATION_SECONDS + 0.4,
+    (MAX_DURATION_SLOTS + 1) * SLOT_DURATION_SECONDS,
   ])('ignores an invalid custom duration of %s', (input) => {
     const { result } = renderHook(useOrderDuration, {
       initialProps: createInputs(),
@@ -196,7 +222,9 @@ describe('useOrderDuration', () => {
       expect(result.current.recommendedDurationSeconds).toBeNull()
 
       rerender(createInputs())
-      expect(result.current.durationSeconds).toBe(12.4)
+      expect(result.current.durationSeconds).toBeCloseTo(
+        31 * SLOT_DURATION_SECONDS,
+      )
       act(() => result.current.onDurationChange(120))
       rerender(inputs)
       expect(result.current.durationSeconds).toBe(120)

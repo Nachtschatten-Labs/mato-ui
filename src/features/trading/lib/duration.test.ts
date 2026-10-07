@@ -6,6 +6,7 @@ import {
   SLOTS_PER_MINUTE,
 } from './duration'
 import { computePriceImpactPercent } from './price-impact'
+import { SLOT_DURATION_SECONDS } from '../constants'
 import type { Address } from '@solana/kit'
 import type { StreamingMarketState } from '../domain/models'
 
@@ -44,10 +45,10 @@ describe('recommendDurationSlots', () => {
 
   it.each([
     [25_000n, 31],
-    [144_000n, 150],
-    [145_000n, 300],
-    [294_000n, 300],
-    [295_000n, 450],
+    [(BigInt(SLOTS_PER_MINUTE) - 6n) * 1_000n, SLOTS_PER_MINUTE],
+    [(BigInt(SLOTS_PER_MINUTE) - 5n) * 1_000n, 2 * SLOTS_PER_MINUTE],
+    [(BigInt(2 * SLOTS_PER_MINUTE) - 6n) * 1_000n, 2 * SLOTS_PER_MINUTE],
+    [(BigInt(2 * SLOTS_PER_MINUTE) - 5n) * 1_000n, 3 * SLOTS_PER_MINUTE],
   ] as const)(
     'chooses the shortest eligible duration for %s atoms',
     (amountAtoms, expected) => {
@@ -124,7 +125,7 @@ describe('recommendDurationSlots', () => {
 
     expect(recommendDurationSlots(inputs)).toBe(106)
     expect(recommendDurationSlots({ ...inputs, amountAtoms: 200_000n })).toBe(
-      300,
+      206,
     )
     expect(
       recommendDurationSlots({
@@ -137,7 +138,9 @@ describe('recommendDurationSlots', () => {
   })
 
   it('allows exactly one year on the minute-aligned duration grid', () => {
-    expect(MAX_DURATION_SLOTS).toBe(78_840_000)
+    expect(MAX_DURATION_SLOTS * SLOT_DURATION_SECONDS).toBe(365 * 24 * 60 * 60)
+    expect(MAX_DURATION_SLOTS % SLOTS_PER_MINUTE).toBe(0)
+    expect(MAX_DURATION_SLOTS).toBeLessThanOrEqual(160_000_000)
     expect(
       recommendDurationSlots({
         amountAtoms: (BigInt(MAX_DURATION_SLOTS) - 6n) * 1_000n,

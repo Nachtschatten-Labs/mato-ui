@@ -227,24 +227,33 @@ describe('OrderEntryCard', () => {
     expect(props.onSideChange).toHaveBeenLastCalledWith('sell')
   })
 
-  it('applies a duration preset only after confirmation and labels the current quote', async () => {
-    const props = createProps()
-    render(<OrderEntryCard {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
-    await screen.findByRole('dialog', { name: /^Customize duration/ })
+  it.each([5, 20])(
+    'applies the %s-second duration preset only after confirmation and labels the current quote',
+    async (seconds) => {
+      const props = createProps()
+      render(<OrderEntryCard {...props} />)
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Customize duration/ }),
+      )
+      await screen.findByRole('dialog', { name: /^Customize duration/ })
 
-    fireEvent.click(screen.getByRole('button', { name: '20 seconds' }))
-    expect(props.onDurationChange).not.toHaveBeenCalled()
-    expect(screen.getByText('Current estimate · 1 hour')).toBeTruthy()
-    expect(
-      screen
-        .getByRole('slider', { name: 'Order duration' })
-        .getAttribute('aria-valuetext'),
-    ).toBe('20 seconds')
-    fireEvent.click(screen.getByRole('button', { name: 'Use 20 seconds' }))
-    expect(props.onDurationChange).toHaveBeenCalledWith(20)
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  })
+      fireEvent.click(
+        screen.getByRole('button', { name: `${seconds} seconds` }),
+      )
+      expect(props.onDurationChange).not.toHaveBeenCalled()
+      expect(screen.getByText('Current estimate · 1 hour')).toBeTruthy()
+      expect(
+        screen
+          .getByRole('slider', { name: 'Order duration' })
+          .getAttribute('aria-valuetext'),
+      ).toBe(`${seconds} seconds`)
+      fireEvent.click(
+        screen.getByRole('button', { name: `Use ${seconds} seconds` }),
+      )
+      expect(props.onDurationChange).toHaveBeenCalledWith(seconds)
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    },
+  )
 
   it('discards duration slider changes when dismissed and resets the next draft', async () => {
     const props = createProps()
