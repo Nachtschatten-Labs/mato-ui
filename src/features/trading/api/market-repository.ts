@@ -1,5 +1,9 @@
 import { getMarketDefinition } from '../constants'
 import { readApiUrl } from './read-api'
+import {
+  buildClosedPositionMiniChart,
+  normalizeMarketPricePoints,
+} from '../lib/mini-chart'
 import type {
   MarketConfigRow,
   MarketUpdateEvent,
@@ -95,19 +99,6 @@ interface ReadApiClosedPositionsResponse {
   items: Array<ReadApiClosedPositionItem>
 }
 
-interface ReadApiClosedPositionMiniChartItem {
-  slot: number
-  price: number
-}
-
-interface ReadApiClosedPositionMiniChartResponse {
-  market_address: string
-  start_slot: number
-  end_slot: number
-  points: number
-  items: Array<ReadApiClosedPositionMiniChartItem>
-}
-
 export interface MarketCandle {
   time: number
   open: number
@@ -115,11 +106,6 @@ export interface MarketCandle {
   low: number
   close: number
   volume: number
-}
-
-export interface ClosedPositionMiniChartPoint {
-  slot: number
-  price: number
 }
 
 function assertMarket(
@@ -438,58 +424,18 @@ export async function fetchClosedPositionMiniChart({
 }) {
   if (startSlot > endSlot) return []
 
-  const query = new URLSearchParams({
-    end_slot: String(endSlot),
-    max_points: String(maxPoints),
-    start_slot: String(startSlot),
-  })
-  const response = await fetch(
-    readApiUrl(
-      `/v1/markets/${getMarketDefinition(marketId).address}/closed-position-mini-chart?${query.toString()}`,
-    ),
-    {
-      headers: {
-        Accept: 'application/json',
-      },
-    },
+  // The mini-chart endpoint samples the first event in each bucket and includes
+  // an earlier anchor. Raw history retains the post-order event at startSlot.
+  const events = await fetchMarketUpdateRange({ endSlot, marketId, startSlot })
+  const market = getMarketDefinition(marketId)
+  const points = normalizeMarketPricePoints(
+    events,
+    market.baseDecimals,
+    market.quoteDecimals,
   )
-
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(
-      `Failed to fetch closed-position mini chart (${response.status}): ${body || response.statusText}`,
-    )
-  }
-
-  const payload =
-    (await response.json()) as ReadApiClosedPositionMiniChartResponse
-  assertMarket(payload, marketId)
-  const points = payload.items
-    .filter(
-      (item) =>
-        Number.isFinite(item.slot) &&
-        Number.isFinite(item.price) &&
-        item.price > 0 &&
-        isSafeChartNumber(item.price),
-    )
-    .map<ClosedPositionMiniChartPoint>((item) => ({
-      price: item.price,
-      slot: item.slot,
-    }))
-    .sort((left, right) => left.slot - right.slot)
-
-  const deduped: Array<ClosedPositionMiniChartPoint> = []
-  for (const point of points) {
-    const previous = deduped.at(-1)
-    if (previous && previous.slot === point.slot) {
-      deduped[deduped.length - 1] = point
-      continue
-    }
-
-    deduped.push(point)
-  }
-
-  return deduped
+  return (
+    buildClosedPositionMiniChart(points, startSlot, endSlot, maxPoints) ?? []
+  )
 }
 
 async function fetchMarketUpdateRangeFromReadApi({
@@ -628,6 +574,7 @@ function parseReadApiMarketUpdateItems(items: Array<ReadApiMarketHistoryItem>) {
     parseMarketUpdateEvent({
       base_flow: item.base_flow,
       created_at: item.created_at,
+      event_index: item.event_index,
       id: stableEventIdFromUid(item.event_uid),
       market_address: item.market_address,
       quote_flow: item.quote_flow,

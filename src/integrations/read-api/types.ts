@@ -16,6 +16,7 @@ export interface ClosePositionEvent {
 
 export interface MarketUpdateEvent {
   id: number
+  event_index?: number
   signature: string
   slot: number
   market_address: string
@@ -42,6 +43,7 @@ export interface ClosePositionEventRow {
 
 export interface MarketUpdateEventRow {
   id: number
+  event_index?: number
   signature: string
   slot: number
   market_address: string

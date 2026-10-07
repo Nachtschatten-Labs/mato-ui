@@ -12,7 +12,12 @@ import {
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
 } from '@solana/kit'
-import type { Address, Blockhash, Instruction } from '@solana/kit'
+import type {
+  Address,
+  Blockhash,
+  Instruction,
+  ReadonlyUint8Array,
+} from '@solana/kit'
 import type { SolanaClient, WalletSession } from '@solana/client'
 import * as accounts from '@/lib/generated/twob/src/generated/accounts'
 import { getMarketUpdateEventEventDecoder } from '@/lib/generated/twob/src/generated/events'
@@ -264,13 +269,6 @@ describe('v1 protocol compatibility', () => {
       await expect(
         fetchEndSlotBookkeepingSnapshot({
           ...request,
-          bookkeepingLastUpdateSlot: 659,
-        }),
-      ).resolves.toBeNull()
-      expect(accounts.fetchMarketInterval).not.toHaveBeenCalled()
-      await expect(
-        fetchEndSlotBookkeepingSnapshot({
-          ...request,
           bookkeepingLastUpdateSlot: 700,
         }),
       ).resolves.toEqual({
@@ -280,6 +278,68 @@ describe('v1 protocol compatibility', () => {
       })
     },
   )
+
+  it('reads market and scheduled exits from one bank to fill a short ended order immediately', async () => {
+    const { client } = createContext()
+    const market = createMarket()
+    market.bookkeeping.lastUpdateSlot = 650n
+    const exitInterval: accounts.MarketIntervalArgs = {
+      market: MARKET,
+      index: 3n,
+      payer: WALLET,
+      openPositions: 1,
+      bump: 0,
+      padding: new Uint8Array(3),
+      baseExits: Array<bigint>(16).fill(0n),
+      quoteExits: Array<bigint>(16).fill(0n),
+      basePerQuoteSnapshot: Array<bigint>(16).fill(0n),
+      quotePerBaseSnapshot: Array<bigint>(16).fill(0n),
+      slotsWithoutTradesSnapshot: Array<number>(16).fill(0),
+    }
+    const account = (bytes: ReadonlyUint8Array) => ({
+      data: [Buffer.from(bytes).toString('base64'), 'base64'],
+      executable: false,
+      lamports: 1n,
+      owner: TWOB_ANCHOR_PROGRAM_ADDRESS,
+      space: BigInt(bytes.length),
+    })
+    const getMultipleAccounts = vi.fn(() => ({
+      send: async () => ({
+        context: { slot: 660n },
+        value: [
+          account(accounts.getMarketEncoder().encode(market)),
+          null,
+          account(accounts.getMarketIntervalEncoder().encode(exitInterval)),
+        ],
+      }),
+    }))
+    Object.assign(client.runtime.rpc, { getMultipleAccounts })
+    await expect(
+      fetchEndSlotBookkeepingSnapshot({
+        rpcClient: client.runtime.rpc,
+        marketAddress: MARKET,
+        endSlot: 660,
+        endSlotInterval: 11,
+        isBuy: true,
+        bookkeepingLastUpdateSlot: 650,
+      }),
+    ).resolves.toEqual({
+      slot: 660,
+      bookkeeping: 5_000_000_000_000_001n,
+      slotsWithoutTrades: 123,
+    })
+    expect(getMultipleAccounts).toHaveBeenCalledWith(
+      [
+        MARKET,
+        await deriveMarketIntervalAddress(MARKET, 2n),
+        await deriveMarketIntervalAddress(MARKET, 3n),
+      ],
+      expect.objectContaining({
+        commitment: 'confirmed',
+        minContextSlot: 660n,
+      }),
+    )
+  })
 
   it('passes canonical interval accounts for pause and resume', async () => {
     const context = createContext()

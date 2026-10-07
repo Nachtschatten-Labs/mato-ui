@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { formatPrice } from '../lib/format'
 import type { MiniPriceChartPoint } from '../lib/mini-chart'
 
-function buildPoints(
+export function buildMiniPriceChartGeometry(
   points: MiniPriceChartPoint[],
   width: number,
   height: number,
@@ -30,12 +30,19 @@ function buildPoints(
     return 6 + ((max - value) / range) * (height - 12)
   }
 
+  const startSlot = points[0].slot
+  const slotSpan = points.at(-1)!.slot - startSlot
   const path = points
     .map((point, index) => {
       const x =
-        points.length === 1 ? width / 2 : (index / (points.length - 1)) * width
+        slotSpan === 0
+          ? (index / (points.length - 1)) * width
+          : ((point.slot - startSlot) / slotSpan) * width
       const y = toY(point.price)
-      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
+      // Flows change at a slot boundary; prices do not interpolate between events.
+      return index === 0
+        ? `M ${x.toFixed(2)} ${y.toFixed(2)}`
+        : `H ${x.toFixed(2)} V ${y.toFixed(2)}`
     })
     .join(' ')
 
@@ -79,7 +86,7 @@ export function MiniPriceChart({
   points: MiniPriceChartPoint[]
 }) {
   const geometry = useMemo(
-    () => buildPoints(points, 240, 60, averagePrice),
+    () => buildMiniPriceChartGeometry(points, 240, 60, averagePrice),
     [averagePrice, points],
   )
 

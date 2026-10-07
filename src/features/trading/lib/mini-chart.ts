@@ -17,17 +17,6 @@ export interface MarketPriceRangeStats {
   uniquePrices: number
 }
 
-const MIN_SAMPLES = 24
-const MAX_SAMPLES = 640
-const SAMPLE_PADDING = 8
-const SAMPLE_DENSITY_MULTIPLIER = 1.25
-
-function clamp(value: number, min: number, max: number) {
-  if (value < min) return min
-  if (value > max) return max
-  return value
-}
-
 function toFinitePositivePrice(
   event: MarketUpdateEvent,
   baseScale: number,
@@ -55,17 +44,36 @@ export function normalizeMarketPricePoints(
   const quoteScale = 10 ** quoteDecimals
   const latestPerSlot = new Map<
     number,
-    { slot: number; price: number; createdAtMs: number }
+    {
+      slot: number
+      price: number
+      createdAtMs: number
+      eventIndex: number
+      signature: string
+    }
   >()
 
   for (const event of events) {
     const price = toFinitePositivePrice(event, baseScale, quoteScale)
     const createdAtMs = new Date(event.created_at).getTime()
     if (price === null || !Number.isFinite(createdAtMs)) continue
+    const eventIndex = event.event_index ?? 0
 
     const previous = latestPerSlot.get(event.slot)
-    if (!previous || createdAtMs >= previous.createdAtMs) {
-      latestPerSlot.set(event.slot, { slot: event.slot, price, createdAtMs })
+    if (
+      !previous ||
+      createdAtMs > previous.createdAtMs ||
+      (createdAtMs === previous.createdAtMs &&
+        (event.signature !== previous.signature ||
+          eventIndex >= previous.eventIndex))
+    ) {
+      latestPerSlot.set(event.slot, {
+        slot: event.slot,
+        price,
+        createdAtMs,
+        eventIndex,
+        signature: event.signature,
+      })
     }
   }
 
@@ -130,63 +138,6 @@ function findFirstPointAtOrAfter(
   return low
 }
 
-function getPriceAtSlot(points: Array<MarketPricePoint>, slot: number) {
-  if (points.length === 0) return null
-
-  const index = findLastPointAtOrBefore(points, slot)
-  return index >= 0 ? points[index].price : points[0].price
-}
-
-function getAveragePriceBetween(
-  points: Array<MarketPricePoint>,
-  startSlot: number,
-  endSlot: number,
-) {
-  const initialPrice = getPriceAtSlot(points, startSlot)
-  if (initialPrice === null) return null
-  if (endSlot <= startSlot) return initialPrice
-
-  let cursor = startSlot
-  let currentPrice = initialPrice
-  let weightedPrice = 0
-  let nextIndex = findFirstPointAfter(points, startSlot)
-
-  while (cursor < endSlot) {
-    const nextSlot =
-      nextIndex < points.length
-        ? Math.min(endSlot, points[nextIndex].slot)
-        : endSlot
-
-    if (nextSlot > cursor) {
-      weightedPrice += (nextSlot - cursor) * currentPrice
-      cursor = nextSlot
-    }
-
-    if (cursor >= endSlot || nextIndex >= points.length) break
-    currentPrice = points[nextIndex].price
-    nextIndex += 1
-  }
-
-  const span = endSlot - startSlot
-  return span > 0 ? weightedPrice / span : currentPrice
-}
-
-function countPointsInRange(
-  points: Array<MarketPricePoint>,
-  startSlot: number,
-  endSlot: number,
-) {
-  if (points.length === 0) return 0
-
-  const startIndex = findFirstPointAtOrAfter(points, startSlot)
-  if (startIndex >= points.length) return 0
-
-  const endIndex = findLastPointAtOrBefore(points, endSlot)
-  if (endIndex < startIndex) return 0
-
-  return endIndex - startIndex + 1
-}
-
 export function getMarketPriceRangeStats(
   points: Array<MarketPricePoint>,
   startSlot: number | null,
@@ -245,25 +196,14 @@ export function getMarketPriceRangeStats(
   }
 }
 
-function createSampleSlots(
-  startSlot: number,
-  endSlot: number,
-  sampleCount: number,
-) {
-  if (sampleCount <= 1) return [startSlot]
-
-  const span = Math.max(0, endSlot - startSlot)
-  return Array.from({ length: sampleCount }, (_, index) =>
-    index === sampleCount - 1
-      ? endSlot
-      : startSlot + Math.floor((index * span) / (sampleCount - 1)),
-  )
-}
-
-export function buildClosedPositionMiniChart(
+export function buildPositionPricePath(
   points: Array<MarketPricePoint>,
   startSlot: number | null,
   endSlot: number | null,
+  {
+    includeEndSlot = false,
+    maxPoints = 240,
+  }: { includeEndSlot?: boolean; maxPoints?: number } = {},
 ) {
   if (
     points.length === 0 ||
@@ -274,33 +214,61 @@ export function buildClosedPositionMiniChart(
     return null
   }
 
-  const observedPoints = countPointsInRange(points, startSlot, endSlot)
-  const desiredSamples = clamp(
-    Math.round(observedPoints * SAMPLE_DENSITY_MULTIPLIER) + SAMPLE_PADDING,
-    MIN_SAMPLES,
-    MAX_SAMPLES,
-  )
-  const maxSamplesForSpan =
-    startSlot === endSlot
-      ? 2
-      : Math.min(desiredSamples, endSlot - startSlot + 1)
-  const sampleSlots = createSampleSlots(
-    startSlot,
-    endSlot,
-    Math.max(2, maxSamplesForSpan),
-  )
+  const startIndex = findLastPointAtOrBefore(points, startSlot)
+  // A later observation cannot establish the price when the order began.
+  if (startIndex < 0) return null
 
-  const chartPoints: Array<MiniPriceChartPoint> = []
-  for (let index = 0; index < sampleSlots.length; index += 1) {
-    const slot = sampleSlots[index]
-    const price =
-      index === 0 || index === sampleSlots.length - 1
-        ? getPriceAtSlot(points, slot)
-        : getAveragePriceBetween(points, sampleSlots[index - 1], slot)
+  const chartPoints: Array<MiniPriceChartPoint> = [
+    { slot: startSlot, price: points[startIndex].price },
+  ]
+  const afterEndIndex = includeEndSlot
+    ? findFirstPointAfter(points, endSlot)
+    : findFirstPointAtOrAfter(points, endSlot)
 
-    if (price === null) return null
-    chartPoints.push({ slot, price })
+  for (let index = startIndex + 1; index < afterEndIndex; index += 1) {
+    const point = points[index]
+    if (point.price !== chartPoints.at(-1)!.price) chartPoints.push(point)
   }
 
-  return chartPoints
+  // Settlement accrues up to the end with the old flows, then removes exits.
+  // Keep the final earned price through that boundary, excluding the exit jump.
+  if (chartPoints.at(-1)!.slot !== endSlot || chartPoints.length === 1) {
+    chartPoints.push({ slot: endSlot, price: chartPoints.at(-1)!.price })
+  }
+
+  const pointLimit = Math.max(2, Math.floor(maxPoints))
+  if (chartPoints.length <= pointLimit) return chartPoints
+
+  // Preserve actual observations and extrema instead of inventing bucket means.
+  const bucketCount = Math.floor((pointLimit - 2) / 2)
+  const sampled = [chartPoints[0]]
+  const interiorCount = chartPoints.length - 2
+  for (let bucket = 0; bucket < bucketCount; bucket += 1) {
+    const start = 1 + Math.floor((bucket * interiorCount) / bucketCount)
+    const end = 1 + Math.floor(((bucket + 1) * interiorCount) / bucketCount)
+    let minIndex = start
+    let maxIndex = start
+    for (let index = start + 1; index < end; index += 1) {
+      if (chartPoints[index].price < chartPoints[minIndex].price)
+        minIndex = index
+      if (chartPoints[index].price > chartPoints[maxIndex].price)
+        maxIndex = index
+    }
+    for (const index of [...new Set([minIndex, maxIndex])].sort(
+      (a, b) => a - b,
+    )) {
+      sampled.push(chartPoints[index])
+    }
+  }
+  sampled.push(chartPoints.at(-1)!)
+  return sampled
+}
+
+export function buildClosedPositionMiniChart(
+  points: Array<MarketPricePoint>,
+  startSlot: number | null,
+  endSlot: number | null,
+  maxPoints = 240,
+) {
+  return buildPositionPricePath(points, startSlot, endSlot, { maxPoints })
 }
