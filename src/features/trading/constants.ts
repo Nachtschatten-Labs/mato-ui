@@ -87,7 +87,7 @@ export function parseMarketSearch(value: unknown): { market: MarketId } {
 // Match the Twob mainnet release constants (not emitted in the IDL).
 export const ARRAY_LENGTH = 16
 export const END_SLOT_INTERVAL = 11
-export const SLOT_DURATION_MS = 400
+export const SLOT_DURATION_MS = 200
 export const SLOT_DURATION_SECONDS = SLOT_DURATION_MS / 1000
 export const MAX_ORDER_DURATION_SECONDS = 365 * 24 * 60 * 60
 export const NATIVE_SOL_DECIMALS = 9
