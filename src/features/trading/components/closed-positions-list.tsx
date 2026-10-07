@@ -1,550 +1,326 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Fragment, useId, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowUpRight, ChevronDown } from 'lucide-react'
 import { fetchClosedPositionMiniChart } from '../api/market-repository'
 import { useClosedPositionEvents } from '../hooks/use-closed-position-events'
-import {
-  CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS,
-  CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX,
-  POSITION_PAGE_SIZE,
-} from '../constants'
+import { useClosedPositionTimes } from '../hooks/use-closed-position-times'
+import { POSITION_PAGE_SIZE } from '../constants'
+import { tradingQueryRoot } from '../query-keys'
 import { clampPage, getPageCount, getPageItems } from '../lib/pagination'
-import { formatAtoms, formatPrice } from '../lib/format'
+import {
+  formatAtoms,
+  formatExplorerTransactionUrl,
+  formatPrice,
+} from '../lib/format'
 import { buildClosedPositionSummary } from '../view-models/closed-position'
 import { MiniPriceChart } from './mini-price-chart'
 import { PositionPagination } from './position-pagination'
-import type { MiniPriceChartPoint } from '../lib/mini-chart'
+import { TokenMark } from './token-mark'
 import type { ClosePositionEvent } from '@/integrations/read-api'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface ClosedPositionChartState {
-  error: string | null
-  points: Array<MiniPriceChartPoint> | null
-  status: 'loading' | 'ready' | 'unavailable' | 'error'
-}
-
-const EMPTY_CLOSED_POSITION_EVENTS: Array<ClosePositionEvent> = []
-
-function hasValidChartRange(event: {
-  start_slot: number | null
-  end_slot: number | null
-}): event is { start_slot: number; end_slot: number } {
-  return (
-    event.start_slot !== null &&
-    event.end_slot !== null &&
-    event.start_slot <= event.end_slot
-  )
-}
-
-function areSetsEqual(left: Set<number>, right: Set<number>) {
-  if (left === right) {
-    return true
-  }
-  if (left.size !== right.size) {
-    return false
-  }
-
-  for (const value of left) {
-    if (!right.has(value)) {
-      return false
-    }
-  }
-
-  return true
-}
-
-function buildChartStateFromMiniChartPoints(
-  points: Array<MiniPriceChartPoint>,
-): ClosedPositionChartState {
-  if (points.length >= 2) {
-    return {
-      error: null,
-      points,
-      status: 'ready',
-    }
-  }
-
-  return {
-    error: null,
-    points: null,
-    status: 'unavailable',
-  }
-}
-
-export function ClosedPositionsList({
-  baseDecimals,
-  baseTicker,
-  marketId,
-  positionAuthority,
-  priceHistoryAvailable,
-  quoteDecimals,
-  quoteTicker,
-}: {
+interface ClosedPositionMarketProps {
   baseDecimals: number
   baseTicker: string
   marketId: number
-  positionAuthority: string
   priceHistoryAvailable: boolean
   quoteDecimals: number
   quoteTicker: string
-}) {
+}
+
+export function ClosedPositionsList({
+  positionAuthority,
+  ...market
+}: ClosedPositionMarketProps & { positionAuthority: string }) {
   const eventsQuery = useClosedPositionEvents({
     limit: 50,
-    marketId,
+    marketId: market.marketId,
     positionAuthority,
   })
-  const events = useMemo(
-    () => eventsQuery.data ?? EMPTY_CLOSED_POSITION_EVENTS,
-    [eventsQuery.data],
-  )
-  const [chartStatesByEventId, setChartStatesByEventId] = useState<
-    Map<number, ClosedPositionChartState>
-  >(new Map())
-  const [closedPositionPage, setClosedPositionPage] = useState(0)
-  const chartLoadRunRef = useRef(0)
-  const rowElementByIdRef = useRef(new Map<number, HTMLDivElement>())
-  const [visibleEventIds, setVisibleEventIds] = useState<Set<number>>(new Set())
-  const eventIdsKey = useMemo(
-    () => events.map((event) => event.id).join('|'),
-    [events],
-  )
-  const closedPositionPageCount = getPageCount(
-    events.length,
-    POSITION_PAGE_SIZE,
-  )
-  const normalizedClosedPositionPage = clampPage(
-    closedPositionPage,
-    events.length,
-    POSITION_PAGE_SIZE,
-  )
-  const paginatedEvents = useMemo(
-    () =>
-      getPageItems({
-        items: events,
-        page: normalizedClosedPositionPage,
-        pageSize: POSITION_PAGE_SIZE,
-      }),
-    [events, normalizedClosedPositionPage],
-  )
-  const paginatedEventIdsKey = useMemo(
-    () => paginatedEvents.map((event) => event.id).join('|'),
-    [paginatedEvents],
-  )
-
-  useEffect(() => {
-    setClosedPositionPage((current) =>
-      clampPage(current, events.length, POSITION_PAGE_SIZE),
-    )
-  }, [events.length])
-
-  useEffect(() => {
-    const nextVisibleIds = new Set(paginatedEvents.map((event) => event.id))
-
-    setVisibleEventIds((current) =>
-      areSetsEqual(current, nextVisibleIds) ? current : nextVisibleIds,
-    )
-  }, [paginatedEvents])
-
-  useEffect(() => {
-    chartLoadRunRef.current += 1
-    setChartStatesByEventId((current) => {
-      const next = new Map<number, ClosedPositionChartState>()
-
-      for (const event of events) {
-        const previous = current.get(event.id)
-        if (previous) {
-          next.set(event.id, previous)
-        }
-      }
-
-      return next
-    })
-  }, [eventIdsKey, events])
-
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') {
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        setVisibleEventIds((current) => {
-          const next = new Set(current)
-          let changed = false
-
-          for (const entry of entries) {
-            const id = Number((entry.target as HTMLElement).dataset.eventId)
-            if (!Number.isFinite(id)) continue
-
-            if (entry.isIntersecting) {
-              if (!next.has(id)) {
-                next.add(id)
-                changed = true
-              }
-            }
-          }
-
-          return changed ? next : current
-        })
-      },
-      {
-        root: null,
-        rootMargin: `${CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX}px 0px`,
-        threshold: 0,
-      },
-    )
-
-    for (const [eventId, element] of rowElementByIdRef.current.entries()) {
-      element.dataset.eventId = String(eventId)
-      observer.observe(element)
-    }
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [paginatedEventIdsKey])
-
-  const activeChartLoadCount = useMemo(() => {
-    let count = 0
-    for (const chartState of chartStatesByEventId.values()) {
-      if (chartState.status === 'loading') {
-        count += 1
-      }
-    }
-    return count
-  }, [chartStatesByEventId])
-
-  const pendingChartEvents = useMemo(() => {
-    if (!priceHistoryAvailable) return []
-
-    const remainingSlots =
-      CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS - activeChartLoadCount
-    if (remainingSlots <= 0) {
-      return []
-    }
-
-    const nextEvents: Array<ClosePositionEvent> = []
-    for (const event of paginatedEvents) {
-      if (!visibleEventIds.has(event.id)) continue
-      if (!hasValidChartRange(event)) continue
-      if (chartStatesByEventId.has(event.id)) continue
-
-      nextEvents.push(event)
-      if (nextEvents.length >= remainingSlots) {
-        break
-      }
-    }
-
-    return nextEvents
-  }, [
-    activeChartLoadCount,
-    chartStatesByEventId,
-    paginatedEvents,
-    priceHistoryAvailable,
-    visibleEventIds,
-  ])
-
-  const registerRowElement =
-    (eventId: number) => (element: HTMLDivElement | null) => {
-      if (element) {
-        element.dataset.eventId = String(eventId)
-        rowElementByIdRef.current.set(eventId, element)
-        return
-      }
-
-      rowElementByIdRef.current.delete(eventId)
-    }
-
-  useEffect(() => {
-    if (pendingChartEvents.length === 0) {
-      return
-    }
-
-    const runVersion = chartLoadRunRef.current
-    setChartStatesByEventId((current) => {
-      const next = new Map(current)
-      for (const event of pendingChartEvents) {
-        if (!next.has(event.id)) {
-          next.set(event.id, {
-            error: null,
-            points: null,
-            status: 'loading',
-          })
-        }
-      }
-      return next
-    })
-
-    for (const event of pendingChartEvents) {
-      if (!hasValidChartRange(event)) continue
-
-      void fetchClosedPositionMiniChart({
-        endSlot: event.end_slot,
-        marketId,
-        startSlot: event.start_slot,
-      })
-        .then((points) => {
-          if (chartLoadRunRef.current !== runVersion) {
-            return
-          }
-
-          setChartStatesByEventId((current) => {
-            const next = new Map(current)
-            next.set(event.id, buildChartStateFromMiniChartPoints(points))
-            return next
-          })
-        })
-        .catch((error: unknown) => {
-          if (chartLoadRunRef.current !== runVersion) {
-            return
-          }
-
-          const message =
-            error instanceof Error
-              ? error.message
-              : 'Failed to load closed-position mini chart'
-          setChartStatesByEventId((current) => {
-            const next = new Map(current)
-            next.set(event.id, {
-              error: `Price history unavailable: ${message}`,
-              points: null,
-              status: 'error',
-            })
-            return next
-          })
-        })
-    }
-  }, [marketId, pendingChartEvents])
-
-  const chartStateForEvent = (
-    event: ClosePositionEvent,
-  ): ClosedPositionChartState => {
-    if (!priceHistoryAvailable) {
-      return {
-        error: null,
-        points: null,
-        status: 'unavailable',
-      }
-    }
-
-    const existing = chartStatesByEventId.get(event.id)
-    if (existing) {
-      return existing
-    }
-
-    if (!hasValidChartRange(event)) {
-      return {
-        error: null,
-        points: null,
-        status: 'unavailable',
-      }
-    }
-
-    if (visibleEventIds.has(event.id)) {
-      return {
-        error: null,
-        points: null,
-        status: 'loading',
-      }
-    }
-
-    return {
-      error: null,
-      points: null,
-      status: 'unavailable',
-    }
-  }
+  const events = eventsQuery.data ?? []
+  const [page, setPage] = useState(0)
+  const normalizedPage = clampPage(page, events.length, POSITION_PAGE_SIZE)
+  const paginatedEvents = getPageItems({
+    items: events,
+    page: normalizedPage,
+    pageSize: POSITION_PAGE_SIZE,
+  })
 
   return (
-    <Card className="border-white/10 bg-black/15">
-      <CardHeader>
-        <CardTitle>Closed positions</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {eventsQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">
-            Loading recent closes...
-          </p>
-        ) : events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No closed positions yet.
-          </p>
-        ) : (
-          paginatedEvents.map((event) => (
-            <div key={event.id} ref={registerRowElement(event.id)}>
-              <ClosedPositionRow
-                baseDecimals={baseDecimals}
-                baseTicker={baseTicker}
-                chartState={chartStateForEvent(event)}
+    <div className="space-y-4">
+      {eventsQuery.isPending ? (
+        <p role="status" className="py-5 text-sm text-muted-foreground">
+          Loading recent closes...
+        </p>
+      ) : events.length === 0 && !eventsQuery.error ? (
+        <p className="py-5 text-sm text-muted-foreground">
+          No closed positions yet.
+        </p>
+      ) : events.length > 0 ? (
+        <table className="w-full table-fixed border-collapse text-left text-xs sm:text-sm">
+          <caption className="sr-only">Closed positions</caption>
+          <colgroup>
+            <col className="w-[32%] sm:w-[36%]" />
+            <col className="w-[40%] sm:w-[38%]" />
+            <col className="w-[28%] sm:w-[26%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-border/60 text-muted-foreground">
+              <th scope="col" className="py-3 pl-6 pr-2 font-normal sm:pl-10">
+                Asset
+              </th>
+              <th scope="col" className="px-2 py-3 font-normal sm:px-4">
+                Size
+              </th>
+              <th
+                scope="col"
+                className="px-2 py-3 text-right font-normal sm:px-4"
+              >
+                Avg. fill
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedEvents.map((event) => (
+              <ClosedPositionRow key={event.id} event={event} {...market} />
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+      <PositionPagination
+        itemLabel="positions"
+        onPageChange={setPage}
+        page={normalizedPage}
+        pageCount={getPageCount(events.length, POSITION_PAGE_SIZE)}
+        pageSize={POSITION_PAGE_SIZE}
+        totalItems={events.length}
+      />
+      {eventsQuery.error instanceof Error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {eventsQuery.error.message}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function ClosedPositionRow({
+  event,
+  ...market
+}: ClosedPositionMarketProps & { event: ClosePositionEvent }) {
+  const [expanded, setExpanded] = useState(false)
+  const detailsId = useId()
+  const summary = buildClosedPositionSummary({ ...market, event })
+
+  return (
+    <Fragment>
+      <tr
+        className={`cursor-pointer transition-colors hover:bg-white/[0.025] focus-within:bg-white/[0.025] ${expanded ? '' : 'border-b border-border/60'}`}
+        onClick={() => setExpanded((previous) => !previous)}
+      >
+        <td className="py-4 pr-2 align-top">
+          <button
+            aria-controls={expanded ? detailsId : undefined}
+            aria-expanded={expanded}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${summary.sideLabel} ${market.baseTicker} position`}
+            className="flex w-full items-center gap-2 rounded-sm py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
+            type="button"
+          >
+            <ChevronDown
+              aria-hidden="true"
+              className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`}
+            />
+            <TokenMark
+              symbol={market.baseTicker}
+              className="hidden size-5 sm:inline-flex"
+            />
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="break-all font-medium">{market.baseTicker}</span>
+              <span className="rounded bg-white/[0.07] px-1.5 py-0.5 text-xs text-foreground/80">
+                {summary.sideLabel}
+              </span>
+            </span>
+          </button>
+        </td>
+        <td className="px-2 py-4 align-top sm:px-4">
+          <div className="space-y-1 tabular-nums">
+            <div className="break-words">
+              <span className="sr-only">From </span>
+              {formatAtoms(summary.consumedAtoms, summary.depositDecimals)}{' '}
+              <span className="text-muted-foreground">
+                {summary.depositToken}
+              </span>
+            </div>
+            <div className="break-words">
+              <span aria-hidden="true" className="mr-1 text-muted-foreground">
+                →
+              </span>
+              <span className="sr-only">To </span>
+              {formatAtoms(summary.receivedAtoms, summary.swappedDecimals)}{' '}
+              <span className="text-muted-foreground">
+                {summary.swappedToken}
+              </span>
+            </div>
+          </div>
+        </td>
+        <td className="px-2 py-4 text-right align-top tabular-nums sm:px-4">
+          <div title="Average fill before fees">
+            {summary.averageFillPrice === null
+              ? '—'
+              : formatPrice(summary.averageFillPrice)}
+          </div>
+          <div className="mt-1 break-words text-[10px] text-muted-foreground sm:text-xs">
+            {market.quoteTicker}/{market.baseTicker}
+          </div>
+        </td>
+      </tr>
+      {expanded ? (
+        <tr className="border-b border-border/60">
+          <td colSpan={3} className="pb-5 sm:pl-10">
+            <div id={detailsId}>
+              <ClosedPositionDetails
                 event={event}
-                quoteDecimals={quoteDecimals}
-                quoteTicker={quoteTicker}
+                summary={summary}
+                {...market}
               />
             </div>
-          ))
-        )}
-
-        <PositionPagination
-          itemLabel="positions"
-          onPageChange={setClosedPositionPage}
-          page={normalizedClosedPositionPage}
-          pageCount={closedPositionPageCount}
-          pageSize={POSITION_PAGE_SIZE}
-          totalItems={events.length}
-        />
-
-        {eventsQuery.error instanceof Error ? (
-          <p className="text-sm text-destructive">
-            {eventsQuery.error.message}
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+          </td>
+        </tr>
+      ) : null}
+    </Fragment>
   )
 }
 
-const ClosedPositionRow = memo(function ClosedPositionRow({
-  baseDecimals,
-  baseTicker,
-  chartState,
+function formatPositionTime(timeMs: number | null, estimated: boolean) {
+  if (timeMs === null) return 'Unavailable'
+  const formatted = new Date(timeMs).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return `${estimated ? '≈ ' : ''}${formatted}`
+}
+
+function ClosedPositionDetails({
   event,
-  quoteDecimals,
+  summary,
+  marketId,
+  priceHistoryAvailable,
+  baseTicker,
   quoteTicker,
-}: {
-  baseDecimals: number
-  baseTicker: string
-  chartState: ClosedPositionChartState
+}: ClosedPositionMarketProps & {
   event: ClosePositionEvent
-  quoteDecimals: number
-  quoteTicker: string
+  summary: ReturnType<typeof buildClosedPositionSummary>
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const summary = useMemo(
-    () =>
-      buildClosedPositionSummary({
-        baseDecimals,
-        baseTicker,
-        event,
-        quoteDecimals,
-        quoteTicker,
+  const times = useClosedPositionTimes(event)
+  const endSlot =
+    event.end_slot === null ? null : Math.min(event.end_slot, event.slot)
+  const validRange =
+    event.start_slot !== null && endSlot !== null && event.start_slot <= endSlot
+  const history = useQuery({
+    queryKey: [
+      ...tradingQueryRoot,
+      'closed-position-chart',
+      marketId,
+      event.start_slot,
+      endSlot,
+    ],
+    enabled: priceHistoryAvailable && validRange,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: () =>
+      fetchClosedPositionMiniChart({
+        marketId,
+        startSlot: event.start_slot!,
+        endSlot: endSlot!,
       }),
-    [baseDecimals, baseTicker, event, quoteDecimals, quoteTicker],
-  )
-  const chartPoints = chartState.points
-  const hasChart =
-    chartState.status === 'ready' && chartPoints && chartPoints.length >= 2
-  const showChartSkeleton = chartState.status === 'loading'
+  })
+  const points = history.data ?? []
+  const startLabel = formatPositionTime(times.startTimeMs, times.estimatedStart)
+  const endLabel = formatPositionTime(times.endTimeMs, times.estimatedEnd)
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-      <button
-        className="w-full text-left"
-        onClick={() => setExpanded((previous) => !previous)}
-        type="button"
+    <div className="space-y-5 rounded-lg border border-border/60 bg-white/[0.035] p-4 sm:p-5">
+      <dl className="grid gap-4 sm:grid-cols-3">
+        <Detail
+          label="Started"
+          value={times.isLoading ? 'Loading…' : startLabel}
+        />
+        <Detail label="Ended" value={times.isLoading ? 'Loading…' : endLabel} />
+        <Detail
+          label="Fee paid"
+          value={`${formatAtoms(summary.feeAtoms, summary.swappedDecimals, summary.swappedDecimals)} ${summary.swappedToken}`}
+        />
+      </dl>
+      <div
+        className="space-y-2"
+        role="group"
+        aria-label={`${baseTicker}/${quoteTicker} price movement`}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Badge variant={summary.isBuy ? 'positive' : 'negative'}>
-              {summary.sideLabel}
-            </Badge>
-            <div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-medium">
-                  {formatAtoms(summary.consumedAtoms, summary.depositDecimals)}{' '}
-                  {summary.depositToken}
-                </span>
-                <span className="text-muted-foreground">→</span>
-                <span className="font-medium">
-                  {formatAtoms(summary.receivedAtoms, summary.swappedDecimals)}{' '}
-                  {summary.swappedToken}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 text-right">
-            <ChevronDown
-              className={`size-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
-            />
-          </div>
+        <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+          <span>
+            {baseTicker}/{quoteTicker} price movement
+          </span>
+          {points[0] ? (
+            <span>
+              Started at{' '}
+              <span className="tabular-nums text-foreground">
+                {formatPrice(points[0].price)}
+              </span>
+            </span>
+          ) : null}
         </div>
-      </button>
-
-      {hasChart ? (
-        <div className="mt-4">
+        {points.length >= 2 ? (
           <MiniPriceChart
-            averageClassName="stroke-positive/55"
             averagePrice={summary.averageFillPrice}
-            lineClassName="stroke-positive"
-            points={chartPoints}
+            averageClassName="stroke-foreground/40"
+            lineClassName="stroke-accent-strong"
+            points={points}
           />
+        ) : (
+          <div
+            role="status"
+            className="flex h-28 items-center justify-center rounded-lg border border-border/50 bg-background/50 text-xs text-muted-foreground"
+          >
+            {history.isLoading
+              ? 'Loading price history…'
+              : 'Price history is unavailable.'}
+          </div>
+        )}
+        <div className="flex justify-between gap-4 text-[10px] text-muted-foreground sm:text-xs">
+          <span>{times.isLoading ? 'Loading…' : startLabel}</span>
+          <span className="text-right">
+            {times.isLoading ? 'Loading…' : endLabel}
+          </span>
         </div>
-      ) : showChartSkeleton ? (
-        <MiniChartSkeleton />
-      ) : null}
-
-      {expanded ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <DetailCard
-            label="Deposited"
-            value={`${formatAtoms(event.deposit_amount, summary.depositDecimals)} ${summary.depositToken}`}
-          />
-          <DetailCard
-            label={summary.isBuy ? 'Actually spent' : 'Actually sold'}
-            value={`${formatAtoms(summary.consumedAtoms, summary.depositDecimals)} ${summary.depositToken}`}
-          />
-          <DetailCard
-            label="Received"
-            value={`${formatAtoms(summary.receivedAtoms, summary.swappedDecimals)} ${summary.swappedToken}`}
-          />
-          <DetailCard
-            label="Effective price"
-            value={
-              summary.effectivePrice === null
-                ? '—'
-                : `${formatPrice(summary.effectivePrice)} ${quoteTicker}/${baseTicker}`
-            }
-          />
-          <DetailCard
-            label="Fee"
-            value={`${formatAtoms(summary.feeAtoms, summary.swappedDecimals)} ${summary.swappedToken}`}
-          />
-        </div>
-      ) : null}
-
-      {chartState.status === 'error' && chartState.error ? (
-        <p className="mt-3 text-sm text-destructive">{chartState.error}</p>
-      ) : null}
-    </div>
-  )
-})
-
-function MiniChartSkeleton() {
-  return (
-    <div className="mt-4 rounded-xl border border-border/50 bg-background/50 p-2">
-      <div className="mb-2 flex gap-3">
-        <div className="h-2 w-24 animate-pulse rounded-full bg-white/10" />
-        <div className="h-2 w-20 animate-pulse rounded-full bg-white/10" />
       </div>
-      <div className="flex items-stretch gap-3">
-        <div className="flex h-[60px] w-14 shrink-0 flex-col justify-between">
-          <div className="h-2 w-12 animate-pulse rounded-full bg-white/10" />
-          <div className="h-2 w-10 animate-pulse rounded-full bg-white/10" />
-          <div className="h-2 w-12 animate-pulse rounded-full bg-white/10" />
-        </div>
-        <div className="h-[60px] flex-1 animate-pulse rounded-lg bg-white/5" />
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+        <a
+          className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground"
+          href={formatExplorerTransactionUrl(event.signature, '')}
+          target="_blank"
+          rel="noreferrer"
+        >
+          View transaction{' '}
+          <ArrowUpRight aria-hidden="true" className="size-3" />
+        </a>
+        {summary.remainingAtoms > 0n ? (
+          <span>
+            Refunded{' '}
+            {formatAtoms(summary.remainingAtoms, summary.depositDecimals)}{' '}
+            {summary.depositToken}
+          </span>
+        ) : null}
       </div>
     </div>
   )
 }
 
-function DetailCard({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-black/20 p-3">
-      <div className="mb-1 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="font-medium">{value}</div>
+    <div>
+      <dt className="mb-2 text-muted-foreground">{label}</dt>
+      <dd className="tabular-nums">{value}</dd>
     </div>
   )
 }

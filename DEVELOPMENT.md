@@ -53,6 +53,15 @@ The API routes use full market addresses. Empty quote history is an expected sta
 before quoting starts; the UI does not fabricate prices. Closed history is available
 from the same mainnet API and is filtered by wallet and market address.
 
+Closed history uses expandable table rows: asset and side, consumed input → net
+received output, and average fill in quote/base units before fees. Expanded rows
+show the output-token fee, refunded input when present, a transaction link, and
+price history. Dates use the browser's locale and time zone with minute precision.
+Start/end block times and charts load only when expanded and are cached; a delayed
+close transaction is not treated as the trading end. Missing block times fall back
+to estimates anchored to the close event (marked `≈`); missing dates or history are
+shown as unavailable.
+
 Position spending follows settlement accounting: unelapsed slots and slots without
 opposing flow remain refundable. Live estimates include the market's cumulative
 inactive-slot counter and stop advancing while either flow is zero. Ended positions
