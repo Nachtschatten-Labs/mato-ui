@@ -95,6 +95,7 @@ describe('OrderEntryCard', () => {
     [61 * 60, '1 hour 30 minutes'],
     [7 * 86400, 'week'],
     [39 * 86400, '1 month 1 week 2 days'],
+    [365 * 86400, '1 year'],
   ])('shows %s seconds as the clickable label %s', (durationSeconds, label) => {
     render(<OrderEntryCard {...createProps({ durationSeconds })} />)
     expect(
@@ -134,6 +135,31 @@ describe('OrderEntryCard', () => {
     expect(props.onResetDuration).toHaveBeenCalledOnce()
     expect(props.onDurationChange).not.toHaveBeenCalled()
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('explains that the one-year cap can exceed the price impact target', async () => {
+    const year = 365 * 86400
+    render(
+      <OrderEntryCard
+        {...createProps({
+          durationSeconds: year,
+          recommendedDurationSeconds: year,
+          onResetDuration: vi.fn(),
+          priceImpactDisplay: '0.020%',
+        })}
+      />,
+    )
+    expect(screen.getByText('Price impact 0.020%')).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Customize duration: 1 year' }),
+    )
+    await screen.findByRole('dialog')
+    expect(
+      screen.getByText('Maximum duration. Price impact may exceed 0.01%.'),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText('Recommended for less than 0.01% price impact'),
+    ).toBeNull()
   })
 
   it('reveals balance controls and preserves max, preset, slider, and amount callbacks', () => {

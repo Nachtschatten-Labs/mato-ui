@@ -1,3 +1,5 @@
+import { MAX_ORDER_DURATION_SECONDS } from '../constants'
+
 const SECONDS_PER_MINUTE = 60
 const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
 const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
@@ -36,6 +38,7 @@ export function formatSmartDuration(seconds: number): string {
           ? 30 * SECONDS_PER_MINUTE
           : SECONDS_PER_DAY
   const roundedSeconds = Math.ceil(seconds / increment) * increment
+  if (roundedSeconds === MAX_ORDER_DURATION_SECONDS) return '1 year'
 
   // Format after rounding so a boundary displays “1 hour”, not “60 minutes”.
   if (roundedSeconds < SECONDS_PER_MINUTE) {

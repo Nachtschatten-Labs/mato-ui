@@ -136,8 +136,8 @@ describe('recommendDurationSlots', () => {
     ).toBe(56)
   })
 
-  it('allows the last minute-aligned duration within the program limit', () => {
-    expect(MAX_DURATION_SLOTS).toBe(159_999_900)
+  it('allows exactly one year on the minute-aligned duration grid', () => {
+    expect(MAX_DURATION_SLOTS).toBe(78_840_000)
     expect(
       recommendDurationSlots({
         amountAtoms: (BigInt(MAX_DURATION_SLOTS) - 6n) * 1_000n,
@@ -147,15 +147,36 @@ describe('recommendDurationSlots', () => {
     ).toBe(MAX_DURATION_SLOTS)
   })
 
-  it('returns no recommendation when the target cannot be met within the program limit', () => {
+  it('keeps one year when meeting the strict target would require one more minute', () => {
     expect(
       recommendDurationSlots({
         amountAtoms: (BigInt(MAX_DURATION_SLOTS) - 5n) * 1_000n,
         side: 'buy',
         streamingState: marketState(),
       }),
-    ).toBeNull()
+    ).toBe(MAX_DURATION_SLOTS)
   })
+
+  it.each(['buy', 'sell'] as const)(
+    'caps %s recommendations at one year while impact increases with order size',
+    (side) => {
+      const inputs = {
+        amountAtoms: BigInt(MAX_DURATION_SLOTS) * 2_000n,
+        side,
+        streamingState: marketState(),
+      }
+      const durationSlots = recommendDurationSlots(inputs)!
+      const impact = computePriceImpactPercent({ ...inputs, durationSlots })!
+      const largerOrder = { ...inputs, amountAtoms: inputs.amountAtoms * 2n }
+
+      expect(durationSlots).toBe(MAX_DURATION_SLOTS)
+      expect(impact).toBeGreaterThan(0.01)
+      expect(recommendDurationSlots(largerOrder)).toBe(MAX_DURATION_SLOTS)
+      expect(
+        computePriceImpactPercent({ ...largerOrder, durationSlots }),
+      ).toBeGreaterThan(impact)
+    },
+  )
 
   it.each([10, 11])(
     'requires one input atom per slot at the longest endpoint for interval %s',

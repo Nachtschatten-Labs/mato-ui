@@ -66,7 +66,8 @@ describe('formatSmartDuration', () => {
     [60, '2 months'],
     [68, '2 months 1 week 1 day'],
     [90, '3 months'],
-    [365, '12 months 5 days'],
+    [364.1, '1 year'],
+    [365, '1 year'],
   ])('formats %s days as %s', (days, expected) => {
     expect(formatSmartDuration(days * DAY)).toBe(expected)
   })

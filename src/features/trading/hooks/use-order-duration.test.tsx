@@ -45,6 +45,21 @@ function createInputs(
 }
 
 describe('useOrderDuration', () => {
+  it('keeps the automatic duration at one year as oversized orders grow', () => {
+    const inputs = createInputs({ amountAtoms: 1_000_000_000n })
+    const { result, rerender } = renderHook(useOrderDuration, {
+      initialProps: inputs,
+    })
+
+    expect(result.current.durationSeconds).toBe(365 * 24 * 60 * 60)
+    expect(result.current.isCustomDuration).toBe(false)
+    rerender({ ...inputs, amountAtoms: 2_000_000_000n })
+    expect(result.current.durationSeconds).toBe(365 * 24 * 60 * 60)
+    expect(result.current.recommendedDurationSeconds).toBe(
+      result.current.durationSeconds,
+    )
+  })
+
   it('recommends again as the amount and market liquidity change', () => {
     const inputs = createInputs()
     const { result, rerender } = renderHook(useOrderDuration, {

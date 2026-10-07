@@ -1,11 +1,12 @@
+import { MAX_ORDER_DURATION_SECONDS, SLOT_DURATION_SECONDS } from '../constants'
 import { getConservativePriceImpactInputs } from './price-impact'
 import type { PriceImpactInputs } from './price-impact'
 
 export const MIN_DURATION_SLOTS = 25
 export const SLOTS_PER_MINUTE = 150
-// The program accepts at most 160,000,000 slots; keep the minute-sized grid.
+// One year at the assumed slot duration, within the program's 160M-slot limit.
 export const MAX_DURATION_SLOTS =
-  Math.floor(160_000_000 / SLOTS_PER_MINUTE) * SLOTS_PER_MINUTE
+  MAX_ORDER_DURATION_SECONDS / SLOT_DURATION_SECONDS
 
 export function recommendDurationSlots(
   inputs: PriceImpactInputs,
@@ -21,7 +22,7 @@ export function recommendDurationSlots(
   }
 
   const { amountFlowTwice, endSlotInterval, marketFlow } = conservativeInputs
-  // Impact must be strictly below 1/10,000. For sells, the added user flow
+  // Target impact is strictly below 1/10,000. For sells, the added user flow
   // is part of the denominator, reducing the threshold multiplier by one.
   const thresholdMultiplier = inputs.side === 'buy' ? 10_000n : 9_999n
   const shortestSlots =
@@ -33,19 +34,21 @@ export function recommendDurationSlots(
       ? BigInt(MIN_DURATION_SLOTS)
       : shortestSlots
   const minuteSlots = BigInt(SLOTS_PER_MINUTE)
-  const recommendedSlots =
+  const targetSlots =
     boundedSlots <= minuteSlots
       ? boundedSlots
       : ((boundedSlots + minuteSlots - 1n) / minuteSlots) * minuteSlots
+  // Stop extending at one year; larger orders retain their higher price impact.
+  const recommendedSlots =
+    targetSlots > BigInt(MAX_DURATION_SLOTS)
+      ? BigInt(MAX_DURATION_SLOTS)
+      : targetSlots
 
   // The program requires at least one input atom per slot. Its end-slot
   // rounding can extend the duration by floor(interval / 2), so only suggest
   // durations that keep enough flow even at that longest possible endpoint.
   const longestDuration = recommendedSlots + endSlotInterval / 2n
-  if (
-    recommendedSlots > BigInt(MAX_DURATION_SLOTS) ||
-    (inputs.amountAtoms ?? 0n) < longestDuration
-  ) {
+  if ((inputs.amountAtoms ?? 0n) < longestDuration) {
     return null
   }
 

@@ -89,6 +89,7 @@ export const ARRAY_LENGTH = 16
 export const END_SLOT_INTERVAL = 11
 export const SLOT_DURATION_MS = 400
 export const SLOT_DURATION_SECONDS = SLOT_DURATION_MS / 1000
+export const MAX_ORDER_DURATION_SECONDS = 365 * 24 * 60 * 60
 export const NATIVE_SOL_DECIMALS = 9
 export const NATIVE_FEE_BUFFER_ATOMS = 20_000_000n
 export const MAINTENANCE_TRANSACTION_FEE_BUFFER_ATOMS = 1_000_000n
@@ -125,7 +126,7 @@ export const DURATION_OPTIONS = [
   { label: '1mo', seconds: 30 * 24 * 60 * 60 },
   { label: '3mo', seconds: 90 * 24 * 60 * 60 },
   { label: '6mo', seconds: 180 * 24 * 60 * 60 },
-  { label: '1y', seconds: 365 * 24 * 60 * 60 },
+  { label: '1y', seconds: MAX_ORDER_DURATION_SECONDS },
 ] as const
 
 export const CHART_TIMEFRAMES = [

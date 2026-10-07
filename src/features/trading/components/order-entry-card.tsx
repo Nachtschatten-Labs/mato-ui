@@ -6,7 +6,11 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { Tooltip } from '@base-ui/react/tooltip'
-import { DURATION_OPTIONS, SLOT_DURATION_SECONDS } from '../constants'
+import {
+  DURATION_OPTIONS,
+  MAX_ORDER_DURATION_SECONDS,
+  SLOT_DURATION_SECONDS,
+} from '../constants'
 import { MIN_DURATION_SLOTS } from '../lib/duration'
 import { formatSmartDuration } from '../lib/duration-label'
 import { formatUiAmount } from '../lib/format'
@@ -367,7 +371,9 @@ export function OrderEntryCard({
               <span className="text-left">
                 <span className="block">Smart fill</span>
                 <span className="block text-xs font-normal text-muted-foreground">
-                  Recommended for less than 0.01% price impact
+                  {recommendedDurationSeconds >= MAX_ORDER_DURATION_SECONDS
+                    ? 'Maximum duration. Price impact may exceed 0.01%.'
+                    : 'Recommended for less than 0.01% price impact'}
                 </span>
               </span>
               <span>{formatDuration(recommendedDurationSeconds)}</span>
