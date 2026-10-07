@@ -99,8 +99,6 @@ export const CHART_HISTORY_REQUEST_THRESHOLD_RATIO = 0.35
 export const CHART_HISTORY_REQUEST_BUFFER_BARS = 24
 export const CHART_HISTORY_REQUEST_MIN_BARS = 72
 export const CHART_HISTORY_REQUEST_DEBOUNCE_MS = 450
-export const CLOSED_POSITION_VISIBLE_ROW_OVERSCAN_PX = 480
-export const CLOSED_POSITION_MAX_CONCURRENT_CHART_LOADS = 10
 export const CLOSED_POSITION_BATCH_GAP_SLOTS = 900
 // Keep batch closes within the transaction wire limit, including distinct receivers.
 export const MAX_BATCH_CLOSE_POSITIONS_PER_TRANSACTION = 2
