@@ -107,6 +107,28 @@ function dashboardInputs(): Parameters<
 }
 
 describe('buildTradingDashboardViewModel', () => {
+  it('uses the conservative effective duration for impact and execution estimates', () => {
+    const viewModel = buildTradingDashboardViewModel(dashboardInputs())
+    const expectedImpact = (1_000_000 / (150 - 7 / 2) / 2_500_000) * 100
+
+    expect(viewModel.priceImpactPercent).toBeCloseTo(expectedImpact, 12)
+    expect(viewModel.executionPrice).toBeCloseTo(
+      2.5 * (1 + expectedImpact / 100),
+      12,
+    )
+  })
+
+  it('leaves impact unavailable until a duration is selected', () => {
+    const inputs = dashboardInputs()
+    inputs.durationSeconds = null
+    const viewModel = buildTradingDashboardViewModel(inputs)
+
+    expect(viewModel.priceImpactPercent).toBeNull()
+    expect(viewModel.priceImpactDisplay).toBe('—')
+    expect(viewModel.executionPrice).toBeNull()
+    expect(viewModel.estimatedConversionText).toBe('— SOL')
+  })
+
   it.each(MARKET_DEFINITIONS)(
     'keeps historical prices separate from live execution estimates for market $id ($baseSymbol)',
     (market) => {
