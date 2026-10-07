@@ -135,14 +135,13 @@ function RootLayout() {
       <Navbar marketId={marketId}>
         <WalletConnectionButton marketId={marketId} />
       </Navbar>
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-[11px] leading-4 text-muted-foreground sm:px-6">
-        <span role="note">Mainnet · SOL/USDC</span>
-        {!transactionsEnabled() && (
+      {!transactionsEnabled() && (
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-[11px] leading-4 text-muted-foreground sm:px-6">
           <span role="status" className="text-warning">
             Read-only · Trading disabled
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <Outlet />
       {transactionsEnabled() && <RiskDisclaimerDialog />}
     </>
