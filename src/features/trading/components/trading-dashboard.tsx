@@ -69,6 +69,7 @@ import { ActivePositionCard } from './active-position-card'
 import { BatchCloseReview } from './batch-close-review'
 import { HighPriceImpactDialog } from './high-price-impact-dialog'
 import { PositionPagination } from './position-pagination'
+import { PositionCompletionNotifications } from './position-completion-notifications'
 import { ReclaimRentBanner } from './reclaim-rent-banner'
 import { MarketSelector } from './market-selector'
 import { useMarketOverview } from '../hooks/use-market-overview'
@@ -806,6 +807,22 @@ export function TradingDashboard({
 
   return (
     <main className="mx-auto min-h-[calc(100dvh-7rem)] max-w-[1400px] px-4 pb-12 pt-2 text-foreground sm:px-6">
+      {address &&
+      marketAddress &&
+      isMarketReady &&
+      onChainMarket &&
+      tradePositionsQuery.data !== undefined ? (
+        <PositionCompletionNotifications
+          key={`${address}:${marketAddress}`}
+          baseDecimals={baseDecimals}
+          baseTicker={baseTicker}
+          marketAddress={marketAddress}
+          positions={activePositions}
+          quoteDecimals={quoteDecimals}
+          quoteTicker={quoteTicker}
+          streamingState={onChainMarket}
+        />
+      ) : null}
       <h1 className="sr-only">
         Trade {baseTicker}/{quoteTicker}
       </h1>
