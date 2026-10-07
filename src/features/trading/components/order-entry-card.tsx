@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
-import { AlertTriangle, ArrowDownUp, Info } from 'lucide-react'
-import { DURATION_OPTIONS } from '../constants'
+import { AlertTriangle, ArrowDownUp, SlidersHorizontal } from 'lucide-react'
+import { Tooltip } from '@base-ui/react/tooltip'
+import { DURATION_OPTIONS, SLOT_DURATION_SECONDS } from '../constants'
+import { MIN_DURATION_SLOTS } from '../lib/duration'
+import { formatSmartDuration } from '../lib/duration-label'
 import { formatUiAmount } from '../lib/format'
 import type { OrderSide } from '../constants'
 import { TokenMark } from './token-mark'
@@ -23,12 +26,15 @@ export function OrderEntryCard({
   availableAmountDisplay,
   canSubmit,
   durationSeconds,
+  durationUnavailableMessage,
   estimatedConversionText,
   executionPriceDisplay,
   isConnected,
+  isCustomDuration = false,
   minimumAmountDisplay,
   onAmountChange,
   onDurationChange,
+  onResetDuration,
   onMaxClick,
   onPercentSelect,
   onSideChange,
@@ -38,6 +44,7 @@ export function OrderEntryCard({
   priceImpactWarningText,
   receiveBalanceDisplay,
   receiveTokenTicker,
+  recommendedDurationSeconds,
   selectedPercent,
   side,
   statusLabel,
@@ -47,13 +54,16 @@ export function OrderEntryCard({
   amountTokenTicker: string
   availableAmountDisplay: number
   canSubmit: boolean
-  durationSeconds: number
+  durationSeconds: number | null
+  durationUnavailableMessage?: string | null
   estimatedConversionText: string
   executionPriceDisplay: string
   isConnected: boolean
+  isCustomDuration?: boolean
   minimumAmountDisplay: string
   onAmountChange: (value: string) => void
   onDurationChange: (seconds: number) => void
+  onResetDuration?: () => void
   onMaxClick: () => void
   onPercentSelect: (percent: number) => void
   onSideChange: (side: OrderSide) => void
@@ -63,6 +73,7 @@ export function OrderEntryCard({
   priceImpactWarningText: string | null
   receiveBalanceDisplay?: number
   receiveTokenTicker: string
+  recommendedDurationSeconds?: number | null
   selectedPercent: number
   side: OrderSide
   statusLabel: string
@@ -70,8 +81,12 @@ export function OrderEntryCard({
   const [showPercentages, setShowPercentages] = useState(false)
   const [durationDialogOpen, setDurationDialogOpen] = useState(false)
   const durationTriggerRef = useRef<HTMLButtonElement>(null)
-  const [draftDurationSeconds, setDraftDurationSeconds] =
-    useState(durationSeconds)
+  const minimumDurationSeconds = MIN_DURATION_SLOTS * SLOT_DURATION_SECONDS
+  const [draftDurationSeconds, setDraftDurationSeconds] = useState(
+    durationSeconds ?? minimumDurationSeconds,
+  )
+  const hasAmount = Number(amountInput) > 0
+  const smartFillTooltip = `Your ${side} streams continuously over time instead of filling all at once.`
   const receiveSuffix = ` ${receiveTokenTicker}`
   const receiveAmount = estimatedConversionText.endsWith(receiveSuffix)
     ? estimatedConversionText.slice(0, -receiveSuffix.length)
@@ -86,7 +101,7 @@ export function OrderEntryCard({
   )
 
   function openDurationDialog() {
-    setDraftDurationSeconds(durationSeconds)
+    setDraftDurationSeconds(durationSeconds ?? minimumDurationSeconds)
     setDurationDialogOpen(true)
   }
 
@@ -212,29 +227,49 @@ export function OrderEntryCard({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-5 text-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>
-              Over{' '}
-              <span className="text-foreground">
-                {formatDuration(durationSeconds)}
-              </span>
-            </span>
-            <span title="Your order executes gradually over the selected duration.">
-              <Info
-                aria-label="Orders execute gradually over the selected duration"
-                className="size-3.5"
-              />
-            </span>
-          </div>
-          <Button
-            className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
-            onClick={openDurationDialog}
-            ref={durationTriggerRef}
-            variant="link"
-          >
-            Customize duration
-          </Button>
+        <div className="flex flex-wrap items-center gap-2 px-1 py-5 text-sm text-muted-foreground">
+          {hasAmount ? (
+            <>
+              {durationSeconds !== null ? <span>Over the next</span> : null}
+              <Button
+                aria-label={
+                  durationSeconds === null
+                    ? 'Customize duration'
+                    : `Customize duration: ${formatSmartDuration(durationSeconds)}`
+                }
+                aria-haspopup="dialog"
+                className="h-auto min-h-7 max-w-full gap-2 rounded-full border-border bg-secondary px-3 py-1 text-xs font-normal whitespace-normal text-foreground/80 hover:text-foreground"
+                onClick={openDurationDialog}
+                ref={durationTriggerRef}
+                variant="secondary"
+              >
+                {durationSeconds === null
+                  ? 'Choose duration'
+                  : formatSmartDuration(durationSeconds)}
+                <SlidersHorizontal aria-hidden="true" className="size-3" />
+              </Button>
+            </>
+          ) : (
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger className="cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  Smart fill
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Positioner sideOffset={8}>
+                    <Tooltip.Popup className="z-50 max-w-64 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-5 text-popover-foreground shadow-lg">
+                      {smartFillTooltip}
+                    </Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          )}
+          {durationUnavailableMessage ? (
+            <p className="w-full text-xs leading-5" role="status">
+              {durationUnavailableMessage}
+            </p>
+          ) : null}
         </div>
 
         <div className="min-h-[140px] rounded-xl border border-white/[0.06] bg-secondary p-4 sm:p-5">
@@ -310,6 +345,26 @@ export function OrderEntryCard({
             </DialogDescription>
           </DialogHeader>
 
+          {recommendedDurationSeconds != null && onResetDuration ? (
+            <Button
+              aria-pressed={!isCustomDuration}
+              className="h-auto justify-between gap-3 rounded-xl px-4 py-3 whitespace-normal"
+              onClick={() => {
+                onResetDuration()
+                setDurationDialogOpen(false)
+              }}
+              variant="secondary"
+            >
+              <span className="text-left">
+                <span className="block">Smart fill</span>
+                <span className="block text-xs font-normal text-muted-foreground">
+                  Recommended for less than 0.01% price impact
+                </span>
+              </span>
+              <span>{formatDuration(recommendedDurationSeconds)}</span>
+            </Button>
+          ) : null}
+
           <div>
             <div
               className="mb-6 text-center text-3xl tracking-tight"
@@ -370,7 +425,9 @@ export function OrderEntryCard({
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
               <span className="text-xs text-muted-foreground">
-                Current estimate · {formatDuration(durationSeconds)}
+                {durationSeconds === null
+                  ? 'Current estimate unavailable'
+                  : `Current estimate · ${formatDuration(durationSeconds)}`}
               </span>
               <span>{estimatedConversionText}</span>
             </div>

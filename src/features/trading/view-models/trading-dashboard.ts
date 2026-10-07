@@ -1,5 +1,6 @@
 import { durationToSlots } from '../lib/amounts'
 import { computeMarketStats, marketPriceFromFlows } from '../lib/market'
+import { computePriceImpactPercent } from '../lib/price-impact'
 import {
   formatCrosshairTimeLabel,
   formatPrice,
@@ -147,7 +148,7 @@ export function buildTradingDashboardViewModel({
   amountUiValue: number | null
   baseDecimals: number
   baseTicker: string
-  durationSeconds: number
+  durationSeconds: number | null
   quoteDecimals: number
   quoteTicker: string
   referencePricing: ReferenceMarketPricingInputs
@@ -217,30 +218,15 @@ export function buildTradingDashboardViewModel({
     referencePricing.quoteDecimals,
   )
 
-  const priceImpactPercent = (() => {
-    if (!amountAtoms || amountAtoms <= 0n || !streamingState) return null
-
-    const slots = durationToSlots(durationSeconds)
-    const userFlowPerSlot = amountAtoms / BigInt(slots)
-    if (userFlowPerSlot <= 0n) return null
-
-    if (side === 'buy') {
-      if (streamingState.marketQuoteFlow <= 0n) return null
-      return (
-        (Number(userFlowPerSlot) /
-          (Number(streamingState.marketQuoteFlow) / 1_000_000_000)) *
-        100
-      )
-    }
-
-    if (streamingState.marketBaseFlow <= 0n) return null
-    return (
-      (Number(userFlowPerSlot) /
-        (Number(streamingState.marketBaseFlow) / 1_000_000_000 +
-          Number(userFlowPerSlot))) *
-      100
-    )
-  })()
+  const priceImpactPercent =
+    durationSeconds === null
+      ? null
+      : computePriceImpactPercent({
+          amountAtoms,
+          durationSlots: durationToSlots(durationSeconds),
+          side,
+          streamingState,
+        })
 
   const signedPriceImpactPercent =
     priceImpactPercent === null
@@ -251,6 +237,8 @@ export function buildTradingDashboardViewModel({
 
   const executionPrice = (() => {
     if (onChainIndicativePrice === null || onChainIndicativePrice <= 0)
+      return null
+    if (amountAtoms !== null && amountAtoms > 0n && durationSeconds === null)
       return null
     if (signedPriceImpactPercent === null) return onChainIndicativePrice
 

@@ -51,6 +51,7 @@ import { useTradePositions } from '../hooks/use-trade-positions'
 import { useWalletSolBalance } from '../hooks/use-wallet-sol-balance'
 import { useWalletTokenBalance } from '../hooks/use-wallet-token-balance'
 import { useSubmitOrder } from '../hooks/use-submit-order'
+import { useOrderDuration } from '../hooks/use-order-duration'
 import { useClosePosition } from '../hooks/use-close-position'
 import { usePositionControls } from '../hooks/use-position-controls'
 import { useReclaimRent } from '../hooks/use-reclaim-rent'
@@ -141,7 +142,6 @@ export function TradingDashboard({
   const [marketSelectorOpen, setMarketSelectorOpen] = useState(false)
   const marketOverview = useMarketOverview(marketSelectorOpen)
   const [amountInput, setAmountInput] = useState('')
-  const [durationSeconds, setDurationSeconds] = useState(30 * 60)
   const [positionPanelTab, setPositionPanelTab] =
     useState<PositionPanelTab>('active')
   const [activePositionPage, setActivePositionPage] = useState(0)
@@ -203,6 +203,24 @@ export function TradingDashboard({
     () => parseTokenAmount(amountInput, amountDecimals),
     [amountDecimals, amountInput],
   )
+  const {
+    durationSeconds,
+    recommendedDurationSeconds,
+    onDurationChange,
+    onResetDuration,
+    isCustomDuration,
+  } = useOrderDuration({
+    amountAtoms,
+    side,
+    streamingState: isMarketReady ? onChainMarket : null,
+    marketKey: marketId,
+  })
+  const durationUnavailableMessage =
+    amountAtoms !== null && amountAtoms > 0n && durationSeconds === null
+      ? !isMarketReady
+        ? 'Waiting for market liquidity…'
+        : 'No duration below 0.01% impact is available with current liquidity. Try a smaller amount or choose a custom duration.'
+      : null
   const sliderValue = useMemo(
     () => toSliderPercent(amountAtoms, availableAtoms),
     [amountAtoms, availableAtoms],
@@ -393,6 +411,10 @@ export function TradingDashboard({
     isMarketPaused ||
     !amountAtoms ||
     amountAtoms <= 0n ||
+    durationSeconds === null ||
+    !onChainMarket ||
+    onChainMarket.marketBaseFlow <= 0n ||
+    onChainMarket.marketQuoteFlow <= 0n ||
     amountBelowMinimum ||
     amountExceedsAvailable ||
     hasLowSubmitNativeSolBalance ||
@@ -418,9 +440,16 @@ export function TradingDashboard({
                   ? 'Market paused'
                   : hasLowSubmitNativeSolBalance
                     ? 'Add SOL to submit'
-                    : hasHighPriceImpact
-                      ? 'Review price impact'
-                      : `Stream over ${formatDuration(durationSeconds)}`
+                    : !amountAtoms || amountAtoms <= 0n
+                      ? 'Enter an amount'
+                      : durationSeconds === null ||
+                          !onChainMarket ||
+                          onChainMarket.marketBaseFlow <= 0n ||
+                          onChainMarket.marketQuoteFlow <= 0n
+                        ? 'Smart fill unavailable'
+                        : hasHighPriceImpact
+                          ? 'Review price impact'
+                          : `Stream over ${formatDuration(durationSeconds)}`
 
   useEffect(() => {
     setAmountInput('')
@@ -669,6 +698,20 @@ export function TradingDashboard({
       return
     }
 
+    if (
+      durationSeconds === null ||
+      !onChainMarket ||
+      onChainMarket.marketBaseFlow <= 0n ||
+      onChainMarket.marketQuoteFlow <= 0n
+    ) {
+      toast.error('Order not ready', {
+        description:
+          durationUnavailableMessage ?? 'Market liquidity is unavailable.',
+        id: 'order-validation',
+      })
+      return
+    }
+
     const durationSlots = durationToSlots(durationSeconds)
     const success = await submitOrder.submitOrder({
       amount: amountAtoms,
@@ -798,6 +841,9 @@ export function TradingDashboard({
               availableAmountDisplay={availableAmountDisplay}
               canSubmit={!submitDisabled}
               durationSeconds={durationSeconds}
+              durationUnavailableMessage={durationUnavailableMessage}
+              recommendedDurationSeconds={recommendedDurationSeconds}
+              isCustomDuration={isCustomDuration}
               estimatedConversionText={estimatedConversionText}
               executionPriceDisplay={executionPriceDisplay}
               isConnected={walletConnection.connected}
@@ -805,7 +851,8 @@ export function TradingDashboard({
               onAmountChange={(value) => {
                 setAmountInput(sanitizeAmountInput(value))
               }}
-              onDurationChange={setDurationSeconds}
+              onDurationChange={onDurationChange}
+              onResetDuration={onResetDuration}
               onMaxClick={() => handleSliderChange(100)}
               onPercentSelect={handleSliderChange}
               onSideChange={(nextSide) => {

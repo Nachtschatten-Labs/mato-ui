@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -47,6 +48,85 @@ function createProps(
 }
 
 describe('OrderEntryCard', () => {
+  it('shows Smart fill without a duration until an amount is entered', async () => {
+    const props = createProps({ amountInput: '', side: 'buy' })
+    const view = render(<OrderEntryCard {...props} />)
+
+    const smartFill = screen.getByRole('button', { name: 'Smart fill' })
+    expect(screen.queryByText('Over the next')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /^Customize duration/ }),
+    ).toBeNull()
+    fireEvent.keyDown(document.body, { key: 'Tab' })
+    act(() => smartFill.focus())
+    expect(
+      await screen.findByText(
+        'Your buy streams continuously over time instead of filling all at once.',
+      ),
+    ).toBeTruthy()
+
+    view.rerender(
+      <OrderEntryCard {...props} amountInput="1" durationSeconds={10} />,
+    )
+    expect(screen.getByText('Over the next')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Customize duration: few seconds' })
+        .textContent,
+    ).toBe('few seconds')
+    expect(screen.queryByRole('button', { name: 'Smart fill' })).toBeNull()
+
+    view.rerender(<OrderEntryCard {...props} amountInput="0" />)
+    expect(screen.getByRole('button', { name: 'Smart fill' })).toBeTruthy()
+    expect(screen.queryByText('Over the next')).toBeNull()
+  })
+
+  it.each([
+    [13.2, '15 seconds'],
+    [60, '1 minute'],
+    [61 * 60, '1 hour 30 minutes'],
+    [7 * 86400, 'week'],
+    [39 * 86400, '1 month 1 week 2 days'],
+  ])('shows %s seconds as the clickable label %s', (durationSeconds, label) => {
+    render(<OrderEntryCard {...createProps({ durationSeconds })} />)
+    expect(
+      screen.getByRole('button', { name: `Customize duration: ${label}` })
+        .textContent,
+    ).toBe(label)
+  })
+
+  it('does not invent a duration when a recommendation is unavailable', () => {
+    render(
+      <OrderEntryCard
+        {...createProps({
+          durationSeconds: null,
+          durationUnavailableMessage: 'Waiting for market liquidity…',
+        })}
+      />,
+    )
+    expect(screen.queryByText('Over the next')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Customize duration' }).textContent,
+    ).toBe('Choose duration')
+    expect(screen.getByRole('status').textContent).toBe(
+      'Waiting for market liquidity…',
+    )
+  })
+
+  it('can return a custom duration to the live Smart fill recommendation', async () => {
+    const props = createProps({
+      isCustomDuration: true,
+      recommendedDurationSeconds: 10.4,
+      onResetDuration: vi.fn(),
+    })
+    render(<OrderEntryCard {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    await screen.findByRole('dialog')
+    fireEvent.click(screen.getByRole('button', { name: /Smart fill/ }))
+    expect(props.onResetDuration).toHaveBeenCalledOnce()
+    expect(props.onDurationChange).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
   it('reveals balance controls and preserves max, preset, slider, and amount callbacks', () => {
     const props = createProps()
     render(<OrderEntryCard {...props} />)
@@ -103,8 +183,8 @@ describe('OrderEntryCard', () => {
   it('applies a duration preset only after confirmation and labels the current quote', async () => {
     const props = createProps()
     render(<OrderEntryCard {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Customize duration' }))
-    await screen.findByRole('dialog', { name: 'Customize duration' })
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    await screen.findByRole('dialog', { name: /^Customize duration/ })
 
     fireEvent.click(screen.getByRole('button', { name: '20 seconds' }))
     expect(props.onDurationChange).not.toHaveBeenCalled()
@@ -122,7 +202,7 @@ describe('OrderEntryCard', () => {
   it('discards duration slider changes when dismissed and resets the next draft', async () => {
     const props = createProps()
     render(<OrderEntryCard {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Customize duration' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
     await screen.findByRole('dialog')
     fireEvent.change(screen.getByRole('slider', { name: 'Order duration' }), {
       target: {
@@ -136,7 +216,7 @@ describe('OrderEntryCard', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(props.onDurationChange).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Customize duration' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
     await screen.findByRole('dialog')
     expect(
       screen
