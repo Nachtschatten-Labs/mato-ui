@@ -492,11 +492,18 @@ export async function sendSubmitOrder({
     : marketAccount.data.baseMint
   if (inputMintAddress !== mint)
     throw new Error('Input mint does not match the selected market side.')
-  const tokenProgram = await detectTokenProgram(
-    client.runtime,
-    mint,
-    'confirmed',
-  )
+  const outputMint = isBuy
+    ? marketAccount.data.baseMint
+    : marketAccount.data.quoteMint
+  const [tokenProgram, createReceiverInstruction] = await Promise.all([
+    detectTokenProgram(client.runtime, mint, 'confirmed'),
+    getCreateMissingReceiverTokenInstruction({
+      client,
+      mint: outputMint,
+      owner: session.account.address,
+      payer: walletSigner,
+    }),
+  ])
 
   const wrapInstructions =
     wrapShortfall > 0n
@@ -568,7 +575,11 @@ export async function sendSubmitOrder({
       setTransactionMessageLifetimeUsingBlockhash(blockhashLifetime, message),
     (message) =>
       appendTransactionMessageInstructions(
-        [...wrapInstructions, instruction],
+        [
+          ...wrapInstructions,
+          ...(createReceiverInstruction ? [createReceiverInstruction] : []),
+          instruction,
+        ],
         message,
       ),
   )
@@ -593,6 +604,44 @@ export async function sendSubmitOrder({
   const serializedSignature = signature.toString()
   await waitForConfirmedSignature(client.runtime.rpc, serializedSignature)
   return serializedSignature
+}
+
+async function getCreateMissingReceiverTokenInstruction({
+  client,
+  mint,
+  owner,
+  payer,
+}: {
+  client: SolanaClient
+  mint: Address
+  owner: Address
+  payer: TransactionSigner
+}) {
+  if (mint === WRAPPED_SOL_MINT) return null
+
+  const tokenProgram = await detectTokenProgram(
+    client.runtime,
+    mint,
+    'confirmed',
+  )
+  const ata = await deriveAssociatedTokenAddress({
+    mint,
+    owner,
+    tokenProgram: tokenProgram.programAddress,
+  })
+  const account = await client.runtime.rpc
+    .getAccountInfo(ata, { commitment: 'confirmed', encoding: 'base64' })
+    .send()
+  if (account.value !== null) return null
+
+  // Creation may race with another transaction while the wallet is approving.
+  return getCreateAssociatedTokenIdempotentInstruction({
+    ata,
+    mint,
+    owner,
+    payer,
+    tokenProgram: tokenProgram.programAddress,
+  })
 }
 
 function getCreateAssociatedTokenIdempotentInstruction({

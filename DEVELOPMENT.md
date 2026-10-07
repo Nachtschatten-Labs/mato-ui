@@ -60,6 +60,12 @@ use the price and inactive-slot counters at their own end slot; until that snaps
 is available, the card shows “Updating fill…” instead of assuming a complete fill.
 Confirmed settlement replaces earlier estimates, including lower or zero fills.
 
+Order submission checks the wallet's associated token account for the receiving
+mint (quote for sells, base for buys). If it is missing, the same transaction
+creates it with an idempotent instruction before submitting the order. The mint's
+token program determines the account address; receiving native SOL skips this
+setup. Existing SOL deposit wrapping remains part of the order transaction.
+
 ## Production preview
 
 Prepare `.env.production.local` using the example, then:
