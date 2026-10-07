@@ -1,10 +1,5 @@
 import { useRef, useState } from 'react'
-import {
-  AlertTriangle,
-  ArrowDownUp,
-  Info,
-  SlidersHorizontal,
-} from 'lucide-react'
+import { AlertTriangle, Info, SlidersHorizontal } from 'lucide-react'
 import { Tooltip } from '@base-ui/react/tooltip'
 import {
   DURATION_OPTIONS,
@@ -118,6 +113,31 @@ export function OrderEntryCard({
     <Card className="rounded-[20px]">
       <CardContent className="p-5 sm:p-10">
         <div
+          aria-label="Order side"
+          className="mb-6 grid grid-cols-2 rounded-full border border-border bg-input p-1"
+          role="group"
+        >
+          {(['buy', 'sell'] as const).map((orderSide) => (
+            <Button
+              key={orderSide}
+              aria-pressed={side === orderSide}
+              className={cn(
+                'h-9 rounded-full font-normal',
+                side === orderSide
+                  ? 'border-border bg-secondary text-foreground'
+                  : 'text-muted-foreground',
+              )}
+              onClick={() => {
+                if (side !== orderSide) onSideChange(orderSide)
+              }}
+              variant={side === orderSide ? 'secondary' : 'ghost'}
+            >
+              {orderSide === 'buy' ? 'Buy' : 'Sell'}
+            </Button>
+          ))}
+        </div>
+
+        <div
           className={cn(
             'rounded-xl border bg-input p-4 sm:p-5',
             amountValidationMessage ? 'border-destructive/60' : 'border-border',
@@ -168,15 +188,6 @@ export function OrderEntryCard({
               <TokenMark symbol={amountTokenTicker} />
               {amountTokenTicker}
             </span>
-            <Button
-              aria-label={`Switch to ${side === 'sell' ? 'buy' : 'sell'}`}
-              className="rounded-lg bg-secondary text-muted-foreground"
-              onClick={() => onSideChange(side === 'sell' ? 'buy' : 'sell')}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <ArrowDownUp className="size-3.5" />
-            </Button>
           </div>
 
           <p

@@ -195,10 +195,17 @@ describe('OrderEntryCard', () => {
     expect(props.onAmountChange).toHaveBeenCalledWith('4.2')
   })
 
-  it('switches sides through the existing callback', () => {
+  it('switches sides using the Buy/Sell control without resetting the active side', () => {
     const props = createProps()
     const view = render(<OrderEntryCard {...props} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to buy' }))
+    expect(screen.getByRole('group', { name: 'Order side' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Sell', pressed: true }),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Switch to/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Sell' }))
+    expect(props.onSideChange).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Buy', pressed: false }))
     expect(props.onSideChange).toHaveBeenCalledWith('buy')
 
     view.rerender(
@@ -211,7 +218,12 @@ describe('OrderEntryCard', () => {
     )
     expect(screen.getByRole('textbox', { name: 'You pay' })).toBeTruthy()
     expect(screen.queryByRole('textbox', { name: 'Buy' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to sell' }))
+    expect(
+      screen.getByRole('button', { name: 'Buy', pressed: true }),
+    ).toBeTruthy()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Sell', pressed: false }),
+    )
     expect(props.onSideChange).toHaveBeenLastCalledWith('sell')
   })
 
