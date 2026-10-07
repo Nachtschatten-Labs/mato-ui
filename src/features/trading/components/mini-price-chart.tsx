@@ -13,17 +13,14 @@ export function buildMiniPriceChartGeometry(
   const values = points.map((point) => point.price)
   if (averagePrice !== null) values.push(averagePrice)
 
-  let min = Math.min(...values)
-  let max = Math.max(...values)
-  if (min === max) {
-    const padding = Math.max(Math.abs(min) * 0.05, 0.000001)
-    min -= padding
-    max += padding
-  } else {
-    const padding = (max - min) * 0.08
-    min -= padding
-    max += padding
-  }
+  const dataMin = Math.min(...values)
+  const dataMax = Math.max(...values)
+  const center = dataMin + (dataMax - dataMin) / 2
+  // Three labels need at least 0.0001 between ticks. Keep tiny fill-rounding
+  // differences in proportion while retaining 8% padding for larger moves.
+  const halfRange = Math.max((dataMax - dataMin) * 0.58, 0.0001)
+  const min = Math.max(0, center - halfRange)
+  const max = min + halfRange * 2
 
   const toY = (value: number) => {
     const range = max - min || 1
@@ -117,7 +114,7 @@ export function MiniPriceChart({
         <div className="flex h-[60px] w-14 shrink-0 flex-col justify-between text-[10px] tabular-nums text-muted-foreground">
           <span>{formatPrice(geometry.max)}</span>
           <span>{formatPrice(midpoint)}</span>
-          <span>{formatPrice(geometry.min)}</span>
+          <span>{geometry.min === 0 ? '0' : formatPrice(geometry.min)}</span>
         </div>
 
         <svg
