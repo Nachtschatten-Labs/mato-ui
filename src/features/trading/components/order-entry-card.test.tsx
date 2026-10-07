@@ -74,9 +74,9 @@ describe('OrderEntryCard', () => {
     )
     expect(screen.getByText('Over the next')).toBeTruthy()
     expect(
-      screen.getByRole('button', { name: 'Customize duration: few seconds' })
+      screen.getByRole('button', { name: 'Customize duration: 10 seconds' })
         .textContent,
-    ).toBe('few seconds')
+    ).toBe('10 seconds')
     expect(
       screen.queryByRole('button', { name: 'About Smart fill' }),
     ).toBeNull()

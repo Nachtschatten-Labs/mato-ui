@@ -25,7 +25,7 @@ function formatDays(days: number) {
 /** The duration suffix in “Over the next …”, rounded upward for display. */
 export function formatSmartDuration(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '—'
-  if (seconds < 13) return 'few seconds'
+  if (seconds < 10) return 'few seconds'
 
   const increment =
     seconds < SECONDS_PER_MINUTE

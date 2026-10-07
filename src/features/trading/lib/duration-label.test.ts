@@ -8,8 +8,10 @@ const DAY = 24 * HOUR
 describe('formatSmartDuration', () => {
   it.each([
     [0.4, 'few seconds'],
-    [10, 'few seconds'],
-    [12.999, 'few seconds'],
+    [9.999, 'few seconds'],
+    [10, '10 seconds'],
+    [10.001, '15 seconds'],
+    [12.999, '15 seconds'],
     [13, '15 seconds'],
     [15, '15 seconds'],
     [15.001, '20 seconds'],
