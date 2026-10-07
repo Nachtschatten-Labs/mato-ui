@@ -1,5 +1,10 @@
 import { useRef, useState } from 'react'
-import { AlertTriangle, ArrowDownUp, SlidersHorizontal } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowDownUp,
+  Info,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { Tooltip } from '@base-ui/react/tooltip'
 import { DURATION_OPTIONS, SLOT_DURATION_SECONDS } from '../constants'
 import { MIN_DURATION_SLOTS } from '../lib/duration'
@@ -251,9 +256,13 @@ export function OrderEntryCard({
             </>
           ) : (
             <Tooltip.Provider>
+              <span>Smart fill</span>
               <Tooltip.Root>
-                <Tooltip.Trigger className="cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  Smart fill
+                <Tooltip.Trigger
+                  aria-label="About Smart fill"
+                  className="inline-flex cursor-help items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Info aria-hidden="true" className="size-3.5" />
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
                   <Tooltip.Positioner sideOffset={8}>

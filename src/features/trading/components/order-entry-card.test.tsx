@@ -52,13 +52,17 @@ describe('OrderEntryCard', () => {
     const props = createProps({ amountInput: '', side: 'buy' })
     const view = render(<OrderEntryCard {...props} />)
 
-    const smartFill = screen.getByRole('button', { name: 'Smart fill' })
+    expect(screen.getByText('Smart fill')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Smart fill' })).toBeNull()
+    const smartFillInfo = screen.getByRole('button', {
+      name: 'About Smart fill',
+    })
     expect(screen.queryByText('Over the next')).toBeNull()
     expect(
       screen.queryByRole('button', { name: /^Customize duration/ }),
     ).toBeNull()
     fireEvent.keyDown(document.body, { key: 'Tab' })
-    act(() => smartFill.focus())
+    act(() => smartFillInfo.focus())
     expect(
       await screen.findByText(
         'Your buy streams continuously over time instead of filling all at once.',
@@ -73,10 +77,15 @@ describe('OrderEntryCard', () => {
       screen.getByRole('button', { name: 'Customize duration: few seconds' })
         .textContent,
     ).toBe('few seconds')
-    expect(screen.queryByRole('button', { name: 'Smart fill' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'About Smart fill' }),
+    ).toBeNull()
 
     view.rerender(<OrderEntryCard {...props} amountInput="0" />)
-    expect(screen.getByRole('button', { name: 'Smart fill' })).toBeTruthy()
+    expect(screen.getByText('Smart fill')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'About Smart fill' }),
+    ).toBeTruthy()
     expect(screen.queryByText('Over the next')).toBeNull()
   })
 
