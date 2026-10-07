@@ -29,13 +29,13 @@ describe('closed-position chart geometry', () => {
     const averagePrice = 116.21760001
     const geometry = buildMiniPriceChartGeometry(points, 240, 60, averagePrice)!
     const pathY = Number(geometry.path.split(' ')[2])
-    expect(geometry.max - geometry.min).toBeCloseTo(0.0002, 10)
+    expect(geometry.max - geometry.min).toBeCloseTo(0.001, 10)
     expect(Math.abs(geometry.averageY! - pathY)).toBeLessThan(0.01)
 
     const markup = renderToStaticMarkup(
       <MiniPriceChart points={points} averagePrice={averagePrice} />,
     )
-    for (const label of ['116.2177', '116.2176', '116.2175']) {
+    for (const label of ['116.2181', '116.2176', '116.2171']) {
       expect(markup).toContain(`<span>${label}</span>`)
     }
   })
@@ -52,8 +52,8 @@ describe('closed-position chart geometry', () => {
         60,
         averagePrice,
       )!
-      expect(geometry.min).toBeCloseTo(116.2175, 10)
-      expect(geometry.max).toBeCloseTo(116.2177, 10)
+      expect(geometry.min).toBeCloseTo(116.2171, 10)
+      expect(geometry.max).toBeCloseTo(116.2181, 10)
       expect(geometry.path).toBe('M 0.00 30.00 H 240.00 V 30.00')
       if (averagePrice !== null) expect(geometry.averageY).toBeCloseTo(30)
     },
@@ -82,11 +82,11 @@ describe('closed-position chart geometry', () => {
     ]
     const geometry = buildMiniPriceChartGeometry(points, 240, 60, null)!
     expect(geometry.min).toBe(0)
-    expect(geometry.max).toBe(0.0002)
+    expect(geometry.max).toBe(0.001)
     const markup = renderToStaticMarkup(
       <MiniPriceChart points={points} averagePrice={null} />,
     )
-    for (const label of ['0.0002', '0.0001', '0']) {
+    for (const label of ['0.001', '0.0005', '0']) {
       expect(markup).toContain(`<span>${label}</span>`)
     }
   })

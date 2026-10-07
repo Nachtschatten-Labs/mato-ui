@@ -16,9 +16,9 @@ export function buildMiniPriceChartGeometry(
   const dataMin = Math.min(...values)
   const dataMax = Math.max(...values)
   const center = dataMin + (dataMax - dataMin) / 2
-  // Three labels need at least 0.0001 between ticks. Keep tiny fill-rounding
+  // A minimum range of 0.001 gives the three labels 0.0005 between ticks. Keep fill-rounding
   // differences in proportion while retaining 8% padding for larger moves.
-  const halfRange = Math.max((dataMax - dataMin) * 0.58, 0.0001)
+  const halfRange = Math.max((dataMax - dataMin) * 0.58, 0.0005)
   const min = Math.max(0, center - halfRange)
   const max = min + halfRange * 2
 
