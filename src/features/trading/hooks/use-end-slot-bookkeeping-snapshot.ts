@@ -27,11 +27,6 @@ export function useEndSlotBookkeepingSnapshot({
     return resolveSnapshotLocation(endSlot, endSlotInterval)
   }, [endSlot, endSlotInterval])
 
-  const isSnapshotLikelyReady = useMemo(() => {
-    if (bookkeepingLastUpdateSlot === null) return false
-    return bookkeepingLastUpdateSlot >= endSlot
-  }, [bookkeepingLastUpdateSlot, endSlot])
-
   return useQuery({
     ...tradingQueries.endSlotSnapshot({
       client,
@@ -41,11 +36,10 @@ export function useEndSlotBookkeepingSnapshot({
       isBuy,
       marketAddress,
     }),
-    enabled: enabled && snapshotLocation !== null && isSnapshotLikelyReady,
+    enabled: enabled && snapshotLocation !== null,
     refetchInterval: ({ state }) => {
-      if (!enabled || snapshotLocation === null || !isSnapshotLikelyReady)
-        return false
-      return state.data === null ? 2_000 : false
+      if (!enabled || snapshotLocation === null) return false
+      return state.data == null ? 1_000 : false
     },
   })
 }

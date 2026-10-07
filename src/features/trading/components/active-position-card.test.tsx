@@ -27,10 +27,15 @@ vi.mock('../hooks/use-end-slot-bookkeeping-snapshot', () => ({
 vi.mock('../hooks/use-position-chart', () => ({
   usePositionChart: () => ({
     points: [
-      { timeMs: 1000, price: 120 },
-      { timeMs: 2000, price: 121 },
+      { slot: 0, price: 120 },
+      { slot: 2, price: 121 },
     ],
     startTimeMs: 1000,
+    endTimeMs: null,
+    startSlot: 0,
+    endSlot: 10,
+    hasEnded: false,
+    estimatedEnd: true,
     estimatedStart: false,
     isLoading: false,
     hasError: false,

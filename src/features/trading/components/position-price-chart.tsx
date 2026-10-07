@@ -10,10 +10,15 @@ const dateLabel = (timeMs: number) =>
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
   })
 
 export function PositionPriceChart({
   points,
+  startSlot,
+  endSlot,
+  hasEnded,
+  estimatedEnd,
   startTimeMs,
   endTimeMs,
   estimatedStart,
@@ -22,6 +27,10 @@ export function PositionPriceChart({
   paused,
 }: {
   points: PositionChartPoint[]
+  startSlot: number
+  endSlot: number
+  hasEnded: boolean
+  estimatedEnd: boolean
   startTimeMs: number | null
   endTimeMs: number | null
   estimatedStart: boolean
@@ -30,36 +39,37 @@ export function PositionPriceChart({
   paused: boolean
 }) {
   const gradientId = useId()
-  const [hoverTime, setHoverTime] = useState<number | null>(null)
+  const [hoverSlot, setHoverSlot] = useState<number | null>(null)
   const first = points[0]
   const last = points.at(-1)
   const hovered =
-    hoverTime === null
+    hoverSlot === null
       ? null
       : points.reduce<PositionChartPoint | null>(
-          (nearest, point) =>
-            !nearest ||
-            Math.abs(point.timeMs - hoverTime) <
-              Math.abs(nearest.timeMs - hoverTime)
-              ? point
-              : nearest,
-          null,
+          (previous, point) => (point.slot <= hoverSlot ? point : previous),
+          first ?? null,
         )
   const shown = hovered ?? last
-  const start = startTimeMs ?? first?.timeMs ?? 0
-  const end = Math.max(endTimeMs ?? 0, last?.timeMs ?? 0, start + 1)
+  const start = startSlot
+  const end = Math.max(endSlot, start + 1)
+  const timeAtSlot = (slot: number) =>
+    startTimeMs === null || endTimeMs === null
+      ? null
+      : startTimeMs +
+        ((slot - start) / (end - start)) * (endTimeMs - startTimeMs)
   const prices = points.map((point) => point.price)
   const min = prices.length ? Math.min(...prices) : 0
   const max = prices.length ? Math.max(...prices) : 1
   const padding = Math.max((max - min) * 0.2, max * 0.0001)
-  const x = (timeMs: number) =>
-    8 + ((timeMs - start) / (end - start)) * (WIDTH - 16)
+  const x = (slot: number) =>
+    8 + ((slot - start) / (end - start)) * (WIDTH - 16)
   const y = (price: number) =>
     12 + ((max + padding - price) / (max - min + 2 * padding)) * (HEIGHT - 24)
   const path = points
-    .map(
-      (point, index) =>
-        `${index ? 'L' : 'M'}${x(point.timeMs)},${y(point.price)}`,
+    .map((point, index) =>
+      index === 0
+        ? `M${x(point.slot)},${y(point.price)}`
+        : `H${x(point.slot)} V${y(point.price)}`,
     )
     .join(' ')
   const timeLabels = startTimeMs !== null && endTimeMs !== null
@@ -96,9 +106,9 @@ export function PositionPriceChart({
                 0,
                 Math.min(1, (event.clientX - bounds.left) / bounds.width),
               )
-              setHoverTime(start + fraction * (end - start))
+              setHoverSlot(start + fraction * (end - start))
             }}
-            onPointerLeave={() => setHoverTime(null)}
+            onPointerLeave={() => setHoverSlot(null)}
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -126,7 +136,7 @@ export function PositionPriceChart({
             />
             {points.length > 1 && (
               <path
-                d={`${path} L${x(last.timeMs)},${HEIGHT} L${x(first.timeMs)},${HEIGHT} Z`}
+                d={`${path} L${x(last.slot)},${HEIGHT} L${x(first.slot)},${HEIGHT} Z`}
                 fill={`url(#${gradientId})`}
               />
             )}
@@ -140,7 +150,7 @@ export function PositionPriceChart({
               vectorEffect="non-scaling-stroke"
             />
             <circle
-              cx={x(last.timeMs)}
+              cx={x(last.slot)}
               cy={y(last.price)}
               r="4"
               fill="var(--color-accent-strong)"
@@ -148,8 +158,8 @@ export function PositionPriceChart({
             {hovered && (
               <>
                 <line
-                  x1={x(hovered.timeMs)}
-                  x2={x(hovered.timeMs)}
+                  x1={x(hovered.slot)}
+                  x2={x(hovered.slot)}
                   y1="0"
                   y2={HEIGHT}
                   stroke="currentColor"
@@ -157,7 +167,7 @@ export function PositionPriceChart({
                   strokeDasharray="3 4"
                 />
                 <circle
-                  cx={x(hovered.timeMs)}
+                  cx={x(hovered.slot)}
                   cy={y(hovered.price)}
                   r="4"
                   fill="var(--foreground)"
@@ -173,20 +183,24 @@ export function PositionPriceChart({
             {isLoading
               ? 'Loading price history…'
               : hasError
-                ? 'Reference price history is unavailable.'
+                ? 'Price history is unavailable.'
                 : 'Waiting for market prices after this stream started.'}
           </div>
         )}
         <div className="flex justify-between gap-3 border-t border-border/40 pt-2 pb-3 text-[10px] text-muted-foreground">
           <span>
             {hovered
-              ? dateLabel(hovered.timeMs)
+              ? timeAtSlot(hovered.slot) === null
+                ? `Slot ${hovered.slot}`
+                : `≈ ${dateLabel(timeAtSlot(hovered.slot)!)}`
               : timeLabels
                 ? `${estimatedStart ? '≈ ' : ''}${dateLabel(startTimeMs)}`
                 : 'Start time unavailable'}
           </span>
           <span className="text-right">
-            {timeLabels ? `Est. end ${dateLabel(end)}` : 'Market price'}
+            {timeLabels
+              ? `${hasEnded ? (estimatedEnd ? '≈ End' : 'End') : 'Est. end'} ${dateLabel(endTimeMs)}`
+              : 'Market price'}
           </span>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMarketDefinition } from '../constants'
 import {
   fetchClosedPositionEvents,
+  fetchClosedPositionMiniChart,
   fetchMarketCandles,
   fetchMarketConfig,
   fetchMarketPrice,
@@ -32,6 +33,61 @@ const price = {
   event_time: '2026-10-06T12:00:00Z',
 }
 describe('address-based mainnet data API', () => {
+  it('builds closed charts from post-submission history through the final fill slot', async () => {
+    const historyItem = (slot: number, value: number, eventIndex = 0) => ({
+      event_uid: `${slot}:${eventIndex}`,
+      signature: `tx-${slot}`,
+      event_index: eventIndex,
+      slot,
+      market_address: market.address,
+      base_flow: '1000000000',
+      quote_flow: String(value * 1_000_000),
+      created_at: price.event_time,
+    })
+    respond({
+      market_address: market.address,
+      start_slot: 1000,
+      end_slot: 1010,
+      items: [
+        historyItem(999, 100),
+        historyItem(1000, 100),
+        historyItem(1000, 120, 1),
+        historyItem(1010, 100),
+      ],
+    })
+
+    expect(
+      await fetchClosedPositionMiniChart({
+        marketId: 1,
+        startSlot: 1000,
+        endSlot: 1010,
+      }),
+    ).toEqual([
+      { slot: 1000, price: 120 },
+      { slot: 1010, price: 120 },
+    ])
+    const url = new URL(String(mockedFetch.mock.calls[0][0]))
+    expect(url.pathname).toBe(`/v1/markets/${market.address}/history`)
+    expect(url.searchParams.get('start_slot')).toBe('1000')
+    expect(url.searchParams.get('end_slot')).toBe('1010')
+    expect(url.searchParams.get('max_rows')).toBe('100000')
+  })
+
+  it('does not substitute a sampled or partial chart when history exceeds the server limit', async () => {
+    respond(
+      { error: 'Requested history range exceeds max_rows=100000 rows' },
+      500,
+    )
+    await expect(
+      fetchClosedPositionMiniChart({
+        marketId: 1,
+        startSlot: 1,
+        endSlot: 1000000,
+      }),
+    ).rejects.toThrow('exceeds max_rows=100000')
+    expect(mockedFetch).toHaveBeenCalledTimes(1)
+  })
+
   it('requests prices for the deployed address', async () => {
     respond(price)
     expect(await fetchMarketPrice({ marketId: 1 })).toMatchObject({

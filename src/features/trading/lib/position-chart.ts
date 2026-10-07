@@ -1,48 +1,58 @@
-import type { MarketCandle } from '../api/market-repository'
+import {
+  buildPositionPricePath,
+  normalizeMarketPricePoints,
+} from './mini-chart'
+import type { MarketUpdateEvent } from '@/integrations/read-api'
 import type { MarketPriceSnapshot } from '../domain/models'
+import type { MiniPriceChartPoint } from './mini-chart'
 
-export interface PositionChartPoint {
-  timeMs: number
-  price: number
-}
+export type PositionChartPoint = MiniPriceChartPoint
 
-export function buildPositionChartPoints(
-  candles: readonly MarketCandle[],
-  startTimeMs: number,
-  nowMs: number,
-  latestPrice: MarketPriceSnapshot | null,
-  intervalMs = 60_000,
-): PositionChartPoint[] {
-  // Candle closes belong at the end of their minute, not before the order began.
-  const points = candles
-    .map((candle) => ({
-      timeMs: candle.time * 1000 + intervalMs,
-      price: candle.close,
-    }))
-    .filter(
-      (point) =>
-        point.timeMs >= startTimeMs &&
-        point.timeMs <= nowMs &&
-        point.price > 0 &&
-        Number.isFinite(point.price),
-    )
-  if (
-    latestPrice?.price != null &&
-    latestPrice.eventTimeMs != null &&
-    latestPrice.price > 0 &&
-    Number.isFinite(latestPrice.price) &&
-    latestPrice.eventTimeMs >= startTimeMs &&
-    latestPrice.eventTimeMs <= nowMs
-  ) {
-    points.push({ timeMs: latestPrice.eventTimeMs, price: latestPrice.price })
+export function buildPositionChartPoints({
+  events,
+  livePrices,
+  startSlot,
+  endSlot,
+  includeEndSlot,
+  baseDecimals,
+  quoteDecimals,
+}: {
+  events: MarketUpdateEvent[]
+  livePrices: MarketPriceSnapshot[]
+  startSlot: number
+  endSlot: number
+  includeEndSlot: boolean
+  baseDecimals: number
+  quoteDecimals: number
+}): PositionChartPoint[] {
+  const points = normalizeMarketPricePoints(events, baseDecimals, quoteDecimals)
+  const lastIndexedSlot = points.at(-1)?.slot ?? -1
+  // Indexed history is authoritative; the stream only fills its trailing gap.
+  for (const observation of livePrices) {
+    if (
+      observation.slot !== null &&
+      observation.slot > lastIndexedSlot &&
+      observation.slot >= startSlot &&
+      observation.price !== null &&
+      Number.isFinite(observation.price) &&
+      observation.price > 0
+    ) {
+      points.push({ slot: observation.slot, price: observation.price })
+    }
   }
-  return [
+  const ordered = [
     ...new Map(
       points
-        .sort((a, b) => a.timeMs - b.timeMs)
-        .map((point) => [point.timeMs, point]),
+        .sort((a, b) => a.slot - b.slot)
+        .map((point) => [point.slot, point]),
     ).values(),
   ]
+  return (
+    buildPositionPricePath(ordered, startSlot, endSlot, {
+      includeEndSlot,
+      maxPoints: 1500,
+    }) ?? []
+  )
 }
 
 export function formatStreamDuration(seconds: number) {

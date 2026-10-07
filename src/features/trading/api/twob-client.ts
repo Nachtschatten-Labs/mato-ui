@@ -11,7 +11,9 @@ import {
 import {
   AccountRole,
   appendTransactionMessageInstructions,
+  assertAccountExists,
   createTransactionMessage,
+  fetchEncodedAccounts,
   getAddressEncoder,
   getBase58Decoder,
   getBytesEncoder,
@@ -33,6 +35,7 @@ import { encodeBase58 } from '../lib/base58'
 import { findMarketAddress } from '../lib/pdas'
 import { decodeBase64 } from '../lib/bytes'
 import { collectCloseableMarketIntervals } from '../lib/rent'
+import { resolveEndSlotSettlement } from '../lib/settlement-snapshot'
 import {
   getTradePositionEndSlot,
   isBuyTradePosition,
@@ -50,12 +53,15 @@ import type {
 import type { IntervalRentAccount } from '../lib/rent'
 import type {
   Market,
+  MarketInterval,
   TradePosition,
 } from '@/lib/generated/twob/src/generated/accounts'
 import {
   fetchMarket,
   fetchMarketInterval,
   fetchTradePosition,
+  decodeMarket,
+  decodeMarketInterval,
   getTradePositionDecoder,
   getTradePositionDiscriminatorBytes,
 } from '@/lib/generated/twob/src/generated/accounts'
@@ -413,7 +419,49 @@ export async function fetchEndSlotBookkeepingSnapshot({
     bookkeepingLastUpdateSlot === null ||
     bookkeepingLastUpdateSlot < endSlot
   ) {
-    return null
+    // Fetch all accounting from the same confirmed bank after the order ended.
+    // This lets short orders settle in the UI before the keeper persists books.
+    const firstIndex = Math.max(0, snapshotLocation.intervalIndex - 1)
+    const intervalIndexes = Array.from(
+      { length: snapshotLocation.intervalIndex - firstIndex + 1 },
+      (_, offset) => firstIndex + offset,
+    )
+    const addresses = await Promise.all(
+      intervalIndexes.map((index) =>
+        deriveMarketIntervalAddress(marketAddress, BigInt(index)),
+      ),
+    )
+    const [encodedMarket, ...encodedIntervals] = await fetchEncodedAccounts(
+      rpcClient,
+      [marketAddress, ...addresses],
+      { commitment: 'confirmed', minContextSlot: BigInt(endSlot) },
+    )
+    assertAccountExists(encodedMarket)
+    const intervals = new Map<number, MarketInterval | null>()
+    for (const [offset, account] of encodedIntervals.entries()) {
+      const index = intervalIndexes[offset]
+      if (!account.exists) {
+        intervals.set(index, null)
+        continue
+      }
+      const interval = decodeMarketInterval(account).data
+      if (
+        interval.market !== marketAddress ||
+        interval.index !== BigInt(index)
+      ) {
+        throw new Error(
+          'The settlement snapshot does not match its market interval.',
+        )
+      }
+      intervals.set(index, interval)
+    }
+    return resolveEndSlotSettlement({
+      endSlot,
+      endSlotInterval: endSlotInterval!,
+      intervals,
+      isBuy,
+      market: decodeMarket(encodedMarket).data,
+    })
   }
 
   const intervalAddress = await deriveMarketIntervalAddress(
@@ -422,6 +470,7 @@ export async function fetchEndSlotBookkeepingSnapshot({
   )
   const interval = await fetchMarketInterval(rpcClient, intervalAddress, {
     commitment: 'confirmed',
+    minContextSlot: BigInt(bookkeepingLastUpdateSlot),
   })
   if (
     interval.data.market !== marketAddress ||

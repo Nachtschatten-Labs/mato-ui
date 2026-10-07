@@ -17,7 +17,7 @@ import {
 import { getActivePositionMetrics } from '../lib/position-progress'
 import { tradeFeeAtoms } from '../lib/close-position-preview'
 import { formatStreamDuration } from '../lib/position-chart'
-import { SLOT_DURATION_SECONDS } from '../constants'
+import { DEFAULT_MARKET_ID, SLOT_DURATION_SECONDS } from '../constants'
 import {
   getTradePositionEndSlot,
   isBuyTradePosition,
@@ -140,6 +140,9 @@ export function ActivePositionCard(props: ActivePositionCardProps) {
   const chart = usePositionChart({
     enabled: expanded,
     startSlot: position.data.startSlot,
+    endSlot: getTradePositionEndSlot(position.data),
+    paused: isPaused,
+    marketId: streamingState?.marketId ?? DEFAULT_MARKET_ID,
     currentSlot: streamingState?.currentSlot ?? null,
     latestPrice: referencePrice,
   })
@@ -509,7 +512,7 @@ export function ActivePositionCardView({
           </div>
           <PositionPriceChart
             {...chart}
-            endTimeMs={endTimeMs}
+            endTimeMs={chart.endTimeMs ?? endTimeMs}
             paused={metrics.isPaused}
           />
           <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
