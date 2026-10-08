@@ -5,6 +5,8 @@ import {
   durationToFraction,
   formatDuration,
   formatDurationImpact,
+  getDurationImpactClassName,
+  getDurationImpactScale,
   getDurationSteps,
 } from './duration-slider'
 
@@ -63,8 +65,49 @@ describe('duration slider values', () => {
 
   it('distinguishes unavailable, zero, and adverse price impact', () => {
     expect(formatDurationImpact(null)).toBe('—')
-    expect(formatDurationImpact(0)).toBe('0.00%')
-    expect(formatDurationImpact(0.001)).toBe('−<0.01%')
-    expect(formatDurationImpact(1.25)).toBe('−1.25%')
+    expect(formatDurationImpact(0)).toBe('0.000%')
+    expect(formatDurationImpact(0.0001)).toBe('−<0.001%')
+    expect(formatDurationImpact(0.001)).toBe('−0.001%')
+    expect(formatDurationImpact(0.009)).toBe('−0.009%')
+    expect(formatDurationImpact(1.2346)).toBe('−1.235%')
+    expect(formatDurationImpact(1.25)).toBe('−1.250%')
+  })
+
+  it.each([
+    [null, 'text-muted-foreground'],
+    [0, 'text-positive'],
+    [0.009999, 'text-positive'],
+    [0.01, 'text-muted-foreground'],
+    [1, 'text-muted-foreground'],
+    [1.000001, 'text-destructive'],
+  ])(
+    'colors an impact of %s using the unrounded value',
+    (impact, className) => {
+      expect(getDurationImpactClassName(impact)).toBe(className)
+    },
+  )
+
+  it.each([
+    [0, 0.01],
+    [0.005, 0.01],
+    [0.2, 0.01],
+    [0.200001, 0.1],
+    [1.2, 0.1],
+    [1.200001, 1],
+    [5, 1],
+  ])(
+    'uses a %s maximum impact to choose the %s%% reference',
+    (maxImpact, referenceImpact) => {
+      const scale = getDurationImpactScale(maxImpact)
+
+      expect(scale.referenceImpact).toBe(referenceImpact)
+      expect(scale.yMax).toBeGreaterThan(maxImpact)
+      expect(scale.yMax).toBeGreaterThan(referenceImpact)
+    },
+  )
+
+  it('zooms the scale to show changes in small-order price impact', () => {
+    expect(getDurationImpactScale(0.005).yMax).toBeCloseTo(0.016)
+    expect(getDurationImpactScale(0.5).yMax).toBeCloseTo(0.54)
   })
 })

@@ -358,6 +358,31 @@ describe('OrderEntryCard', () => {
     ).toBe('3600')
   })
 
+  it('updates the receive impact color and three-decimal value with the duration', async () => {
+    render(<OrderEntryCard {...createProps({ durationSeconds: 4 * 3600 })} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const dialog = await screen.findByRole('dialog')
+    const slider = within(dialog).getByRole('slider', {
+      name: 'Order duration',
+    })
+
+    expect(
+      within(dialog).getByText('(−0.003%)').classList.contains('text-positive'),
+    ).toBe(true)
+    fireEvent.keyDown(slider, { key: 'Home' })
+    expect(
+      within(dialog)
+        .getByText('(−9.302%)')
+        .classList.contains('text-destructive'),
+    ).toBe(true)
+    fireEvent.keyDown(slider, { key: 'End' })
+    expect(
+      within(dialog)
+        .getByText('(−<0.001%)')
+        .classList.contains('text-positive'),
+    ).toBe(true)
+  })
+
   it('keeps an exact off-grid Smart fill duration when stepping away and back', async () => {
     const props = createProps({
       durationSeconds: 10.4,
@@ -406,7 +431,7 @@ describe('OrderEntryCard', () => {
     expect(
       within(dialog).getByText('Est. receive').nextElementSibling?.textContent,
     ).toBe('— USDC (—)')
-    expect(within(dialog).queryByText(/0\.00%/)).toBeNull()
+    expect(within(dialog).queryByText(/0\.000%/)).toBeNull()
   })
 
   it('blocks durations that exceed the amount supported by the stream', async () => {
