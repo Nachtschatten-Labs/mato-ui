@@ -94,6 +94,24 @@ export function formatDuration(seconds: number, short = false): string {
 
 export function formatDurationImpact(impact: number | null) {
   if (impact === null) return '—'
-  const percent = impact > 0 && impact < 0.01 ? '<0.01' : impact.toFixed(2)
+  const percent = impact > 0 && impact < 0.001 ? '<0.001' : impact.toFixed(3)
   return `${impact === 0 ? '' : '−'}${percent}%`
+}
+
+export function getDurationImpactClassName(
+  impact: number | null,
+  neutralClassName = 'text-muted-foreground',
+) {
+  if (impact === null) return neutralClassName
+  if (impact > 1) return 'text-destructive'
+  if (impact < 0.01) return 'text-positive'
+  return neutralClassName
+}
+
+export function getDurationImpactScale(maxImpact: number) {
+  const referenceImpact = maxImpact > 1.2 ? 1 : maxImpact > 0.2 ? 0.1 : 0.01
+  return {
+    referenceImpact,
+    yMax: Math.max(referenceImpact * 1.6, maxImpact * 1.08),
+  }
 }

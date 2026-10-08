@@ -10,6 +10,7 @@ import type { DurationQuoteInputs } from '../lib/duration-quote'
 import {
   formatDuration,
   formatDurationImpact,
+  getDurationImpactClassName,
   getDurationSteps,
 } from '../lib/duration-slider'
 import { DurationImpactSlider } from './duration-impact-slider'
@@ -181,13 +182,7 @@ export function DurationDialog({
                     ? '—'
                     : `~${number(quote.receiveAmount, 6)}`}{' '}
                   {receiveTokenTicker}{' '}
-                  <span
-                    className={
-                      impact !== null && impact > 1
-                        ? 'text-destructive'
-                        : 'text-muted-foreground'
-                    }
-                  >
+                  <span className={getDurationImpactClassName(impact)}>
                     ({formatDurationImpact(impact)})
                   </span>
                 </span>

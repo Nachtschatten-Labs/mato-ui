@@ -6,6 +6,8 @@ import {
   durationToFraction,
   formatDuration,
   formatDurationImpact,
+  getDurationImpactClassName,
+  getDurationImpactScale,
   MIN_SLIDER_DURATION_SECONDS,
 } from '../lib/duration-slider'
 
@@ -50,9 +52,9 @@ export function DurationImpactSlider({
       }),
     [impactAt],
   )
-  const yMax = Math.max(
-    1.6,
-    ...samples.map(({ impact }) => (impact ?? 0) * 1.08),
+  // Scale to the whole curve so dragging the duration does not move the axes.
+  const { referenceImpact, yMax } = getDurationImpactScale(
+    Math.max(0, ...samples.map(({ impact }) => impact ?? 0)),
   )
   const x = (seconds: number) =>
     left + (right - left) * durationToFraction(seconds)
@@ -133,13 +135,7 @@ export function DurationImpactSlider({
         <div className="text-[32px] tracking-tight">
           {formatDuration(value)}
         </div>
-        <div
-          className={
-            impact !== null && impact > 1
-              ? 'text-destructive'
-              : 'text-muted-foreground'
-          }
-        >
+        <div className={getDurationImpactClassName(impact)}>
           {impact === null
             ? 'Price impact unavailable'
             : `${formatDurationImpact(impact)} impact`}
@@ -215,20 +211,20 @@ export function DurationImpactSlider({
         )}
         <line
           x1={compact ? left : left - 24}
-          y1={y(1)}
+          y1={y(referenceImpact)}
           x2={right}
-          y2={y(1)}
+          y2={y(referenceImpact)}
           stroke="var(--muted-foreground)"
           strokeDasharray="3 4"
         />
         <text
           x={right}
-          y={y(1) - 8}
+          y={y(referenceImpact) - 8}
           textAnchor="end"
           fontSize="12"
           fill="var(--muted-foreground)"
         >
-          1% impact
+          {referenceImpact}% impact
         </text>
         <path d={path} fill="none" stroke="var(--chart-1)" strokeWidth="2" />
         <line
@@ -320,11 +316,8 @@ export function DurationImpactSlider({
               y="5"
               textAnchor="middle"
               fontSize="14"
-              fill={
-                impact !== null && impact > 1
-                  ? 'var(--destructive)'
-                  : 'var(--foreground)'
-              }
+              className={getDurationImpactClassName(impact, 'text-foreground')}
+              fill="currentColor"
             >
               {label}
             </text>
