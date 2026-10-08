@@ -125,7 +125,6 @@ function renderNotifications(
 function expectResult(description: string, startSlot = 0n) {
   expect(toast.success).toHaveBeenCalledExactlyOnceWith('Position ended', {
     description,
-    duration: 10_000,
     id: `position-ended-${POSITION_ADDRESS}:${startSlot}`,
   })
 }

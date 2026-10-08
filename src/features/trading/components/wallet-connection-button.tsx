@@ -93,7 +93,7 @@ export function WalletConnectionButton({
 
     toast.success('Rent reclaimed', {
       action: {
-        label: 'View',
+        label: 'View tx',
         onClick: () => {
           window.open(
             formatExplorerTransactionUrl(signature, endpoint),

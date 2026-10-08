@@ -89,7 +89,6 @@ export function PositionCompletionNotifications({
     })
     toast.success('Position ended', {
       description,
-      duration: 10_000,
       id: `position-ended-${key}`,
     })
   }, [])
