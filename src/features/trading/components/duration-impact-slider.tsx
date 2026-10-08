@@ -52,13 +52,15 @@ export function DurationImpactSlider({
       }),
     [impactAt],
   )
+  // Plot magnitude so both price increases and decreases rise above zero.
   // Scale to the whole curve so dragging the duration does not move the axes.
   const { referenceImpact, yMax } = getDurationImpactScale(
-    Math.max(0, ...samples.map(({ impact }) => impact ?? 0)),
+    Math.max(0, ...samples.map(({ impact }) => Math.abs(impact ?? 0))),
   )
   const x = (seconds: number) =>
     left + (right - left) * durationToFraction(seconds)
-  const y = (impact: number) => baseline - ((baseline - top) * impact) / yMax
+  const y = (impact: number) =>
+    baseline - ((baseline - top) * Math.abs(impact)) / yMax
   const impact = impactAt(value)
   const pickImpact = recommended === null ? null : impactAt(recommended)
   const handleX = x(value)

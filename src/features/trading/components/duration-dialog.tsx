@@ -5,7 +5,10 @@ import { MAX_ORDER_DURATION_SECONDS } from '../constants'
 import type { OrderSide } from '../constants'
 import { durationToSlots } from '../lib/amounts'
 import { isDurationSupportedByAmount } from '../lib/duration'
-import { getDurationQuote } from '../lib/duration-quote'
+import {
+  getDurationPriceChangePercent,
+  getDurationQuote,
+} from '../lib/duration-quote'
 import type { DurationQuoteInputs } from '../lib/duration-quote'
 import {
   formatDuration,
@@ -73,15 +76,24 @@ export function DurationDialog({
     [quoteInputs, side],
   )
   const impactAt = useCallback(
-    (seconds: number) => quoteAt(seconds).priceImpactPercent,
-    [quoteAt],
+    (seconds: number) =>
+      getDurationPriceChangePercent(
+        quoteAt(seconds).priceImpactPercent,
+        side,
+        inverse,
+      ),
+    [quoteAt, side, inverse],
   )
   const steps = useMemo(
     () => getDurationSteps(durationSeconds, recommendedDurationSeconds),
     [durationSeconds, recommendedDurationSeconds],
   )
   const quote = quoteAt(value)
-  const impact = quote.priceImpactPercent
+  const impact = getDurationPriceChangePercent(
+    quote.priceImpactPercent,
+    side,
+    inverse,
+  )
   const pickImpact =
     recommendedDurationSeconds === null
       ? null
@@ -143,43 +155,56 @@ export function DurationDialog({
               </p>
               <div className="space-y-3 rounded-lg border border-border bg-secondary p-4 text-sm tabular-nums min-[601px]:text-base">
                 <div aria-label="Price comparison" role="group">
-                  <dl className="grid grid-cols-2 gap-4">
-                    <div className="min-w-0">
-                      <dt className="flex h-6 items-center text-muted-foreground">
+                  <dl className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">
                         Price now
                       </dt>
-                      <dd className="mt-1 text-lg text-muted-foreground [overflow-wrap:anywhere] min-[601px]:text-xl">
+                      <dd className="min-w-0 text-right text-muted-foreground [overflow-wrap:anywhere]">
                         {price === null ? '—' : number(price, inverse ? 6 : 4)}
                       </dd>
-                      <p className="mt-1 text-xs text-muted-foreground break-words">
-                        {inverse ? baseTicker : quoteTicker} per{' '}
-                        {inverse ? quoteTicker : baseTicker}
-                      </p>
                     </div>
-                    <div className="min-w-0 border-l border-border pl-4">
-                      <dt className="flex h-6 items-center justify-between gap-2 text-muted-foreground">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">
                         Est. price
-                        <Button
-                          aria-label="Flip price"
-                          className="shrink-0"
-                          size="icon-xs"
-                          title="Flip both prices"
-                          variant="ghost"
-                          onClick={() => setInverse((current) => !current)}
-                        >
-                          <ArrowRightLeft className="size-3.5" />
-                        </Button>
                       </dt>
-                      <dd className="mt-1 text-lg [overflow-wrap:anywhere] min-[601px]:text-xl">
-                        {estimatedPrice === null
-                          ? '—'
-                          : number(estimatedPrice, inverse ? 6 : 4)}
+                      <dd
+                        className="flex min-w-0 flex-wrap justify-end gap-x-1 text-right [overflow-wrap:anywhere]"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
+                        <span>
+                          {estimatedPrice === null
+                            ? '—'
+                            : number(estimatedPrice, inverse ? 6 : 4)}
+                        </span>
+                        {estimatedPrice !== null && impact !== null && (
+                          <span
+                            aria-label="Price impact"
+                            className={getDurationImpactClassName(impact)}
+                          >
+                            ({formatDurationImpact(impact)})
+                          </span>
+                        )}
                       </dd>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Incl. price impact
-                      </p>
                     </div>
                   </dl>
+                  <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                    <span className="min-w-0 text-right break-words">
+                      {inverse ? baseTicker : quoteTicker} per{' '}
+                      {inverse ? quoteTicker : baseTicker}
+                    </span>
+                    <Button
+                      aria-label="Flip price"
+                      className="shrink-0"
+                      size="icon-xs"
+                      title="Flip both prices"
+                      variant="ghost"
+                      onClick={() => setInverse((current) => !current)}
+                    >
+                      <ArrowRightLeft className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-start justify-between gap-3">
                   <span className="shrink-0 text-muted-foreground">
@@ -201,10 +226,7 @@ export function DurationDialog({
                     {quote.receiveAmount === null || exceedsAmount
                       ? '—'
                       : `~${number(quote.receiveAmount, 6)}`}{' '}
-                    {receiveTokenTicker}{' '}
-                    <span className={getDurationImpactClassName(impact)}>
-                      ({formatDurationImpact(impact)})
-                    </span>
+                    {receiveTokenTicker}
                   </span>
                 </div>
               </div>
