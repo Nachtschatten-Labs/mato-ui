@@ -157,7 +157,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <SolanaProvider>
           {children}
-          <Toaster position="top-right" />
+          <Toaster />
         </SolanaProvider>
         <Scripts />
       </body>

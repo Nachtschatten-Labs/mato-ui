@@ -94,6 +94,7 @@ import { endpoint } from '@/integrations/solana'
 import { Alert } from '@/components/ui/alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ToastIcon } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
 
 const CHART_DISPLAY_MODES = [
@@ -500,7 +501,7 @@ export function TradingDashboard({
 
     toast.success('Order submitted', {
       action: {
-        label: 'View',
+        label: 'View tx',
         onClick: () => {
           window.open(
             formatExplorerTransactionUrl(signature, endpoint),
@@ -530,7 +531,7 @@ export function TradingDashboard({
 
     toast.success(closedCount > 1 ? 'Positions closed' : 'Position closed', {
       action: {
-        label: 'View',
+        label: 'View tx',
         onClick: () => {
           window.open(
             formatExplorerTransactionUrl(signature, endpoint),
@@ -582,7 +583,7 @@ export function TradingDashboard({
 
     toast.success(title, {
       action: {
-        label: 'View',
+        label: 'View tx',
         onClick: () => {
           window.open(
             formatExplorerTransactionUrl(signature, endpoint),
@@ -592,6 +593,9 @@ export function TradingDashboard({
         },
       },
       description,
+      ...(action !== 'withdraw' && {
+        icon: <ToastIcon kind={action === 'pause' ? 'pause' : 'play'} />,
+      }),
       id: `position-control-success-${signature}`,
     })
   }, [
@@ -619,7 +623,7 @@ export function TradingDashboard({
 
     toast.success('Rent reclaimed', {
       action: {
-        label: 'View',
+        label: 'View tx',
         onClick: () => {
           window.open(
             formatExplorerTransactionUrl(signature, endpoint),
