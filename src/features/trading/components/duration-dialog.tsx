@@ -190,6 +190,7 @@ export function DurationDialog({
                     </div>
                   </dl>
                   <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                    <span className="mr-auto">Including price impact</span>
                     <span className="min-w-0 text-right break-words">
                       {inverse ? baseTicker : quoteTicker} per{' '}
                       {inverse ? quoteTicker : baseTicker}
