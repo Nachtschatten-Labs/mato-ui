@@ -63,25 +63,35 @@ describe('duration slider values', () => {
     },
   )
 
-  it('distinguishes unavailable, zero, and adverse price impact', () => {
+  it('distinguishes unavailable, zero, increasing, and decreasing price impact', () => {
     expect(formatDurationImpact(null)).toBe('—')
     expect(formatDurationImpact(0)).toBe('0.000%')
-    expect(formatDurationImpact(0.0001)).toBe('−<0.001%')
-    expect(formatDurationImpact(0.001)).toBe('−0.001%')
-    expect(formatDurationImpact(0.009)).toBe('−0.009%')
-    expect(formatDurationImpact(1.2346)).toBe('−1.235%')
-    expect(formatDurationImpact(1.25)).toBe('−1.250%')
+    expect(formatDurationImpact(-0)).toBe('0.000%')
+    expect(formatDurationImpact(0.0001)).toBe('+<0.001%')
+    expect(formatDurationImpact(-0.0001)).toBe('−<0.001%')
+    expect(formatDurationImpact(0.001)).toBe('+0.001%')
+    expect(formatDurationImpact(-0.001)).toBe('−0.001%')
+    expect(formatDurationImpact(0.009)).toBe('+0.009%')
+    expect(formatDurationImpact(-0.009)).toBe('−0.009%')
+    expect(formatDurationImpact(1.2346)).toBe('+1.235%')
+    expect(formatDurationImpact(-1.2346)).toBe('−1.235%')
+    expect(formatDurationImpact(1.25)).toBe('+1.250%')
+    expect(formatDurationImpact(-1.25)).toBe('−1.250%')
   })
 
   it.each([
     [null, 'text-muted-foreground'],
     [0, 'text-positive'],
     [0.009999, 'text-positive'],
+    [-0.009999, 'text-positive'],
     [0.01, 'text-muted-foreground'],
+    [-0.01, 'text-muted-foreground'],
     [1, 'text-muted-foreground'],
+    [-1, 'text-muted-foreground'],
     [1.000001, 'text-destructive'],
+    [-1.000001, 'text-destructive'],
   ])(
-    'colors an impact of %s using the unrounded value',
+    'colors an impact of %s using its unrounded magnitude',
     (impact, className) => {
       expect(getDurationImpactClassName(impact)).toBe(className)
     },

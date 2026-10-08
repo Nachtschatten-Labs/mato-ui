@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { getDurationQuote } from './duration-quote'
+import {
+  getDurationPriceChangePercent,
+  getDurationQuote,
+} from './duration-quote'
 import type { DurationQuoteInputs } from './duration-quote'
 import type { Address } from '@solana/kit'
 
@@ -107,5 +110,69 @@ describe('getDurationQuote', () => {
       executionPrice: 2,
       receiveAmount: null,
     })
+  })
+})
+
+describe('getDurationPriceChangePercent', () => {
+  it.each([
+    ['buy', false, 10],
+    ['sell', false, -10],
+    ['buy', true, -100 / 11],
+    ['sell', true, 100 / 9],
+  ] as const)(
+    'shows a signed percentage for %s with inverse=%s',
+    (side, inverse, expected) => {
+      expect(getDurationPriceChangePercent(10, side, inverse)).toBeCloseTo(
+        expected,
+        12,
+      )
+    },
+  )
+
+  it.each(['buy', 'sell'] as const)(
+    'matches the change between the displayed %s prices in both orientations',
+    (side) => {
+      const inputs = { ...quoteInputs(), side }
+      const quote = getDurationQuote(inputs)
+      const currentPrice = inputs.indicativePrice!
+      const estimatedPrice = quote.executionPrice!
+
+      expect(
+        getDurationPriceChangePercent(quote.priceImpactPercent, side),
+      ).toBeCloseTo(((estimatedPrice - currentPrice) / currentPrice) * 100, 12)
+      expect(
+        getDurationPriceChangePercent(quote.priceImpactPercent, side, true),
+      ).toBeCloseTo(
+        ((1 / estimatedPrice - 1 / currentPrice) / (1 / currentPrice)) * 100,
+        12,
+      )
+    },
+  )
+
+  it.each(['buy', 'sell'] as const)(
+    'preserves the sign of tiny %s price changes without rounding them to zero',
+    (side) => {
+      const normal = getDurationPriceChangePercent(1e-14, side)!
+      const inverted = getDurationPriceChangePercent(1e-14, side, true)!
+
+      expect(Math.sign(normal)).toBe(side === 'buy' ? 1 : -1)
+      expect(Math.sign(inverted)).toBe(side === 'buy' ? -1 : 1)
+      expect(Math.abs(inverted)).toBeGreaterThan(0)
+      expect(Math.abs(inverted)).toBeLessThan(1e-13)
+    },
+  )
+
+  it.each([null, Number.NaN, Number.POSITIVE_INFINITY])(
+    'keeps an unavailable or non-finite impact (%s) unavailable',
+    (impact) => {
+      expect(getDurationPriceChangePercent(impact, 'buy')).toBeNull()
+      expect(getDurationPriceChangePercent(impact, 'sell', true)).toBeNull()
+    },
+  )
+
+  it('does not present a percentage for a zero or negative execution price', () => {
+    expect(getDurationPriceChangePercent(100, 'sell')).toBeNull()
+    expect(getDurationPriceChangePercent(100, 'sell', true)).toBeNull()
+    expect(getDurationPriceChangePercent(120, 'sell')).toBeNull()
   })
 })

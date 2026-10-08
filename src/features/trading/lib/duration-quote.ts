@@ -1,6 +1,21 @@
 import { durationToSlots } from './amounts'
 import { computePriceImpactPercent } from './price-impact'
 import type { PriceImpactInputs } from './price-impact'
+import type { OrderSide } from '../constants'
+
+/** Price change in the displayed units; reciprocal rates also change its size. */
+export function getDurationPriceChangePercent(
+  impact: number | null,
+  side: OrderSide,
+  inverse = false,
+) {
+  if (impact === null || !Number.isFinite(impact) || impact < 0) return null
+  const signedImpact = side === 'buy' ? impact : -impact
+  const priceRatio = 1 + signedImpact / 100
+  if (priceRatio <= 0) return null
+  const change = inverse ? -signedImpact / priceRatio : signedImpact
+  return Number.isFinite(change) ? change : null
+}
 
 export interface DurationQuoteInputs extends PriceImpactInputs {
   amountUiValue: number | null

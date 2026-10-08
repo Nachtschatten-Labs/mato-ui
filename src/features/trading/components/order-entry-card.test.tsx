@@ -295,7 +295,7 @@ describe('OrderEntryCard', () => {
   })
 
   it.each(['buy', 'sell'] as const)(
-    'previews the %s receive amount and price impact before applying a duration',
+    'previews the %s estimated price and receive amount before applying a duration',
     async (side) => {
       const props = createProps({
         side,
@@ -316,6 +316,24 @@ describe('OrderEntryCard', () => {
         within(dialog).getByText('Est. receive').nextElementSibling!
       const originalReceive = receive.textContent
       const originalImpact = slider.getAttribute('aria-valuetext')
+      const comparison = within(dialog).getByRole('group', {
+        name: 'Price comparison',
+      })
+      const currentPrice =
+        within(comparison).getByText('Price now').nextElementSibling!
+      const estimatedPrice =
+        within(comparison).getByText('Est. price').nextElementSibling!
+      const originalEstimatedPrice = Number(
+        estimatedPrice.firstElementChild!.textContent,
+      )
+      expect(currentPrice.textContent).toBe('150')
+      expect(within(comparison).getByText('USDC per SOL')).toBeTruthy()
+      expect(
+        estimatedPrice.contains(
+          within(comparison).getByLabelText('Price impact'),
+        ),
+      ).toBe(true)
+      expect(receive.textContent).not.toContain('%')
 
       fireEvent.keyDown(slider, { key: 'Home' })
       expect(props.onDurationChange).not.toHaveBeenCalled()
@@ -326,6 +344,18 @@ describe('OrderEntryCard', () => {
       expect(Number(receive.textContent!.match(/^~([\d.]+)/)![1])).toBeLessThan(
         Number(originalReceive!.match(/^~([\d.]+)/)![1]),
       )
+      const shortEstimatedPrice = Number(
+        estimatedPrice.firstElementChild!.textContent,
+      )
+      expect(currentPrice.textContent).toBe('150')
+      if (side === 'buy') {
+        expect(shortEstimatedPrice).toBeGreaterThan(150)
+      } else {
+        expect(shortEstimatedPrice).toBeLessThan(150)
+      }
+      expect(Math.abs(originalEstimatedPrice - 150)).toBeLessThan(
+        Math.abs(shortEstimatedPrice - 150),
+      )
       expect(
         within(dialog).queryByRole('button', { name: '5 seconds' }),
       ).toBeNull()
@@ -335,6 +365,54 @@ describe('OrderEntryCard', () => {
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     },
   )
+
+  it('refreshes prices, impact and receive while keeping the open duration draft', async () => {
+    const props = createProps()
+    const view = render(<OrderEntryCard {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const dialog = await screen.findByRole('dialog')
+    const slider = within(dialog).getByRole('slider', {
+      name: 'Order duration',
+    })
+    fireEvent.keyDown(slider, { key: 'Home' })
+    const comparison = within(dialog).getByRole('group', {
+      name: 'Price comparison',
+    })
+    const currentPrice =
+      within(comparison).getByText('Price now').nextElementSibling!
+    const estimatedPrice =
+      within(comparison).getByText('Est. price').nextElementSibling!
+    const receive = within(dialog).getByText('Est. receive').nextElementSibling!
+    const previousEstimatedPrice = estimatedPrice.textContent
+    const previousReceive = receive.textContent
+    const previousImpact = slider.getAttribute('aria-valuetext')
+
+    view.rerender(
+      <OrderEntryCard
+        {...props}
+        durationQuoteInputs={{
+          ...props.durationQuoteInputs!,
+          indicativePrice: 175,
+          streamingState: {
+            ...props.durationQuoteInputs!.streamingState!,
+            marketBaseFlow: 2_000_000_000_000_000_000n,
+            marketQuoteFlow: 4_000_000_000_000_000_000n,
+          },
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('dialog')).toBe(dialog)
+    expect(currentPrice.textContent).toBe('175')
+    expect(estimatedPrice.textContent).not.toBe(previousEstimatedPrice)
+    expect(receive.textContent).not.toBe(previousReceive)
+    expect(slider.getAttribute('aria-valuetext')).not.toBe(previousImpact)
+    expect(slider.getAttribute('aria-valuenow')).toBe('5')
+    expect(
+      within(dialog).getByRole('button', { name: 'Use 5 seconds' }),
+    ).toBeTruthy()
+    expect(props.onDurationChange).not.toHaveBeenCalled()
+  })
 
   it('discards duration slider changes when dismissed and resets the next draft', async () => {
     const props = createProps()
@@ -358,7 +436,7 @@ describe('OrderEntryCard', () => {
     ).toBe('3600')
   })
 
-  it('updates the receive impact color and three-decimal value with the duration', async () => {
+  it('updates the estimated price impact color and three-decimal value with the duration', async () => {
     render(<OrderEntryCard {...createProps({ durationSeconds: 4 * 3600 })} />)
     fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
     const dialog = await screen.findByRole('dialog')
@@ -430,8 +508,48 @@ describe('OrderEntryCard', () => {
     ).toBeTruthy()
     expect(
       within(dialog).getByText('Est. receive').nextElementSibling?.textContent,
-    ).toBe('— USDC (—)')
+    ).toBe('— USDC')
     expect(within(dialog).queryByText(/0\.000%/)).toBeNull()
+    const comparison = within(dialog).getByRole('group', {
+      name: 'Price comparison',
+    })
+    expect(
+      within(comparison).getByText('Price now').nextElementSibling?.textContent,
+    ).toBe('—')
+    expect(
+      within(comparison).getByText('Est. price').nextElementSibling
+        ?.textContent,
+    ).toBe('—')
+  })
+
+  it('keeps the current price but hides the estimate when liquidity is unavailable', async () => {
+    const props = createProps()
+    render(
+      <OrderEntryCard
+        {...props}
+        durationQuoteInputs={{
+          ...props.durationQuoteInputs!,
+          streamingState: null,
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const dialog = await screen.findByRole('dialog')
+    const comparison = within(dialog).getByRole('group', {
+      name: 'Price comparison',
+    })
+    const currentPrice =
+      within(comparison).getByText('Price now').nextElementSibling!
+    const estimatedPrice =
+      within(comparison).getByText('Est. price').nextElementSibling!
+
+    expect(currentPrice.textContent).toBe('150')
+    expect(estimatedPrice.textContent).toBe('—')
+    fireEvent.click(
+      within(comparison).getByRole('button', { name: 'Flip price' }),
+    )
+    expect(currentPrice.textContent).toBe('0.006667')
+    expect(estimatedPrice.textContent).toBe('—')
   })
 
   it('blocks durations that exceed the amount supported by the stream', async () => {
@@ -455,6 +573,13 @@ describe('OrderEntryCard', () => {
     expect(screen.getByRole('status').textContent).toContain(
       'amount is too small',
     )
+    const comparison = screen.getByRole('group', { name: 'Price comparison' })
+    const estimatedPrice =
+      within(comparison).getByText('Est. price').nextElementSibling!
+    expect(
+      within(comparison).getByText('Price now').nextElementSibling?.textContent,
+    ).toBe('150')
+    expect(estimatedPrice.textContent).toBe('—')
     const apply = screen.getByRole('button', { name: 'Use 1 year' })
     expect(apply.hasAttribute('disabled')).toBe(true)
     fireEvent.click(apply)
@@ -462,6 +587,7 @@ describe('OrderEntryCard', () => {
 
     fireEvent.keyDown(slider, { key: 'Home' })
     expect(screen.queryByRole('status')).toBeNull()
+    expect(estimatedPrice.textContent).not.toBe('—')
     expect(
       screen
         .getByRole('button', { name: 'Use 5 seconds' })
@@ -470,12 +596,13 @@ describe('OrderEntryCard', () => {
   })
 
   it.each(['buy', 'sell'] as const)(
-    'flips the displayed market rate for a %s',
+    'flips both current and estimated prices together for a %s',
     async (side) => {
       render(
         <OrderEntryCard
           {...createProps({
             side,
+            durationSeconds: 5,
             amountTokenTicker: side === 'buy' ? 'USDC' : 'SOL',
             receiveTokenTicker: side === 'buy' ? 'SOL' : 'USDC',
           })}
@@ -485,11 +612,54 @@ describe('OrderEntryCard', () => {
         screen.getByRole('button', { name: /^Customize duration/ }),
       )
       const dialog = await screen.findByRole('dialog')
-      expect(within(dialog).getByText('1 SOL ≈ 150 USDC')).toBeTruthy()
-      fireEvent.click(
-        within(dialog).getByRole('button', { name: 'Flip price' }),
+      const comparison = within(dialog).getByRole('group', {
+        name: 'Price comparison',
+      })
+      const currentPrice =
+        within(comparison).getByText('Price now').nextElementSibling!
+      const estimatedPrice =
+        within(comparison).getByText('Est. price').nextElementSibling!
+      const originalEstimatedPrice =
+        estimatedPrice.firstElementChild!.textContent!
+      const receive =
+        within(dialog).getByText('Est. receive').nextElementSibling!
+      const originalReceive = receive.textContent
+      const flip = within(comparison).getByRole('button', {
+        name: 'Flip price',
+      })
+      expect(currentPrice.textContent).toBe('150')
+      expect(within(comparison).getByText('USDC per SOL')).toBeTruthy()
+      const impact = within(comparison).getByLabelText('Price impact')
+      expect(estimatedPrice.contains(impact)).toBe(true)
+      const normalImpact = side === 'buy' ? '+5.128%' : '−9.302%'
+      expect(impact.textContent).toBe(`(${normalImpact})`)
+      const slider = within(dialog).getByRole('slider', {
+        name: 'Order duration',
+      })
+      expect(slider.getAttribute('aria-valuetext')).toContain(normalImpact)
+      expect(receive.textContent).not.toContain('%')
+
+      fireEvent.click(flip)
+      expect(within(comparison).getByText('SOL per USDC')).toBeTruthy()
+      expect(currentPrice.textContent).toBe('0.006667')
+      expect(Number(estimatedPrice.firstElementChild!.textContent)).toBeCloseTo(
+        1 / Number(originalEstimatedPrice),
+        6,
       )
-      expect(within(dialog).getByText('1 USDC ≈ 0.006667 SOL')).toBeTruthy()
+      expect(estimatedPrice.textContent).not.toBe(currentPrice.textContent)
+      expect(receive.textContent).toBe(originalReceive)
+      const inverseImpact = side === 'buy' ? '−4.878%' : '+10.256%'
+      expect(impact.textContent).toBe(`(${inverseImpact})`)
+      expect(slider.getAttribute('aria-valuetext')).toContain(inverseImpact)
+      expect(impact.classList.contains('text-destructive')).toBe(true)
+
+      fireEvent.click(flip)
+      expect(within(comparison).getByText('USDC per SOL')).toBeTruthy()
+      expect(currentPrice.textContent).toBe('150')
+      expect(estimatedPrice.firstElementChild!.textContent).toBe(
+        originalEstimatedPrice,
+      )
+      expect(impact.textContent).toBe(`(${normalImpact})`)
     },
   )
 
