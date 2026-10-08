@@ -142,18 +142,10 @@ export function DurationDialog({
                   : 'Estimate from liquidity right now. Price can move while the stream runs.'}
               </p>
               <div className="space-y-3 rounded-lg border border-border bg-secondary p-4 text-sm tabular-nums min-[601px]:text-base">
-                <div className="flex items-start justify-between gap-3">
-                  <span className="shrink-0 text-muted-foreground">
-                    {side === 'buy' ? 'Buy with' : 'Sell'}
-                  </span>
-                  <span className="min-w-0 text-right break-words">
-                    {number(Number(amountInput || '0'), 6)} {amountTokenTicker}
-                  </span>
-                </div>
                 <div aria-label="Price comparison" role="group">
                   <dl className="grid grid-cols-2 gap-4">
                     <div className="min-w-0">
-                      <dt className="flex h-6 items-center text-sm text-muted-foreground">
+                      <dt className="flex h-6 items-center text-muted-foreground">
                         Price now
                       </dt>
                       <dd className="mt-1 text-lg text-muted-foreground [overflow-wrap:anywhere] min-[601px]:text-xl">
@@ -165,7 +157,7 @@ export function DurationDialog({
                       </p>
                     </div>
                     <div className="min-w-0 border-l border-border pl-4">
-                      <dt className="flex h-6 items-center justify-between gap-2 text-sm text-muted-foreground">
+                      <dt className="flex h-6 items-center justify-between gap-2 text-muted-foreground">
                         Est. price
                         <Button
                           aria-label="Flip price"
@@ -188,6 +180,14 @@ export function DurationDialog({
                       </p>
                     </div>
                   </dl>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-muted-foreground">
+                    {side === 'buy' ? 'Buy with' : 'Sell'}
+                  </span>
+                  <span className="min-w-0 text-right break-words">
+                    {number(Number(amountInput || '0'), 6)} {amountTokenTicker}
+                  </span>
                 </div>
                 <div className="flex items-start justify-between gap-3 border-t border-dashed border-border pt-3">
                   <span className="shrink-0 text-muted-foreground">
