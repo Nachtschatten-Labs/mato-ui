@@ -1,26 +1,17 @@
 import { useRef, useState } from 'react'
 import { AlertTriangle, Info, SlidersHorizontal } from 'lucide-react'
 import { Tooltip } from '@base-ui/react/tooltip'
-import {
-  DURATION_OPTIONS,
-  MAX_ORDER_DURATION_SECONDS,
-  SLOT_DURATION_SECONDS,
-} from '../constants'
+import { SLOT_DURATION_SECONDS } from '../constants'
 import { MIN_DURATION_SLOTS } from '../lib/duration'
-import { formatSmartDuration } from '../lib/duration-label'
+import { formatOrderDuration } from '../lib/duration-label'
 import { formatUiAmount } from '../lib/format'
 import type { OrderSide } from '../constants'
 import { TokenMark } from './token-mark'
+import { DurationDialog } from './duration-dialog'
+import type { DurationPreviewInputs } from './duration-dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 export function OrderEntryCard({
@@ -31,6 +22,7 @@ export function OrderEntryCard({
   canSubmit,
   durationSeconds,
   durationUnavailableMessage,
+  durationQuoteInputs,
   estimatedConversionText,
   executionPriceDisplay,
   isConnected,
@@ -60,6 +52,7 @@ export function OrderEntryCard({
   canSubmit: boolean
   durationSeconds: number | null
   durationUnavailableMessage?: string | null
+  durationQuoteInputs?: DurationPreviewInputs
   estimatedConversionText: string
   executionPriceDisplay: string
   isConnected: boolean
@@ -95,14 +88,6 @@ export function OrderEntryCard({
   const receiveAmount = estimatedConversionText.endsWith(receiveSuffix)
     ? estimatedConversionText.slice(0, -receiveSuffix.length)
     : estimatedConversionText
-  const draftDurationIndex = DURATION_OPTIONS.reduce(
-    (closest, option, index) =>
-      Math.abs(option.seconds - draftDurationSeconds) <
-      Math.abs(DURATION_OPTIONS[closest].seconds - draftDurationSeconds)
-        ? index
-        : closest,
-    0,
-  )
 
   function openDurationDialog() {
     setDraftDurationSeconds(durationSeconds ?? minimumDurationSeconds)
@@ -255,7 +240,7 @@ export function OrderEntryCard({
                 aria-label={
                   durationSeconds === null
                     ? 'Customize duration'
-                    : `Customize duration: ${formatSmartDuration(durationSeconds)}`
+                    : `Customize duration: ${formatOrderDuration(durationSeconds, isCustomDuration)}`
                 }
                 aria-haspopup="dialog"
                 className="h-auto min-h-7 max-w-full gap-2 rounded-full border-border bg-secondary px-3 py-1 text-xs font-normal whitespace-normal text-foreground/80 hover:text-foreground"
@@ -265,7 +250,7 @@ export function OrderEntryCard({
               >
                 {durationSeconds === null
                   ? 'Choose duration'
-                  : formatSmartDuration(durationSeconds)}
+                  : formatOrderDuration(durationSeconds, isCustomDuration)}
                 <SlidersHorizontal aria-hidden="true" className="size-3" />
               </Button>
             </>
@@ -354,143 +339,22 @@ export function OrderEntryCard({
         </p>
       </CardContent>
 
-      <Dialog onOpenChange={setDurationDialogOpen} open={durationDialogOpen}>
-        <DialogContent
-          className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[20px] p-6 sm:max-w-lg sm:p-8"
-          finalFocus={durationTriggerRef}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-xl font-medium">
-              Customize duration
-            </DialogTitle>
-            <DialogDescription className="pr-4 leading-6">
-              Spread your order over time. Choose how long your trade should
-              take to execute.
-            </DialogDescription>
-          </DialogHeader>
-
-          {recommendedDurationSeconds != null && onResetDuration ? (
-            <Button
-              aria-pressed={!isCustomDuration}
-              className="h-auto justify-between gap-3 rounded-xl px-4 py-3 whitespace-normal"
-              onClick={() => {
-                onResetDuration()
-                setDurationDialogOpen(false)
-              }}
-              variant="secondary"
-            >
-              <span className="text-left">
-                <span className="block">Smart fill</span>
-                <span className="block text-xs font-normal text-muted-foreground">
-                  {recommendedDurationSeconds >= MAX_ORDER_DURATION_SECONDS
-                    ? 'Maximum duration. Price impact may exceed 0.01%.'
-                    : 'Recommended for less than 0.01% price impact'}
-                </span>
-              </span>
-              <span>{formatDuration(recommendedDurationSeconds)}</span>
-            </Button>
-          ) : null}
-
-          <div>
-            <div
-              className="mb-6 text-center text-3xl tracking-tight"
-              aria-live="polite"
-            >
-              {formatDuration(draftDurationSeconds)}
-            </div>
-            <input
-              aria-label="Order duration"
-              aria-valuetext={formatDuration(draftDurationSeconds)}
-              className="block w-full cursor-pointer accent-accent-strong"
-              max={DURATION_OPTIONS.length - 1}
-              min={0}
-              onChange={(event) =>
-                setDraftDurationSeconds(
-                  DURATION_OPTIONS[Number(event.target.value)].seconds,
-                )
-              }
-              step={1}
-              type="range"
-              value={draftDurationIndex}
-            />
-            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>{formatDuration(DURATION_OPTIONS[0].seconds)}</span>
-              <span>{formatDuration(DURATION_OPTIONS.at(-1)!.seconds)}</span>
-            </div>
-            <div className="mt-5 grid grid-cols-5 gap-2">
-              {DURATION_OPTIONS.map((option) => (
-                <Button
-                  key={option.label}
-                  aria-label={formatDuration(option.seconds)}
-                  aria-pressed={draftDurationSeconds === option.seconds}
-                  className="rounded-full"
-                  onClick={() => setDraftDurationSeconds(option.seconds)}
-                  size="sm"
-                  variant={
-                    draftDurationSeconds === option.seconds
-                      ? 'default'
-                      : 'secondary'
-                  }
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3 rounded-xl bg-secondary p-4 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Order amount</span>
-              <span>
-                {amountInput || '0'} {amountTokenTicker}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Duration</span>
-              <span>{formatDuration(draftDurationSeconds)}</span>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-              <span className="text-xs text-muted-foreground">
-                {durationSeconds === null
-                  ? 'Current estimate unavailable'
-                  : `Current estimate · ${formatDuration(durationSeconds)}`}
-              </span>
-              <span>{estimatedConversionText}</span>
-            </div>
-            <p className="text-xs leading-5 text-muted-foreground">
-              Applying a duration updates the estimate. Final amounts depend on
-              market prices during execution.
-            </p>
-          </div>
-
-          <Button
-            className="h-12 w-full rounded-full"
-            onClick={() => {
-              onDurationChange(draftDurationSeconds)
-              setDurationDialogOpen(false)
-            }}
-          >
-            Use {formatDuration(draftDurationSeconds)}
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <DurationDialog
+        open={durationDialogOpen}
+        onOpenChange={setDurationDialogOpen}
+        triggerRef={durationTriggerRef}
+        value={draftDurationSeconds}
+        onDraftChange={setDraftDurationSeconds}
+        onApply={onDurationChange}
+        onReset={onResetDuration}
+        durationSeconds={durationSeconds}
+        recommendedDurationSeconds={recommendedDurationSeconds ?? null}
+        amountInput={amountInput}
+        amountTokenTicker={amountTokenTicker}
+        receiveTokenTicker={receiveTokenTicker}
+        side={side}
+        quoteInputs={durationQuoteInputs}
+      />
     </Card>
   )
-}
-
-export function formatDuration(seconds: number) {
-  const units = [
-    { seconds: 365 * 24 * 60 * 60, label: 'year' },
-    { seconds: 30 * 24 * 60 * 60, label: 'month' },
-    { seconds: 7 * 24 * 60 * 60, label: 'week' },
-    { seconds: 24 * 60 * 60, label: 'day' },
-    { seconds: 60 * 60, label: 'hour' },
-    { seconds: 60, label: 'minute' },
-    { seconds: 1, label: 'second' },
-  ]
-  const unit =
-    units.find((candidate) => seconds >= candidate.seconds) ??
-    units[units.length - 1]
-  const value = Number((seconds / unit.seconds).toFixed(1))
-  return `${value} ${unit.label}${value === 1 ? '' : 's'}`
 }

@@ -8,6 +8,31 @@ export const SLOTS_PER_MINUTE = 60 / SLOT_DURATION_SECONDS
 export const MAX_DURATION_SLOTS =
   MAX_ORDER_DURATION_SECONDS / SLOT_DURATION_SECONDS
 
+export function isDurationSupportedByAmount({
+  amountAtoms,
+  durationSlots,
+  endSlotInterval,
+}: {
+  amountAtoms: bigint
+  durationSlots: number
+  endSlotInterval: number
+}) {
+  if (
+    !Number.isSafeInteger(durationSlots) ||
+    durationSlots <= 0 ||
+    !Number.isSafeInteger(endSlotInterval) ||
+    endSlotInterval <= 0
+  ) {
+    return false
+  }
+
+  // The program needs one input atom per slot even when end-slot rounding
+  // extends the requested duration to the longest possible endpoint.
+  const longestDuration =
+    BigInt(durationSlots) + BigInt(Math.floor(endSlotInterval / 2))
+  return amountAtoms >= longestDuration
+}
+
 export function recommendDurationSlots(
   inputs: PriceImpactInputs,
 ): number | null {
@@ -44,11 +69,13 @@ export function recommendDurationSlots(
       ? BigInt(MAX_DURATION_SLOTS)
       : targetSlots
 
-  // The program requires at least one input atom per slot. Its end-slot
-  // rounding can extend the duration by floor(interval / 2), so only suggest
-  // durations that keep enough flow even at that longest possible endpoint.
-  const longestDuration = recommendedSlots + endSlotInterval / 2n
-  if ((inputs.amountAtoms ?? 0n) < longestDuration) {
+  if (
+    !isDurationSupportedByAmount({
+      amountAtoms: inputs.amountAtoms ?? 0n,
+      durationSlots: Number(recommendedSlots),
+      endSlotInterval: inputs.streamingState.endSlotInterval,
+    })
+  ) {
     return null
   }
 

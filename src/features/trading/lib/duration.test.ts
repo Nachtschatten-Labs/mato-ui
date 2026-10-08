@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isDurationSupportedByAmount,
   MAX_DURATION_SLOTS,
   MIN_DURATION_SLOTS,
   recommendDurationSlots,
@@ -31,6 +32,69 @@ function marketState(
     ...overrides,
   }
 }
+
+describe('isDurationSupportedByAmount', () => {
+  it.each([10, 11])(
+    'requires enough atoms for the longest rounded endpoint (interval %s)',
+    (endSlotInterval) => {
+      const inputs = { durationSlots: 25, endSlotInterval }
+
+      expect(isDurationSupportedByAmount({ ...inputs, amountAtoms: 29n })).toBe(
+        false,
+      )
+      expect(isDurationSupportedByAmount({ ...inputs, amountAtoms: 30n })).toBe(
+        true,
+      )
+    },
+  )
+
+  it('revalidates a retained custom duration when the amount decreases', () => {
+    const inputs = { durationSlots: MAX_DURATION_SLOTS, endSlotInterval: 11 }
+
+    expect(
+      isDurationSupportedByAmount({ ...inputs, amountAtoms: 1_000_000_000n }),
+    ).toBe(true)
+    expect(
+      isDurationSupportedByAmount({ ...inputs, amountAtoms: 100_000_000n }),
+    ).toBe(false)
+  })
+
+  it('keeps atom comparisons exact beyond number precision', () => {
+    const durationSlots = Number.MAX_SAFE_INTEGER
+    const longestDuration = BigInt(durationSlots) + 5n
+    const inputs = { durationSlots, endSlotInterval: 11 }
+
+    expect(
+      isDurationSupportedByAmount({
+        ...inputs,
+        amountAtoms: longestDuration - 1n,
+      }),
+    ).toBe(false)
+    expect(
+      isDurationSupportedByAmount({ ...inputs, amountAtoms: longestDuration }),
+    ).toBe(true)
+  })
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid durations and intervals (%s)',
+    (invalid) => {
+      expect(
+        isDurationSupportedByAmount({
+          amountAtoms: 1_000n,
+          durationSlots: invalid,
+          endSlotInterval: 11,
+        }),
+      ).toBe(false)
+      expect(
+        isDurationSupportedByAmount({
+          amountAtoms: 1_000n,
+          durationSlots: 25,
+          endSlotInterval: invalid,
+        }),
+      ).toBe(false)
+    },
+  )
+})
 
 describe('recommendDurationSlots', () => {
   it('starts at 25 slots when the minimum is below the impact target', () => {

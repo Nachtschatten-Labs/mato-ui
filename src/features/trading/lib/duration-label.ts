@@ -1,8 +1,15 @@
 import { MAX_ORDER_DURATION_SECONDS } from '../constants'
+import { formatDuration } from './duration-slider'
 
 const SECONDS_PER_MINUTE = 60
 const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
 const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
+
+/** Custom choices must show the exact duration that will be submitted. */
+export function formatOrderDuration(seconds: number, isCustom: boolean) {
+  if (!isCustom) return formatSmartDuration(seconds)
+  return seconds === SECONDS_PER_DAY ? '24 hours' : formatDuration(seconds)
+}
 
 function unitLabel(amount: number, unit: string) {
   return `${amount} ${unit}${amount === 1 ? '' : 's'}`
