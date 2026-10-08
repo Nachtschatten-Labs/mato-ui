@@ -40,7 +40,8 @@ import {
 } from '../lib/format'
 import { clampPage, getPageCount, getPageItems } from '../lib/pagination'
 import { isHighPriceImpact } from '../lib/price-impact'
-import { formatSmartDuration } from '../lib/duration-label'
+import { formatOrderDuration } from '../lib/duration-label'
+import { isDurationSupportedByAmount } from '../lib/duration'
 import { useMarketAddress } from '../hooks/use-market-address'
 import { useMarketChartHistory } from '../hooks/use-market-chart-history'
 import { useMarketPrice } from '../hooks/use-market-price'
@@ -107,6 +108,9 @@ const MARKET_PANEL_TABS = [
   label: string
   tab: MarketPanelTab
 }>
+const DURATION_AMOUNT_ERROR_MESSAGE =
+  'This amount is too small for this duration. Choose a shorter duration or increase the amount.'
+
 export function TradingDashboard({
   marketId,
   onMarketChange,
@@ -217,8 +221,23 @@ export function TradingDashboard({
     streamingState: isMarketReady ? onChainMarket : null,
     marketKey: marketId,
   })
-  const durationUnavailableMessage =
-    amountAtoms !== null && amountAtoms > 0n && durationSeconds === null
+  const durationExceedsAmount = Boolean(
+    isMarketReady &&
+    onChainMarket &&
+    amountAtoms !== null &&
+    amountAtoms > 0n &&
+    durationSeconds !== null &&
+    Number.isSafeInteger(onChainMarket.endSlotInterval) &&
+    onChainMarket.endSlotInterval > 0 &&
+    !isDurationSupportedByAmount({
+      amountAtoms,
+      durationSlots: durationToSlots(durationSeconds),
+      endSlotInterval: onChainMarket.endSlotInterval,
+    }),
+  )
+  const durationUnavailableMessage = durationExceedsAmount
+    ? DURATION_AMOUNT_ERROR_MESSAGE
+    : amountAtoms !== null && amountAtoms > 0n && durationSeconds === null
       ? !isMarketReady
         ? 'Waiting for market liquidity…'
         : 'No duration below 0.01% impact is available with current liquidity. Try a smaller amount or choose a custom duration.'
@@ -414,6 +433,7 @@ export function TradingDashboard({
     !amountAtoms ||
     amountAtoms <= 0n ||
     durationSeconds === null ||
+    durationExceedsAmount ||
     !onChainMarket ||
     onChainMarket.marketBaseFlow <= 0n ||
     onChainMarket.marketQuoteFlow <= 0n ||
@@ -449,9 +469,11 @@ export function TradingDashboard({
                           onChainMarket.marketBaseFlow <= 0n ||
                           onChainMarket.marketQuoteFlow <= 0n
                         ? 'Smart fill unavailable'
-                        : hasHighPriceImpact
-                          ? 'Review price impact'
-                          : `${side === 'buy' ? 'Buy' : 'Sell'} over the next ${formatSmartDuration(durationSeconds)}`
+                        : durationExceedsAmount
+                          ? 'Choose a shorter duration'
+                          : hasHighPriceImpact
+                            ? 'Review price impact'
+                            : `${side === 'buy' ? 'Buy' : 'Sell'} over the next ${formatOrderDuration(durationSeconds, isCustomDuration)}`
 
   useEffect(() => {
     setAmountInput('')
@@ -715,6 +737,19 @@ export function TradingDashboard({
     }
 
     const durationSlots = durationToSlots(durationSeconds)
+    if (
+      !isDurationSupportedByAmount({
+        amountAtoms,
+        durationSlots,
+        endSlotInterval: onChainMarket.endSlotInterval,
+      })
+    ) {
+      toast.error('Order not ready', {
+        description: DURATION_AMOUNT_ERROR_MESSAGE,
+        id: 'order-validation',
+      })
+      return
+    }
     const success = await submitOrder.submitOrder({
       amount: amountAtoms,
       durationSlots,
@@ -859,6 +894,12 @@ export function TradingDashboard({
               availableAmountDisplay={availableAmountDisplay}
               canSubmit={!submitDisabled}
               durationSeconds={durationSeconds}
+              durationQuoteInputs={{
+                amountAtoms,
+                amountUiValue,
+                streamingState: isMarketReady ? onChainMarket : null,
+                indicativePrice: dashboardViewModel.onChainIndicativePrice,
+              }}
               durationUnavailableMessage={durationUnavailableMessage}
               recommendedDurationSeconds={recommendedDurationSeconds}
               isCustomDuration={isCustomDuration}

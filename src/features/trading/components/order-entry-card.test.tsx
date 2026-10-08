@@ -7,11 +7,13 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
+import type { Address } from '@solana/kit'
 import { OrderEntryCard } from './order-entry-card'
-import { DURATION_OPTIONS } from '../constants'
+import { MAX_ORDER_DURATION_SECONDS } from '../constants'
 
 afterEach(cleanup)
 
@@ -25,6 +27,27 @@ function createProps(
     availableAmountDisplay: 8,
     canSubmit: true,
     durationSeconds: 3600,
+    durationQuoteInputs: {
+      amountAtoms: 2_000_000_000n,
+      amountUiValue: 2,
+      indicativePrice: 150,
+      streamingState: {
+        baseMint: 'So11111111111111111111111111111111111111112' as Address,
+        quoteMint: '11111111111111111111111111111111' as Address,
+        marketId: 1,
+        minimumBaseDepositAtoms: 1n,
+        minimumQuoteDepositAtoms: 1n,
+        isPaused: false,
+        currentSlot: 100,
+        endSlotInterval: 11,
+        marketBaseFlow: 1_000_000_000_000_000_000n,
+        marketQuoteFlow: 2_000_000_000_000_000_000n,
+        bookkeepingBasePerQuote: 0n,
+        bookkeepingQuotePerBase: 0n,
+        bookkeepingLastUpdateSlot: 100,
+        bookkeepingSlotsWithoutTrades: 0,
+      },
+    },
     estimatedConversionText: '~300 USDC',
     executionPriceDisplay: '$150',
     isConnected: true,
@@ -104,6 +127,25 @@ describe('OrderEntryCard', () => {
     ).toBe(label)
   })
 
+  it.each([
+    [10.4, '10.4 seconds'],
+    [75 * 60, '1 h 15 min'],
+    [86400, '24 hours'],
+  ])(
+    'shows the exact custom duration %s as %s after applying',
+    (durationSeconds, label) => {
+      render(
+        <OrderEntryCard
+          {...createProps({ durationSeconds, isCustomDuration: true })}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: `Customize duration: ${label}` })
+          .textContent,
+      ).toBe(label)
+    },
+  )
+
   it('does not invent a duration when a recommendation is unavailable', () => {
     render(
       <OrderEntryCard
@@ -122,7 +164,7 @@ describe('OrderEntryCard', () => {
     )
   })
 
-  it('can return a custom duration to the live Smart fill recommendation', async () => {
+  it('previews a reset and restores live Smart fill only when the choice is applied', async () => {
     const props = createProps({
       isCustomDuration: true,
       recommendedDurationSeconds: 10.4,
@@ -131,7 +173,32 @@ describe('OrderEntryCard', () => {
     render(<OrderEntryCard {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
     await screen.findByRole('dialog')
-    fireEvent.click(screen.getByRole('button', { name: /Smart fill/ }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Reset to 10\.4 seconds/ }),
+    )
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(
+      screen
+        .getByRole('slider', { name: 'Order duration' })
+        .getAttribute('aria-valuenow'),
+    ).toBe('10.4')
+    expect(screen.queryByRole('button', { name: /^Reset to/ })).toBeNull()
+    expect(props.onResetDuration).not.toHaveBeenCalled()
+    expect(props.onDurationChange).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    await screen.findByRole('dialog')
+    expect(
+      screen
+        .getByRole('slider', { name: 'Order duration' })
+        .getAttribute('aria-valuenow'),
+    ).toBe('3600')
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Reset to 10\.4 seconds/ }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Use 10.4 seconds' }))
     expect(props.onResetDuration).toHaveBeenCalledOnce()
     expect(props.onDurationChange).not.toHaveBeenCalled()
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
@@ -227,30 +294,44 @@ describe('OrderEntryCard', () => {
     expect(props.onSideChange).toHaveBeenLastCalledWith('sell')
   })
 
-  it.each([5, 20])(
-    'applies the %s-second duration preset only after confirmation and labels the current quote',
-    async (seconds) => {
-      const props = createProps()
+  it.each(['buy', 'sell'] as const)(
+    'previews the %s receive amount and price impact before applying a duration',
+    async (side) => {
+      const props = createProps({
+        side,
+        amountTokenTicker: side === 'buy' ? 'USDC' : 'SOL',
+        receiveTokenTicker: side === 'buy' ? 'SOL' : 'USDC',
+      })
       render(<OrderEntryCard {...props} />)
       fireEvent.click(
         screen.getByRole('button', { name: /^Customize duration/ }),
       )
-      await screen.findByRole('dialog', { name: /^Customize duration/ })
+      const dialog = await screen.findByRole('dialog', {
+        name: /^Customize duration/,
+      })
+      const slider = within(dialog).getByRole('slider', {
+        name: 'Order duration',
+      })
+      const receive =
+        within(dialog).getByText('Est. receive').nextElementSibling!
+      const originalReceive = receive.textContent
+      const originalImpact = slider.getAttribute('aria-valuetext')
 
-      fireEvent.click(
-        screen.getByRole('button', { name: `${seconds} seconds` }),
-      )
+      fireEvent.keyDown(slider, { key: 'Home' })
       expect(props.onDurationChange).not.toHaveBeenCalled()
-      expect(screen.getByText('Current estimate · 1 hour')).toBeTruthy()
-      expect(
-        screen
-          .getByRole('slider', { name: 'Order duration' })
-          .getAttribute('aria-valuetext'),
-      ).toBe(`${seconds} seconds`)
-      fireEvent.click(
-        screen.getByRole('button', { name: `Use ${seconds} seconds` }),
+      expect(slider.getAttribute('aria-valuenow')).toBe('5')
+      expect(slider.getAttribute('aria-valuetext')).not.toBe(originalImpact)
+      expect(slider.getAttribute('aria-valuetext')).toContain('price impact')
+      expect(receive.textContent).not.toBe(originalReceive)
+      expect(Number(receive.textContent!.match(/^~([\d.]+)/)![1])).toBeLessThan(
+        Number(originalReceive!.match(/^~([\d.]+)/)![1]),
       )
-      expect(props.onDurationChange).toHaveBeenCalledWith(seconds)
+      expect(
+        within(dialog).queryByRole('button', { name: '5 seconds' }),
+      ).toBeNull()
+      expect(within(dialog).getAllByRole('button')).toHaveLength(3)
+      fireEvent.click(screen.getByRole('button', { name: 'Use 5 seconds' }))
+      expect(props.onDurationChange).toHaveBeenCalledExactlyOnceWith(5)
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     },
   )
@@ -260,14 +341,10 @@ describe('OrderEntryCard', () => {
     render(<OrderEntryCard {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
     await screen.findByRole('dialog')
-    fireEvent.change(screen.getByRole('slider', { name: 'Order duration' }), {
-      target: {
-        value: String(
-          DURATION_OPTIONS.findIndex((option) => option.label === '1w'),
-        ),
-      },
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Order duration' }), {
+      key: 'End',
     })
-    expect(screen.getByRole('button', { name: 'Use 1 week' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Use 1 year' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(props.onDurationChange).not.toHaveBeenCalled()
@@ -277,9 +354,119 @@ describe('OrderEntryCard', () => {
     expect(
       screen
         .getByRole('slider', { name: 'Order duration' })
-        .getAttribute('aria-valuetext'),
-    ).toBe('1 hour')
+        .getAttribute('aria-valuenow'),
+    ).toBe('3600')
   })
+
+  it('keeps an exact off-grid Smart fill duration when stepping away and back', async () => {
+    const props = createProps({
+      durationSeconds: 10.4,
+      recommendedDurationSeconds: 10.4,
+      onResetDuration: vi.fn(),
+    })
+    render(<OrderEntryCard {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const slider = await screen.findByRole('slider', { name: 'Order duration' })
+
+    expect(slider.getAttribute('aria-valuenow')).toBe('10.4')
+    expect(
+      screen.getByRole('button', { name: 'Use 10.4 seconds' }),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Reset to/ })).toBeNull()
+    fireEvent.keyDown(slider, { key: 'ArrowRight' })
+    expect(slider.getAttribute('aria-valuenow')).toBe('20')
+    expect(
+      screen.getByRole('button', { name: /^Reset to 10\.4 seconds/ }),
+    ).toBeTruthy()
+    fireEvent.keyDown(slider, { key: 'ArrowLeft' })
+    expect(slider.getAttribute('aria-valuenow')).toBe('10.4')
+    fireEvent.click(screen.getByRole('button', { name: 'Use 10.4 seconds' }))
+    expect(props.onResetDuration).toHaveBeenCalledOnce()
+    expect(props.onDurationChange).not.toHaveBeenCalled()
+  })
+
+  it('shows missing quote data as unavailable rather than zero impact', async () => {
+    render(
+      <OrderEntryCard {...createProps({ durationQuoteInputs: undefined })} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const dialog = await screen.findByRole('dialog')
+    const slider = within(dialog).getByRole('slider', {
+      name: 'Order duration',
+    })
+
+    expect(slider.getAttribute('aria-valuetext')).toBe(
+      '1 hour, price impact unavailable',
+    )
+    expect(
+      within(dialog).getByText(
+        'Price impact is unavailable with current liquidity.',
+      ),
+    ).toBeTruthy()
+    expect(
+      within(dialog).getByText('Est. receive').nextElementSibling?.textContent,
+    ).toBe('— USDC (—)')
+    expect(within(dialog).queryByText(/0\.00%/)).toBeNull()
+  })
+
+  it('blocks durations that exceed the amount supported by the stream', async () => {
+    const props = createProps()
+    render(
+      <OrderEntryCard
+        {...props}
+        durationQuoteInputs={{
+          ...props.durationQuoteInputs!,
+          amountAtoms: 20_000n,
+        }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^Customize duration/ }))
+    const slider = await screen.findByRole('slider', { name: 'Order duration' })
+    fireEvent.keyDown(slider, { key: 'End' })
+
+    expect(slider.getAttribute('aria-valuenow')).toBe(
+      String(MAX_ORDER_DURATION_SECONDS),
+    )
+    expect(screen.getByRole('status').textContent).toContain(
+      'amount is too small',
+    )
+    const apply = screen.getByRole('button', { name: 'Use 1 year' })
+    expect(apply.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(apply)
+    expect(props.onDurationChange).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(slider, { key: 'Home' })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(
+      screen
+        .getByRole('button', { name: 'Use 5 seconds' })
+        .hasAttribute('disabled'),
+    ).toBe(false)
+  })
+
+  it.each(['buy', 'sell'] as const)(
+    'flips the displayed market rate for a %s',
+    async (side) => {
+      render(
+        <OrderEntryCard
+          {...createProps({
+            side,
+            amountTokenTicker: side === 'buy' ? 'USDC' : 'SOL',
+            receiveTokenTicker: side === 'buy' ? 'SOL' : 'USDC',
+          })}
+        />,
+      )
+      fireEvent.click(
+        screen.getByRole('button', { name: /^Customize duration/ }),
+      )
+      const dialog = await screen.findByRole('dialog')
+      expect(within(dialog).getByText('1 SOL ≈ 150 USDC')).toBeTruthy()
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'Flip price' }),
+      )
+      expect(within(dialog).getByText('1 USDC ≈ 0.006667 SOL')).toBeTruthy()
+    },
+  )
 
   it('keeps validation accessible and displays the price impact warning', () => {
     render(

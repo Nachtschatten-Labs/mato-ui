@@ -106,28 +106,6 @@ export const MAX_RECLAIM_RENT_ACCOUNTS_PER_TRANSACTION = 10
 export const POSITION_PAGE_SIZE = 10
 export const HIGH_PRICE_IMPACT_WARNING_THRESHOLD_PERCENT = 1
 
-export const DURATION_OPTIONS = [
-  { label: '5s', seconds: 5 },
-  { label: '10s', seconds: 10 },
-  { label: '20s', seconds: 20 },
-  { label: '30s', seconds: 30 },
-  { label: '1m', seconds: 1 * 60 },
-  { label: '5m', seconds: 5 * 60 },
-  { label: '10m', seconds: 10 * 60 },
-  { label: '30m', seconds: 30 * 60 },
-  { label: '1h', seconds: 60 * 60 },
-  { label: '2h', seconds: 2 * 60 * 60 },
-  { label: '4h', seconds: 4 * 60 * 60 },
-  { label: '12h', seconds: 12 * 60 * 60 },
-  { label: '1d', seconds: 24 * 60 * 60 },
-  { label: '3d', seconds: 3 * 24 * 60 * 60 },
-  { label: '1w', seconds: 7 * 24 * 60 * 60 },
-  { label: '1mo', seconds: 30 * 24 * 60 * 60 },
-  { label: '3mo', seconds: 90 * 24 * 60 * 60 },
-  { label: '6mo', seconds: 180 * 24 * 60 * 60 },
-  { label: '1y', seconds: MAX_ORDER_DURATION_SECONDS },
-] as const
-
 export const CHART_TIMEFRAMES = [
   { label: '1m', intervalMs: 1 * 60 * 1000 },
   { label: '5m', intervalMs: 5 * 60 * 1000 },

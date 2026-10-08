@@ -1,6 +1,5 @@
-import { durationToSlots } from '../lib/amounts'
 import { computeMarketStats, marketPriceFromFlows } from '../lib/market'
-import { computePriceImpactPercent } from '../lib/price-impact'
+import { getDurationQuote } from '../lib/duration-quote'
 import {
   formatCrosshairTimeLabel,
   formatPrice,
@@ -218,15 +217,15 @@ export function buildTradingDashboardViewModel({
     referencePricing.quoteDecimals,
   )
 
-  const priceImpactPercent =
-    durationSeconds === null
-      ? null
-      : computePriceImpactPercent({
-          amountAtoms,
-          durationSlots: durationToSlots(durationSeconds),
-          side,
-          streamingState,
-        })
+  const { priceImpactPercent, executionPrice, receiveAmount } =
+    getDurationQuote({
+      amountAtoms,
+      amountUiValue,
+      durationSeconds,
+      indicativePrice: onChainIndicativePrice,
+      side,
+      streamingState,
+    })
 
   const signedPriceImpactPercent =
     priceImpactPercent === null
@@ -235,32 +234,14 @@ export function buildTradingDashboardViewModel({
         ? priceImpactPercent
         : -priceImpactPercent
 
-  const executionPrice = (() => {
-    if (onChainIndicativePrice === null || onChainIndicativePrice <= 0)
-      return null
-    if (amountAtoms !== null && amountAtoms > 0n && durationSeconds === null)
-      return null
-    if (signedPriceImpactPercent === null) return onChainIndicativePrice
-
-    const nextPrice =
-      onChainIndicativePrice * (1 + signedPriceImpactPercent / 100)
-    if (!Number.isFinite(nextPrice) || nextPrice <= 0) return null
-    return nextPrice
-  })()
-
   const estimatedConversionText = (() => {
     if (amountUiValue === null) {
       return `0 ${side === 'buy' ? baseTicker : quoteTicker}`
     }
-    if (!executionPrice || executionPrice <= 0) {
+    if (receiveAmount === null) {
       return `— ${side === 'buy' ? baseTicker : quoteTicker}`
     }
-
-    if (side === 'buy') {
-      return `~${formatUiAmount(amountUiValue / executionPrice)} ${baseTicker}`
-    }
-
-    return `~${formatUiAmount(amountUiValue * executionPrice)} ${quoteTicker}`
+    return `~${formatUiAmount(receiveAmount)} ${side === 'buy' ? baseTicker : quoteTicker}`
   })()
 
   const activeOhlcv = crosshairData ?? latestChartCandle
