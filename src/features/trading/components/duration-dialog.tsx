@@ -224,9 +224,9 @@ export function DurationDialog({
                     aria-live="polite"
                     aria-atomic="true"
                   >
-                    {quote.receiveAmount === null || exceedsAmount
+                    {quote.netReceiveAmount === null || exceedsAmount
                       ? '—'
-                      : `~${number(quote.receiveAmount, 6)}`}{' '}
+                      : `~${number(quote.netReceiveAmount, 6)}`}{' '}
                     {receiveTokenTicker}
                   </span>
                 </div>

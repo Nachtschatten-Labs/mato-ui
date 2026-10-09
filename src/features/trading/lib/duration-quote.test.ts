@@ -17,6 +17,7 @@ function quoteInputs(): DurationQuoteInputs {
       baseMint: 'So11111111111111111111111111111111111111112' as Address,
       quoteMint: '11111111111111111111111111111111' as Address,
       marketId: 1,
+      feeBps: 10,
       minimumBaseDepositAtoms: 1n,
       minimumQuoteDepositAtoms: 1n,
       isPaused: false,
@@ -33,6 +34,68 @@ function quoteInputs(): DurationQuoteInputs {
 }
 
 describe('getDurationQuote', () => {
+  it.each([
+    {
+      side: 'buy' as const,
+      baseFlow: 125n,
+      quoteFlow: 250n,
+      impact: 100,
+      gross: 250,
+      cost: 250,
+      fee: 0.25,
+      net: 249.75,
+    },
+    {
+      side: 'sell' as const,
+      baseFlow: 250n,
+      quoteFlow: 500n,
+      impact: 50,
+      gross: 1000,
+      cost: 1000,
+      fee: 1,
+      net: 999,
+    },
+  ])(
+    'separates output-token impact cost from fees for a $side',
+    ({ side, baseFlow, quoteFlow, impact, gross, cost, fee, net }) => {
+      const inputs = quoteInputs()
+      const quote = getDurationQuote({
+        ...inputs,
+        side,
+        durationSeconds: 1,
+        streamingState: {
+          ...inputs.streamingState!,
+          endSlotInterval: 2,
+          marketBaseFlow: baseFlow * 1_000_000_000n,
+          marketQuoteFlow: quoteFlow * 1_000_000_000n,
+        },
+      })
+      expect(quote.priceImpactPercent).toBe(impact)
+      expect(quote.receiveAmount).toBe(gross)
+      expect(quote.priceImpactCost).toBe(cost)
+      expect(quote.feePercent).toBe(0.1)
+      expect(quote.feeAmount).toBe(fee)
+      expect(quote.netReceiveAmount).toBe(net)
+    },
+  )
+
+  it('distinguishes a zero fee from an unavailable fee', () => {
+    const inputs = quoteInputs()
+    const free = getDurationQuote({
+      ...inputs,
+      streamingState: { ...inputs.streamingState!, feeBps: 0 },
+    })
+    expect(free.feeAmount).toBe(0)
+    expect(free.netReceiveAmount).toBe(free.receiveAmount)
+    const unknown = getDurationQuote({
+      ...inputs,
+      streamingState: { ...inputs.streamingState!, feeBps: undefined },
+    })
+    expect(unknown.feeAmount).toBeNull()
+    expect(unknown.netReceiveAmount).toBeNull()
+    expect(unknown.priceImpactCost).toBe(free.priceImpactCost)
+  })
+
   it('quotes buys at the conservative, impact-adjusted price', () => {
     const quote = getDurationQuote(quoteInputs())
     const userFlow = 1_000 / (300 - 11 / 2)
@@ -68,7 +131,9 @@ describe('getDurationQuote', () => {
   it.each([null, 0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
     'does not quote an unavailable or invalid duration (%s)',
     (durationSeconds) => {
-      expect(getDurationQuote({ ...quoteInputs(), durationSeconds })).toEqual({
+      expect(
+        getDurationQuote({ ...quoteInputs(), durationSeconds }),
+      ).toMatchObject({
         priceImpactPercent: null,
         executionPrice: null,
         receiveAmount: null,
@@ -79,7 +144,7 @@ describe('getDurationQuote', () => {
   it('does not substitute zero impact or the mid-price for missing liquidity', () => {
     expect(
       getDurationQuote({ ...quoteInputs(), streamingState: null }),
-    ).toEqual({
+    ).toMatchObject({
       priceImpactPercent: null,
       executionPrice: null,
       receiveAmount: null,
@@ -94,6 +159,9 @@ describe('getDurationQuote', () => {
       expect(quote.priceImpactPercent).not.toBeNull()
       expect(quote.executionPrice).toBeNull()
       expect(quote.receiveAmount).toBeNull()
+      expect(quote.priceImpactCost).toBeNull()
+      expect(quote.feeAmount).toBeNull()
+      expect(quote.netReceiveAmount).toBeNull()
     },
   )
 
@@ -105,7 +173,7 @@ describe('getDurationQuote', () => {
         amountUiValue: null,
         durationSeconds: null,
       }),
-    ).toEqual({
+    ).toMatchObject({
       priceImpactPercent: null,
       executionPrice: 2,
       receiveAmount: null,

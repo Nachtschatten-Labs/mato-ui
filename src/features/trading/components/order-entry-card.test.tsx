@@ -35,6 +35,7 @@ function createProps(
         baseMint: 'So11111111111111111111111111111111111111112' as Address,
         quoteMint: '11111111111111111111111111111111' as Address,
         marketId: 1,
+        feeBps: 10,
         minimumBaseDepositAtoms: 1n,
         minimumQuoteDepositAtoms: 1n,
         isPaused: false,
@@ -49,7 +50,10 @@ function createProps(
       },
     },
     estimatedConversionText: '~300 USDC',
-    executionPriceDisplay: '$150',
+    indicativePrice: 150,
+    feePercent: 0.1,
+    feeAmount: 0.3,
+    priceImpactCost: 0.5,
     isConnected: true,
     minimumAmountDisplay: '0.1',
     onAmountChange: vi.fn(),
@@ -81,6 +85,10 @@ describe('OrderEntryCard', () => {
       name: 'About Smart fill',
     })
     expect(screen.queryByText('Over the next')).toBeNull()
+    expect(screen.queryByText(/^Finishes at/)).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Price impact and fee details' }),
+    ).toBeNull()
     expect(
       screen.queryByRole('button', { name: /^Customize duration/ }),
     ).toBeNull()
@@ -96,6 +104,7 @@ describe('OrderEntryCard', () => {
       <OrderEntryCard {...props} amountInput="1" durationSeconds={10} />,
     )
     expect(screen.getByText('Over the next')).toBeTruthy()
+    expect(screen.getByText(/^Finishes at/)).toBeTruthy()
     expect(
       screen.getByRole('button', { name: 'Customize duration: 10 seconds' })
         .textContent,
@@ -216,7 +225,10 @@ describe('OrderEntryCard', () => {
         })}
       />,
     )
-    expect(screen.getByText('Price impact 0.020%')).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Price impact and fee details' })
+        .textContent,
+    ).toContain('Impact −0.020%')
     fireEvent.click(
       screen.getByRole('button', { name: 'Customize duration: 1 year' }),
     )

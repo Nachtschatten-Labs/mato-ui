@@ -217,15 +217,21 @@ export function buildTradingDashboardViewModel({
     referencePricing.quoteDecimals,
   )
 
-  const { priceImpactPercent, executionPrice, receiveAmount } =
-    getDurationQuote({
-      amountAtoms,
-      amountUiValue,
-      durationSeconds,
-      indicativePrice: onChainIndicativePrice,
-      side,
-      streamingState,
-    })
+  const {
+    priceImpactPercent,
+    executionPrice,
+    netReceiveAmount,
+    priceImpactCost,
+    feePercent,
+    feeAmount,
+  } = getDurationQuote({
+    amountAtoms,
+    amountUiValue,
+    durationSeconds,
+    indicativePrice: onChainIndicativePrice,
+    side,
+    streamingState,
+  })
 
   const signedPriceImpactPercent =
     priceImpactPercent === null
@@ -238,10 +244,10 @@ export function buildTradingDashboardViewModel({
     if (amountUiValue === null) {
       return `0 ${side === 'buy' ? baseTicker : quoteTicker}`
     }
-    if (receiveAmount === null) {
+    if (netReceiveAmount === null) {
       return `— ${side === 'buy' ? baseTicker : quoteTicker}`
     }
-    return `~${formatUiAmount(receiveAmount)} ${side === 'buy' ? baseTicker : quoteTicker}`
+    return `~${formatUiAmount(netReceiveAmount)} ${side === 'buy' ? baseTicker : quoteTicker}`
   })()
 
   const activeOhlcv = crosshairData ?? latestChartCandle
@@ -255,6 +261,9 @@ export function buildTradingDashboardViewModel({
     chartCandles,
     displayPrice,
     estimatedConversionText,
+    priceImpactCost,
+    feePercent,
+    feeAmount,
     executionPrice,
     executionPriceDisplay:
       executionPrice === null ? '—' : `$${formatUiAmount(executionPrice)}`,

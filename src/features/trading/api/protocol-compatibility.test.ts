@@ -232,6 +232,7 @@ describe('v1 protocol compatibility', () => {
         await fetchStreamingMarketState(client.runtime.rpc, MARKET),
       ).toMatchObject({
         endSlotInterval: 11,
+        feeBps: 10,
         marketBaseFlow: 1_000_000_000n,
         marketQuoteFlow: 2_000_000_000n,
         bookkeepingSlotsWithoutTrades: 123,

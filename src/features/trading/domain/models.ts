@@ -10,6 +10,7 @@ export interface StreamingMarketState {
   baseMint: Address
   quoteMint: Address
   marketId: number
+  feeBps?: number
   minimumBaseDepositAtoms: bigint
   minimumQuoteDepositAtoms: bigint
   isPaused: boolean

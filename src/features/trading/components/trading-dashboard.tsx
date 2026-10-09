@@ -901,7 +901,10 @@ export function TradingDashboard({
               recommendedDurationSeconds={recommendedDurationSeconds}
               isCustomDuration={isCustomDuration}
               estimatedConversionText={estimatedConversionText}
-              executionPriceDisplay={executionPriceDisplay}
+              indicativePrice={dashboardViewModel.onChainIndicativePrice}
+              feePercent={dashboardViewModel.feePercent}
+              feeAmount={dashboardViewModel.feeAmount}
+              priceImpactCost={dashboardViewModel.priceImpactCost}
               isConnected={walletConnection.connected}
               minimumAmountDisplay={minimumAmountDisplay}
               nativeSolWarning={lowSubmitNativeSolWarning}
