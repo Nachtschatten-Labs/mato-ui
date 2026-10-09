@@ -1221,7 +1221,23 @@ export function TradingDashboard({
                     />
                   </div>
                 ) : (
-                  <EmptyState copy="No streams running. Start one and it shows up here." />
+                  <EmptyState
+                    copy={
+                      <>
+                        No streams running.{' '}
+                        <button
+                          className="cursor-pointer text-[var(--t2)] underline underline-offset-3 hover:text-foreground focus-visible:rounded focus-visible:outline-2 focus-visible:outline-ring"
+                          onClick={() =>
+                            document.getElementById('order-amount')?.focus()
+                          }
+                          type="button"
+                        >
+                          Start one
+                        </button>{' '}
+                        and it shows up here.
+                      </>
+                    }
+                  />
                 )
               ) : address ? (
                 <ClosedPositionsList
@@ -1255,10 +1271,10 @@ export function TradingDashboard({
   )
 }
 
-function EmptyState({ copy }: { copy: string }) {
+function EmptyState({ copy }: { copy: ReactNode }) {
   return (
     <p className="flex min-h-20 items-center text-sm leading-6 text-muted-foreground">
-      {copy}
+      <span>{copy}</span>
     </p>
   )
 }
