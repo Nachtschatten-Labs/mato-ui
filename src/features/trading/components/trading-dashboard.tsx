@@ -573,13 +573,13 @@ export function TradingDashboard({
         ? 'Position paused'
         : action === 'resume'
           ? 'Position resumed'
-          : 'Swapped funds withdrawn'
+          : 'Sent to wallet'
     const description =
       action === 'pause'
         ? 'The position has stopped streaming.'
         : action === 'resume'
           ? 'The position is streaming again.'
-          : 'Available swapped funds were sent to the position receiver.'
+          : 'Available funds were sent to the position receiver.'
 
     toast.success(title, {
       action: {
@@ -609,7 +609,7 @@ export function TradingDashboard({
 
     const title =
       positionControls.action === 'withdraw'
-        ? 'Withdraw failed'
+        ? 'Send failed'
         : 'Position update failed'
     toast.error(title, {
       description: positionControls.error,

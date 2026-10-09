@@ -30,6 +30,7 @@ import { TokenMark } from './token-mark'
 import { ClosePositionReview } from './close-position-review'
 import { PositionPriceChart } from './position-price-chart'
 import { Button } from '@/components/ui/button'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Progress } from '@/components/ui/progress'
 import type { ReactNode } from 'react'
 import type { Address } from '@solana/kit'
@@ -304,6 +305,16 @@ export function ActivePositionCardView({
           metrics.claimableSwappedAtoms,
           metrics.position.feeBpsAtSubmission,
         )
+  // The account stores gross withdrawals, not the sum of per-send fees.
+  // Applying the fee once to the total estimates the net sent amount; each
+  // actual send rounds its fee separately, so label this as an estimate.
+  const sentToWalletAtoms =
+    metrics.position.withdrawnAmount -
+    tradeFeeAtoms(
+      metrics.position.withdrawnAmount,
+      metrics.position.feeBpsAtSubmission,
+    )
+  const sentAmountIsEstimate = metrics.position.feeBpsAtSubmission > 0
   const stateLabel = metrics.isPaused
     ? 'Paused'
     : metrics.hasPositionEnded
@@ -468,6 +479,22 @@ export function ActivePositionCardView({
                   {metrics.swappedToken}
                 </span>
               </p>
+              {metrics.position.withdrawnAmount > 0n ? (
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="min-w-0 break-words tabular-nums">
+                    {sentAmountIsEstimate ? '≈ ' : ''}
+                    {amount(sentToWalletAtoms, metrics.swappedDecimals)}{' '}
+                    {metrics.swappedToken} withdrawn
+                  </span>
+                  {sentAmountIsEstimate ? (
+                    <InfoTooltip label="About amount sent">
+                      Estimated total sent to your wallet after fees. Fees are
+                      rounded separately on each send, so the exact total may be
+                      slightly lower.
+                    </InfoTooltip>
+                  ) : null}
+                </div>
+              ) : null}
               <Button
                 aria-busy={isWithdrawing}
                 disabled={
@@ -480,8 +507,15 @@ export function ActivePositionCardView({
                 variant="outline"
                 className="mt-3 h-7 rounded-md border-border bg-transparent px-2.5 text-[11px]"
               >
-                <ArrowDownToLine className="size-3" />
-                {isWithdrawing ? 'Withdrawing…' : 'Withdraw swapped'}
+                {isWithdrawing ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-3 animate-spin"
+                  />
+                ) : (
+                  <ArrowDownToLine aria-hidden="true" className="size-3" />
+                )}
+                {isWithdrawing ? 'Sending…' : 'Send to wallet'}
               </Button>
             </div>
             <div className="col-span-1 flex items-start justify-between gap-3 min-[380px]:col-span-2 sm:col-span-1 sm:block">
