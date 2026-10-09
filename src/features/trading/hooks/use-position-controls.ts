@@ -22,7 +22,7 @@ type PositionControlStatus =
 const ACTION_FALLBACKS: Record<PositionControlAction, string> = {
   pause: 'Failed to pause position.',
   resume: 'Failed to resume position.',
-  withdraw: 'Failed to withdraw swapped funds.',
+  withdraw: 'Failed to send funds to wallet.',
 }
 
 export function usePositionControls() {

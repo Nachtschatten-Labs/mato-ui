@@ -125,12 +125,18 @@ const STREAMING_STATE: StreamingMarketState = {
 function renderCard({
   isControlDisabled = false,
   isResuming = false,
+  isWithdrawing = false,
+  baseDecimals = 0,
+  quoteDecimals = 0,
   paused = false,
   position = createPosition(paused),
   streamingState = STREAMING_STATE,
 }: {
   isControlDisabled?: boolean
   isResuming?: boolean
+  isWithdrawing?: boolean
+  baseDecimals?: number
+  quoteDecimals?: number
   paused?: boolean
   position?: TradePositionRecord
   streamingState?: StreamingMarketState
@@ -139,31 +145,104 @@ function renderCard({
   const onPauseToggle = vi.fn()
   const onWithdraw = vi.fn()
 
-  render(
+  const card = (
     <ActivePositionCard
-      baseDecimals={0}
+      baseDecimals={baseDecimals}
       baseTicker="SOL"
       isCloseDisabled={isControlDisabled}
       isClosing={false}
       isControlDisabled={isControlDisabled}
       isPausing={false}
       isResuming={isResuming}
-      isWithdrawing={false}
+      isWithdrawing={isWithdrawing}
       marketAddress={MARKET_ADDRESS}
       onClose={onClose}
       onPauseToggle={onPauseToggle}
       onWithdraw={onWithdraw}
       position={position}
-      quoteDecimals={0}
+      quoteDecimals={quoteDecimals}
       quoteTicker="USDC"
       streamingState={streamingState}
-    />,
+    />
   )
+  const view = render(card)
 
-  return { onClose, onPauseToggle, onWithdraw }
+  return {
+    onClose,
+    onPauseToggle,
+    onWithdraw,
+    rerenderPosition: (position: TradePositionRecord) =>
+      view.rerender(<ActivePositionCard {...card.props} position={position} />),
+  }
 }
 
 describe('ActivePositionCard controls', () => {
+  it.each([
+    [Side.Buy, 'SOL', 9, 123_456_789n, '0.123333'],
+    [Side.Sell, 'USDC', 6, 123_456_789n, '123.333332'],
+  ] as const)(
+    'shows cumulative output sent below Available for side %s',
+    (side, token, decimals, withdrawnAmount, expected) => {
+      const position = createPosition(false)
+      position.data = { ...position.data, side, withdrawnAmount }
+      renderCard({ position, baseDecimals: decimals, quoteDecimals: decimals })
+      const available = screen.getByText('Available after fee').parentElement!
+      const sent = within(available).getByText(
+        `≈ ${expected} ${token} withdrawn`,
+      )
+      expect(available.children[2].contains(sent)).toBe(true)
+      expect(
+        within(available).getByRole('button', { name: 'Send to wallet' }),
+      ).toBeTruthy()
+    },
+  )
+
+  it('updates the cumulative sent amount from confirmed position data', () => {
+    const position = createPosition(false)
+    const { rerenderPosition, onWithdraw } = renderCard({ position })
+    expect(screen.queryByText(/withdrawn/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Send to wallet' }))
+    expect(onWithdraw).toHaveBeenCalledWith(POSITION_ADDRESS)
+    expect(screen.queryByText(/withdrawn/)).toBeNull()
+    rerenderPosition({
+      ...position,
+      data: { ...position.data, withdrawnAmount: 10n },
+    })
+    expect(screen.getByText('≈ 9 SOL withdrawn')).toBeTruthy()
+    rerenderPosition({
+      ...position,
+      data: { ...position.data, withdrawnAmount: 15n },
+    })
+    expect(screen.getByText('≈ 14 SOL withdrawn')).toBeTruthy()
+    expect(screen.queryByText('≈ 9 SOL withdrawn')).toBeNull()
+  })
+
+  it('explains fee-rounding estimates on tap and shows exact totals when fees are zero', async () => {
+    const position = createPosition(false)
+    position.data = { ...position.data, withdrawnAmount: 10n }
+    const { rerenderPosition } = renderCard({ position })
+    fireEvent.click(screen.getByRole('button', { name: 'About amount sent' }))
+    expect(
+      (await screen.findByRole('dialog', { name: 'About amount sent' }))
+        .textContent,
+    ).toContain('rounded separately on each send')
+    rerenderPosition({
+      ...position,
+      data: { ...position.data, feeBpsAtSubmission: 0 },
+    })
+    expect(screen.getByText('10 SOL withdrawn')).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'About amount sent' }),
+    ).toBeNull()
+  })
+
+  it('uses Sending while the wallet transfer is pending', () => {
+    renderCard({ isWithdrawing: true, isControlDisabled: true })
+    const sending = screen.getByRole('button', { name: 'Sending…' })
+    expect(sending.getAttribute('aria-busy')).toBe('true')
+    expect(sending.hasAttribute('disabled')).toBe(true)
+  })
+
   it('shows an ended order as partially filled when some slots did not trade', () => {
     snapshotState.data = {
       slot: 10,
@@ -203,12 +282,12 @@ describe('ActivePositionCard controls', () => {
 
     expect(
       screen
-        .getByRole('button', { name: 'Withdraw swapped' })
+        .getByRole('button', { name: 'Send to wallet' })
         .hasAttribute('disabled'),
     ).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause position' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Withdraw swapped' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Send to wallet' }))
 
     expect(onPauseToggle).toHaveBeenCalledWith(POSITION_ADDRESS)
     expect(onWithdraw).toHaveBeenCalledWith(POSITION_ADDRESS)
@@ -247,7 +326,7 @@ describe('ActivePositionCard controls', () => {
     expect(
       screen
         .getByRole('button', {
-          name: 'Withdraw swapped',
+          name: 'Send to wallet',
         })
         .hasAttribute('disabled'),
     ).toBe(true)

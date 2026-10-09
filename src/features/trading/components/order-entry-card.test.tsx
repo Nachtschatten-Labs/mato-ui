@@ -51,6 +51,7 @@ function createProps(
     },
     estimatedConversionText: '~300 USDC',
     indicativePrice: 150,
+    executionPrice: 149.85,
     feePercent: 0.1,
     feeAmount: 0.3,
     priceImpactCost: 0.5,
@@ -94,11 +95,19 @@ describe('OrderEntryCard', () => {
     ).toBeNull()
     fireEvent.keyDown(document.body, { key: 'Tab' })
     act(() => smartFillInfo.focus())
+    fireEvent.click(smartFillInfo)
     expect(
       await screen.findByText(
         'Your buy streams continuously over time instead of filling all at once.',
       ),
     ).toBeTruthy()
+
+    fireEvent.click(smartFillInfo)
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'About Smart fill' }),
+      ).toBeNull(),
+    )
 
     view.rerender(
       <OrderEntryCard {...props} amountInput="1" durationSeconds={10} />,

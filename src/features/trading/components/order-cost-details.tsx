@@ -1,6 +1,8 @@
 import { useId, useState } from 'react'
 import { ArrowRightLeft, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
+import type { OrderSide } from '../constants'
 
 export interface OrderCostDetailsProps {
   hasAmount: boolean
@@ -8,6 +10,8 @@ export interface OrderCostDetailsProps {
   quoteTicker: string
   receiveTokenTicker: string
   indicativePrice: number | null
+  executionPrice: number | null
+  side: OrderSide
   priceImpactDisplay: string
   priceImpactCost: number | null
   hasHighPriceImpact: boolean
@@ -28,6 +32,8 @@ export function OrderCostDetails({
   quoteTicker,
   receiveTokenTicker,
   indicativePrice,
+  executionPrice,
+  side,
   priceImpactDisplay,
   priceImpactCost,
   hasHighPriceImpact,
@@ -43,7 +49,16 @@ export function OrderCostDetails({
     indicativePrice > 0
       ? indicativePrice
       : null
-  const impact = priceImpactDisplay === '—' ? '—' : `−${priceImpactDisplay}`
+  const estimatedRate =
+    executionPrice !== null &&
+    Number.isFinite(executionPrice) &&
+    executionPrice > 0
+      ? executionPrice
+      : null
+  const impact =
+    priceImpactDisplay === '—'
+      ? '—'
+      : `${side === 'buy' ? '+' : '−'}${priceImpactDisplay}`
   const fee = feePercent === null ? '—' : `${number(feePercent, 2)}%`
   const decimals = receiveTokenTicker === 'USDC' ? 2 : 6
   const cost = (value: number | null) =>
@@ -56,7 +71,7 @@ export function OrderCostDetails({
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <span>
           1 {baseTicker} ≈{' '}
-          <span className="text-foreground">{number(rate, 2)}</span>{' '}
+          <span className="text-foreground">{number(rate, 4)}</span>{' '}
           {quoteTicker}
         </span>
         {hasAmount ? (
@@ -96,12 +111,18 @@ export function OrderCostDetails({
         >
           <dl className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <dt>Rate</dt>
+              <dt className="flex items-center gap-1">
+                Estimated Rate
+                <InfoTooltip label="About Estimated Rate">
+                  The estimated rate after price impact, before fees. The final
+                  rate can change while your stream runs.
+                </InfoTooltip>
+              </dt>
               <dd className="ml-auto flex flex-wrap items-center justify-end gap-2 text-foreground">
                 <span>
                   {inverse
-                    ? `1 ${quoteTicker} ≈ ${number(rate === null ? null : 1 / rate, 6)} ${baseTicker}`
-                    : `1 ${baseTicker} ≈ ${number(rate, 4)} ${quoteTicker}`}
+                    ? `1 ${quoteTicker} ≈ ${number(estimatedRate === null ? null : 1 / estimatedRate, 6)} ${baseTicker}`
+                    : `1 ${baseTicker} ≈ ${number(estimatedRate, 4)} ${quoteTicker}`}
                 </span>
                 <button
                   aria-label="Flip rate"
@@ -117,7 +138,14 @@ export function OrderCostDetails({
               </dd>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <dt>Price impact</dt>
+              <dt className="flex items-center gap-1">
+                Price impact
+                <InfoTooltip label="About price impact">
+                  Your stream's estimated effect on the {baseTicker} price in{' '}
+                  {quoteTicker}. The cost is how much less {receiveTokenTicker}{' '}
+                  you receive because of price impact, before fees.
+                </InfoTooltip>
+              </dt>
               <dd className="ml-auto flex flex-wrap justify-end gap-x-1">
                 <span
                   className={cn(
@@ -131,18 +159,19 @@ export function OrderCostDetails({
               </dd>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <dt>Fee</dt>
+              <dt className="flex items-center gap-1">
+                Fee
+                <InfoTooltip label="About fee">
+                  The fee is deducted from the {receiveTokenTicker} you receive
+                  and is already included in Est. receive.
+                </InfoTooltip>
+              </dt>
               <dd className="ml-auto flex flex-wrap justify-end gap-x-1">
                 <span className="text-foreground">{fee}</span>
                 <span>· {cost(feeAmount)}</span>
               </dd>
             </div>
           </dl>
-          <p className="text-xs leading-5">
-            Price impact is how much less {receiveTokenTicker} you receive at
-            the estimated rate. The fee is deducted from the{' '}
-            {receiveTokenTicker} you receive.
-          </p>
         </div>
       ) : null}
     </div>
