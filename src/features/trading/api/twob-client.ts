@@ -304,6 +304,7 @@ export async function fetchStreamingMarketState(
     isPaused: marketAccount.data.isPaused !== 0,
     marketBaseFlow: marketAccount.data.baseFlow,
     marketId: marketAccount.data.id,
+    feeBps: marketAccount.data.feeBps,
     marketQuoteFlow: marketAccount.data.quoteFlow,
     minimumBaseDepositAtoms: marketAccount.data.minimumBaseDepositAtoms,
     minimumQuoteDepositAtoms: marketAccount.data.minimumQuoteDepositAtoms,

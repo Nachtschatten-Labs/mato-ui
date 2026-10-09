@@ -97,6 +97,7 @@ function dashboardInputs(): Parameters<
       isPaused: false,
       marketBaseFlow: 1_000_000_000_000_000_000n,
       marketId: 1,
+      feeBps: 10,
       marketQuoteFlow: 2_500_000_000_000_000n,
       minimumBaseDepositAtoms: 1n,
       minimumQuoteDepositAtoms: 1n,

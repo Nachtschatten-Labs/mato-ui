@@ -79,5 +79,43 @@ export function getDurationQuote({
     return Number.isFinite(amount) ? amount : null
   })()
 
-  return { priceImpactPercent, executionPrice, receiveAmount }
+  const unimpactedReceiveAmount =
+    receiveAmount === null || indicativePrice === null || amountUiValue === null
+      ? null
+      : side === 'buy'
+        ? amountUiValue / indicativePrice
+        : amountUiValue * indicativePrice
+  // Compare output amounts before fees. For buys, applying the price-change
+  // percentage directly to the output would overstate the tokens lost.
+  const priceImpactCost =
+    unimpactedReceiveAmount === null ||
+    !Number.isFinite(unimpactedReceiveAmount)
+      ? null
+      : Math.max(0, unimpactedReceiveAmount - receiveAmount!)
+  const feeBps = streamingState?.feeBps
+  const feePercent =
+    feeBps !== undefined &&
+    Number.isInteger(feeBps) &&
+    feeBps >= 0 &&
+    feeBps <= 10_000
+      ? feeBps / 100
+      : null
+  const feeAmount =
+    receiveAmount === null || feePercent === null
+      ? null
+      : receiveAmount * (feePercent / 100)
+  const netReceiveAmount =
+    receiveAmount === null || feeAmount === null
+      ? null
+      : receiveAmount - feeAmount
+
+  return {
+    priceImpactPercent,
+    executionPrice,
+    receiveAmount,
+    priceImpactCost,
+    feePercent,
+    feeAmount,
+    netReceiveAmount,
+  }
 }

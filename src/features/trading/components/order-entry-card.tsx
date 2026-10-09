@@ -8,6 +8,8 @@ import { formatUiAmount } from '../lib/format'
 import type { OrderSide } from '../constants'
 import { TokenMark } from './token-mark'
 import { DurationDialog } from './duration-dialog'
+import { OrderFinishTime } from './order-finish-time'
+import { OrderCostDetails } from './order-cost-details'
 import type { DurationPreviewInputs } from './duration-dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -24,7 +26,10 @@ export function OrderEntryCard({
   durationUnavailableMessage,
   durationQuoteInputs,
   estimatedConversionText,
-  executionPriceDisplay,
+  indicativePrice,
+  feePercent,
+  feeAmount,
+  priceImpactCost,
   isConnected,
   isCustomDuration = false,
   minimumAmountDisplay,
@@ -55,7 +60,10 @@ export function OrderEntryCard({
   durationUnavailableMessage?: string | null
   durationQuoteInputs?: DurationPreviewInputs
   estimatedConversionText: string
-  executionPriceDisplay: string
+  indicativePrice: number | null
+  feePercent: number | null
+  feeAmount: number | null
+  priceImpactCost: number | null
   isConnected: boolean
   isCustomDuration?: boolean
   minimumAmountDisplay: string
@@ -278,6 +286,9 @@ export function OrderEntryCard({
               </Tooltip.Root>
             </Tooltip.Provider>
           )}
+          {hasAmount && durationSeconds !== null ? (
+            <OrderFinishTime durationSeconds={durationSeconds} />
+          ) : null}
           {durationUnavailableMessage ? (
             <p className="w-full text-xs leading-5" role="status">
               {durationUnavailableMessage}
@@ -308,15 +319,18 @@ export function OrderEntryCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-5 text-xs text-muted-foreground">
-          <span>
-            Est. price{' '}
-            <span className="text-foreground">{executionPriceDisplay}</span>
-          </span>
-          <span className={cn(priceImpactWarningText && 'text-destructive')}>
-            Price impact {priceImpactDisplay}
-          </span>
-        </div>
+        <OrderCostDetails
+          hasAmount={hasAmount}
+          baseTicker={side === 'buy' ? receiveTokenTicker : amountTokenTicker}
+          quoteTicker={side === 'buy' ? amountTokenTicker : receiveTokenTicker}
+          receiveTokenTicker={receiveTokenTicker}
+          indicativePrice={indicativePrice}
+          priceImpactDisplay={priceImpactDisplay}
+          priceImpactCost={priceImpactCost}
+          hasHighPriceImpact={Boolean(priceImpactWarningText)}
+          feePercent={feePercent}
+          feeAmount={feeAmount}
+        />
 
         {priceImpactWarningText ? (
           <div
