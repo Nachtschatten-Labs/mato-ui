@@ -358,14 +358,29 @@ export function MarketPriceChart({
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const lineSeriesRef = useRef<ISeriesApi<'Area'> | null>(null)
   const seriesColors = useMemo(() => {
-    if (typeof document === 'undefined') {
-      return { line: '#cf8654', negative: '#e47a78', positive: '#9fc891' }
-    }
-    const root = getComputedStyle(document.documentElement)
+    const root =
+      typeof document === 'undefined'
+        ? null
+        : getComputedStyle(document.documentElement)
+    const token = (name: string, fallback: string) =>
+      root?.getPropertyValue(name).trim() || fallback
+
+    // Canvas charts need resolved colors; fallbacks match the canonical tokens
+    // when rendering without a browser stylesheet (SSR and component tests).
     return {
-      line: root.getPropertyValue('--color-accent-warm').trim() || '#cf8654',
-      positive: root.getPropertyValue('--color-positive').trim() || '#9fc891',
-      negative: root.getPropertyValue('--color-negative').trim() || '#e47a78',
+      line: token('--action', '#a2bb9c'),
+      positive: token('--good', '#86d6ae'),
+      negative: token('--risk', '#e89a9a'),
+      page: token('--page', '#0b1512'),
+      text: token('--t4', '#9aac9e'),
+      float: token('--float', '#263d33'),
+      border: token('--line', '#d7edc50f'),
+      horizontalGrid: token('--grid-horizontal', 'rgba(215, 237, 197, 0.04)'),
+      verticalGrid: token('--grid-vertical', 'rgba(215, 237, 197, 0.03)'),
+      font: token(
+        '--font',
+        "'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif",
+      ),
     }
   }, [])
   const previousDataLengthRef = useRef(0)
@@ -489,10 +504,7 @@ export function MarketPriceChart({
           ...overlay,
           badgeAnchorX: rawStartX,
           endX: Math.min(Math.max(rawLineEndX, 0), bounds.width),
-          lineColor:
-            overlay.side === 'buy'
-              ? seriesColors.positive
-              : seriesColors.negative,
+          lineColor: seriesColors.line,
           showBadge: rawStartX >= 0 && rawStartX <= bounds.width,
           startX: Math.min(Math.max(rawStartX, 0), bounds.width),
           width: 0,
@@ -606,10 +618,18 @@ export function MarketPriceChart({
       autoSize: true,
       crosshair: {
         mode: CrosshairMode.Normal,
+        horzLine: {
+          color: seriesColors.text,
+          labelBackgroundColor: seriesColors.float,
+        },
+        vertLine: {
+          color: seriesColors.text,
+          labelBackgroundColor: seriesColors.float,
+        },
       },
       grid: {
-        horzLines: { color: 'rgba(255,255,255,0.03)' },
-        vertLines: { color: 'rgba(255,255,255,0.02)' },
+        horzLines: { color: seriesColors.horizontalGrid },
+        vertLines: { color: seriesColors.verticalGrid },
       },
       handleScroll: {
         horzTouchDrag: true,
@@ -627,18 +647,18 @@ export function MarketPriceChart({
       height: height ?? containerRef.current.clientHeight,
       layout: {
         background: {
-          color: 'rgba(20, 20, 20, 0)',
+          color: 'transparent',
           type: ColorType.Solid,
         },
-        fontFamily: '"IBM Plex Sans", sans-serif',
+        fontFamily: seriesColors.font,
         fontSize: 11,
-        textColor: '#969896',
+        textColor: seriesColors.text,
       },
       rightPriceScale: {
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: seriesColors.border,
       },
       timeScale: {
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: seriesColors.border,
         fixLeftEdge: true,
         timeVisible: true,
       },
@@ -655,10 +675,12 @@ export function MarketPriceChart({
 
     const lineSeries = chart.addSeries(AreaSeries, {
       lineColor: seriesColors.line,
-      topColor: 'rgba(207,134,84,0.16)',
-      bottomColor: 'rgba(207,134,84,0)',
+      topColor: `${seriesColors.line}38`,
+      bottomColor: `${seriesColors.line}00`,
       lineWidth: 2,
       priceLineColor: seriesColors.line,
+      crosshairMarkerBackgroundColor: seriesColors.line,
+      crosshairMarkerBorderColor: seriesColors.page,
       visible: false,
     })
 
@@ -942,11 +964,7 @@ export function MarketPriceChart({
             .filter((overlay) => overlay.showBadge)
             .map((overlay) => (
               <div
-                className={`absolute z-10 flex h-6 items-center justify-center rounded-full border px-2 text-[11px] font-semibold shadow-[0_8px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-sm ${
-                  overlay.side === 'buy'
-                    ? 'border-positive/60 bg-positive/90 text-background'
-                    : 'border-negative/60 bg-negative/90 text-white'
-                }`}
+                className="absolute z-10 flex h-6 items-center justify-center rounded-full bg-[var(--float)] px-2 text-[11px] font-normal text-[var(--t2)] shadow-[var(--float-ring),var(--shadow-tip)]"
                 key={`${overlay.id}-badge`}
                 style={{
                   left: overlay.badgeLeft,
@@ -960,7 +978,7 @@ export function MarketPriceChart({
         </div>
       ) : null}
       {isLoadingMoreHistory ? (
-        <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-black/45 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+        <div className="pointer-events-none absolute left-4 top-4 rounded-full bg-[var(--float)] px-3 py-1 text-xs text-[var(--t3)] shadow-[var(--float-ring),var(--shadow-tip)]">
           Loading older history...
         </div>
       ) : null}

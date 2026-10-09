@@ -109,7 +109,7 @@ export function BatchCloseReview({
           </DialogDescription>
         </div>
         <div className="space-y-3">
-          <p className="text-xs font-medium">You’ll get back</p>
+          <p className="text-xs font-normal">You’ll get back</p>
           {previews.isLoading && (
             <p role="status" className="text-xs text-muted-foreground">
               Calculating your returns…
@@ -125,7 +125,7 @@ export function BatchCloseReview({
             return (
               <div
                 key={position.address}
-                className="space-y-2 rounded-lg border border-border/60 bg-secondary/40 p-3 text-xs"
+                className="space-y-2 rounded-lg bg-secondary p-3 shadow-[var(--ring-block)] text-xs"
               >
                 <p className="text-muted-foreground">
                   {inputToken} → {outputToken} ·{' '}
@@ -133,7 +133,7 @@ export function BatchCloseReview({
                 </p>
                 <p className="flex justify-between gap-2">
                   <span>Received, after fee</span>
-                  <span className="break-all text-right font-mono">
+                  <span className="break-all text-right tabular-nums">
                     {formatAtoms(
                       preview.receivedAtoms,
                       outputDecimals,
@@ -144,7 +144,7 @@ export function BatchCloseReview({
                 </p>
                 <p className="flex justify-between gap-2">
                   <span>Unspent deposit</span>
-                  <span className="break-all text-right font-mono">
+                  <span className="break-all text-right tabular-nums">
                     {formatAtoms(
                       preview.remainingDepositAtoms,
                       inputDecimals,

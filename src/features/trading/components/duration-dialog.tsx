@@ -129,7 +129,7 @@ export function DurationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         finalFocus={triggerRef}
-        className="duration-dialog flex flex-col gap-4 overflow-hidden bg-card p-5 min-[601px]:p-6"
+        className="duration-dialog flex flex-col gap-4 overflow-hidden bg-popover p-5 min-[601px]:p-6"
       >
         <DialogTitle className="shrink-0 pr-8 text-xl font-normal">
           Customize duration
@@ -153,7 +153,7 @@ export function DurationDialog({
                   ? 'Price impact is unavailable with current liquidity.'
                   : 'Estimate from liquidity right now. Price can move while the stream runs.'}
               </p>
-              <div className="space-y-3 rounded-lg border border-border bg-secondary p-4 text-sm tabular-nums min-[601px]:text-base">
+              <div className="space-y-3 rounded-lg bg-secondary p-4 shadow-[var(--ring-block)] text-sm tabular-nums min-[601px]:text-base">
                 <div aria-label="Price comparison" role="group">
                   <dl className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
@@ -215,7 +215,7 @@ export function DurationDialog({
                     {number(Number(amountInput || '0'), 6)} {amountTokenTicker}
                   </span>
                 </div>
-                <div className="flex items-start justify-between gap-3 border-t border-dashed border-border pt-3">
+                <div className="flex items-start justify-between gap-3 border-t border-dashed border-[var(--divider)] pt-3">
                   <span className="shrink-0 text-muted-foreground">
                     Est. receive
                   </span>

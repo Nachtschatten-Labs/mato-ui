@@ -49,61 +49,61 @@ export default function ActivePositionCard({
   const ratePerSlot = totalSlots > 0 ? position.amount / totalSlots : BigInt(0)
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
+    <div className="bg-[var(--panel)] rounded-lg p-4 shadow-(--ring-panel)">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg font-semibold text-white">
+        <span className="text-lg font-normal text-foreground">
           {inputMint.symbol}
         </span>
-        <ArrowRight size={20} className="text-gray-400" />
-        <span className="text-lg font-semibold text-white">
+        <ArrowRight size={20} className="text-muted-foreground" />
+        <span className="text-lg font-normal text-foreground">
           {outputMint.symbol}
         </span>
-        <span className="ml-auto text-sm text-gray-400">
+        <span className="ml-auto text-sm text-muted-foreground">
           {position.isBuy ? 'Buy' : 'Sell'}
         </span>
       </div>
 
       <div className="mb-4">
-        <div className="flex justify-between text-sm text-gray-400 mb-1">
+        <div className="flex justify-between text-sm text-muted-foreground mb-1">
           <span>Progress</span>
           <span>{progress}%</span>
         </div>
-        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div className="h-2 bg-[var(--track)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-cyan-600 transition-all duration-300"
+            className="h-full bg-[var(--action)] transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-gray-900 rounded-lg p-3">
-          <div className="text-xs text-gray-400">Total</div>
-          <div className="text-white font-medium">
+        <div className="bg-background shadow-(--sunk) rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Total</div>
+          <div className="text-foreground font-normal">
             {formatAmount(position.amount, inputMint.decimals)}{' '}
             {inputMint.symbol}
           </div>
         </div>
-        <div className="bg-gray-900 rounded-lg p-3">
-          <div className="text-xs text-gray-400">
+        <div className="bg-background shadow-(--sunk) rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">
             {' '}
             {position.isBuy ? 'Spent' : 'Sold'}
           </div>
-          <div className="text-white font-medium">
+          <div className="text-foreground font-normal">
             {formatAmount(amountSpent, inputMint.decimals)} {inputMint.symbol}
           </div>
         </div>
-        <div className="bg-gray-900 rounded-lg p-3">
-          <div className="text-xs text-gray-400">Remaining</div>
-          <div className="text-white font-medium">
+        <div className="bg-background shadow-(--sunk) rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Remaining</div>
+          <div className="text-foreground font-normal">
             {formatAmount(amountRemaining, inputMint.decimals)}{' '}
             {inputMint.symbol}
           </div>
         </div>
         {amountReceived !== undefined && (
-          <div className="bg-gray-900 rounded-lg p-3">
-            <div className="text-xs text-gray-400">Received</div>
-            <div className="text-cyan-400 font-medium">
+          <div className="bg-background shadow-(--sunk) rounded-lg p-3">
+            <div className="text-xs text-muted-foreground">Received</div>
+            <div className="text-[var(--action)] font-normal">
               {formatAmount(amountReceived, outputMint.decimals)}{' '}
               {outputMint.symbol}
             </div>
@@ -111,18 +111,18 @@ export default function ActivePositionCard({
         )}
       </div>
 
-      <div className="flex justify-between text-sm text-gray-400">
+      <div className="flex justify-between text-sm text-muted-foreground">
         <div>
-          <span className="text-gray-500">Slots: </span>
+          <span className="text-[var(--t4)]">Slots: </span>
           {elapsedSlots.toString()} / {totalSlots.toString()}
         </div>
         <div>
-          <span className="text-gray-500">Flow: </span>
+          <span className="text-[var(--t4)]">Flow: </span>
           {formatAmount(ratePerSlot, inputMint.decimals)} SOL/slot
         </div>
       </div>
-      <div className="text-sm text-gray-400 mt-1">
-        <span className="text-gray-500">Est. remaining: </span>
+      <div className="text-sm text-muted-foreground mt-1">
+        <span className="text-[var(--t4)]">Est. remaining: </span>
         {formatTime(remainingSlots)}
       </div>
     </div>

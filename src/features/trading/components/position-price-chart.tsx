@@ -75,16 +75,16 @@ export function PositionPriceChart({
   const timeLabels = startTimeMs !== null && endTimeMs !== null
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-background/65">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border/40 px-3.5 py-3 text-[11px] sm:px-4">
+    <div className="overflow-hidden rounded-lg bg-[var(--page)] shadow-[var(--sunk)]">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[var(--line)] px-3.5 py-3 text-[11px] sm:px-4">
         <span className="text-muted-foreground">
           SOL/USDC{' '}
-          <span className="ml-1 font-mono text-foreground">
+          <span className="ml-1 tabular-nums text-foreground">
             {shown ? formatPrice(shown.price) : '—'}
           </span>
         </span>
         <span className="flex items-center gap-2 text-muted-foreground">
-          <span className="h-px w-4 bg-accent-strong" /> Market price
+          <span className="h-px w-4 bg-[var(--action)]" /> Market price
           {paused && (
             <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px]">
               Stream paused
@@ -114,14 +114,10 @@ export function PositionPriceChart({
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="0%"
-                  stopColor="var(--color-accent-strong)"
-                  stopOpacity="0.13"
+                  stopColor="var(--action)"
+                  stopOpacity="0.22"
                 />
-                <stop
-                  offset="100%"
-                  stopColor="var(--color-accent-strong)"
-                  stopOpacity="0"
-                />
+                <stop offset="100%" stopColor="var(--action)" stopOpacity="0" />
               </linearGradient>
             </defs>
             <line
@@ -129,8 +125,7 @@ export function PositionPriceChart({
               x2={WIDTH - 8}
               y1={y(first.price)}
               y2={y(first.price)}
-              stroke="currentColor"
-              className="text-muted-foreground/30"
+              stroke="var(--axis)"
               strokeDasharray="4 5"
               vectorEffect="non-scaling-stroke"
             />
@@ -143,8 +138,8 @@ export function PositionPriceChart({
             <path
               d={path}
               fill="none"
-              stroke="var(--color-accent-strong)"
-              strokeWidth="1.75"
+              stroke="var(--action)"
+              strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
@@ -153,7 +148,7 @@ export function PositionPriceChart({
               cx={x(last.slot)}
               cy={y(last.price)}
               r="4"
-              fill="var(--color-accent-strong)"
+              fill="var(--action)"
             />
             {hovered && (
               <>
@@ -162,15 +157,14 @@ export function PositionPriceChart({
                   x2={x(hovered.slot)}
                   y1="0"
                   y2={HEIGHT}
-                  stroke="currentColor"
-                  className="text-muted-foreground/40"
+                  stroke="var(--t4)"
                   strokeDasharray="3 4"
                 />
                 <circle
                   cx={x(hovered.slot)}
                   cy={y(hovered.price)}
                   r="4"
-                  fill="var(--foreground)"
+                  fill="var(--t1)"
                 />
               </>
             )}
@@ -187,7 +181,7 @@ export function PositionPriceChart({
                 : 'Waiting for market prices after this stream started.'}
           </div>
         )}
-        <div className="flex justify-between gap-3 border-t border-border/40 pt-2 pb-3 text-[10px] text-muted-foreground">
+        <div className="flex justify-between gap-3 border-t border-[var(--line)] pt-2 pb-3 text-[10px] text-muted-foreground">
           <span>
             {hovered
               ? timeAtSlot(hovered.slot) === null

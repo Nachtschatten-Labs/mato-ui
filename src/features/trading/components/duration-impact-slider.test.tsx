@@ -140,7 +140,7 @@ describe('DurationImpactSlider', () => {
       }
       const view = render(<DurationImpactSlider {...props} value={60} />)
       const slider = screen.getByRole('slider', { name: 'Order duration' })
-      const curve = slider.querySelector('path[stroke="var(--chart-1)"]')!
+      const curve = slider.querySelector('path[stroke="var(--action)"]')!
       const reference = slider.querySelector('line[stroke-dasharray="3 4"]')!
       const initialPath = curve.getAttribute('d')!
       const initialReferenceY = reference.getAttribute('y1')
@@ -169,9 +169,9 @@ describe('DurationImpactSlider', () => {
       <DurationImpactSlider {...props} impactAt={(seconds) => 60 / seconds} />,
     )
     const slider = screen.getByRole('slider', { name: 'Order duration' })
-    const curve = slider.querySelector('path[stroke="var(--chart-1)"]')!
+    const curve = slider.querySelector('path[stroke="var(--action)"]')!
     const recommendation = slider.querySelector(
-      'circle[stroke="var(--chart-1)"]',
+      'circle[stroke="var(--action)"]',
     )!
     const handle = slider.querySelector('circle[r="22"]')!.parentElement!
     const originalCurve = curve.getAttribute('d')

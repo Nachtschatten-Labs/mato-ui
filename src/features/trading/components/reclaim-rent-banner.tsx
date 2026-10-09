@@ -18,7 +18,7 @@ export function ReclaimRentBanner({
   const accountLabel = closeableCount === 1 ? 'account' : 'accounts'
 
   return (
-    <Alert className="mb-5 rounded-[20px] border-white/6 bg-white/[0.02] p-4 text-muted-foreground shadow-none">
+    <Alert className="mb-5 rounded-[var(--r-panel)] border-0 bg-[var(--panel)] p-4 text-muted-foreground shadow-[var(--ring-panel)] backdrop-blur-[24px]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-warning/10 text-warning">
@@ -42,7 +42,7 @@ export function ReclaimRentBanner({
         </div>
         <Button
           aria-busy={isReclaiming}
-          className="h-9 w-full rounded-full border-white/8 bg-transparent px-4 text-xs sm:w-auto"
+          className="h-9 w-full rounded-full border-border bg-transparent px-4 text-xs sm:w-auto"
           disabled={isReclaiming}
           onClick={onReclaim}
           variant="outline"

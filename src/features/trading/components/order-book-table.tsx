@@ -175,14 +175,14 @@ export function OrderBookTable({
         directionFilter={directionFilter}
         onDirectionFilterChange={setDirectionFilter}
       />
-      <div className="max-w-full overflow-hidden rounded-lg border border-white/6 bg-white/[0.01]">
+      <div className="max-w-full overflow-hidden rounded-lg bg-background shadow-[var(--sunk)]">
         <div className="max-h-[420px] w-full overflow-x-auto overflow-y-auto overscroll-contain">
           <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-elevated/95 text-xs text-muted-foreground backdrop-blur">
+            <thead className="sticky top-0 z-10 bg-popover text-xs text-muted-foreground backdrop-blur">
               <tr>
                 {ORDER_BOOK_COLUMNS.map((column) => (
                   <th
-                    className="border-b border-white/6 px-4 py-3 font-normal"
+                    className="border-b border-border px-4 py-3 font-normal"
                     key={column.label}
                     aria-sort={
                       column.sortKey && sort.key === column.sortKey
@@ -214,7 +214,7 @@ export function OrderBookTable({
             <tbody>
               {rows.map((row) => (
                 <tr
-                  className="border-b border-white/6 transition-colors last:border-0 hover:bg-white/[0.025]"
+                  className="border-b border-border transition-colors last:border-0 hover:bg-muted"
                   key={row.position.address}
                 >
                   <td className="px-4 py-3">
@@ -229,7 +229,7 @@ export function OrderBookTable({
                   </td>
                   <td className="px-4 py-3">
                     <a
-                      className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      className="inline-flex items-center gap-1.5 tabular-nums text-xs text-muted-foreground transition-colors hover:text-foreground"
                       href={formatExplorerAddressUrl(
                         row.position.address,
                         endpoint,
@@ -242,7 +242,7 @@ export function OrderBookTable({
                       <ExternalLink className="size-3" />
                     </a>
                   </td>
-                  <td className="px-4 py-3 font-medium tabular-nums">
+                  <td className="px-4 py-3 font-normal tabular-nums">
                     {formatAtoms(row.amountAtoms, row.amountDecimals)}{' '}
                     {row.amountToken}
                   </td>
@@ -279,10 +279,10 @@ function DirectionFilterControls({
         <Button
           aria-pressed={directionFilter === filter.value}
           className={cn(
-            'rounded-full border-white/6 px-3',
+            'rounded-full border-border px-3',
             directionFilter === filter.value
-              ? 'bg-white/8 text-foreground hover:bg-white/10'
-              : 'bg-transparent text-muted-foreground hover:bg-white/5',
+              ? 'bg-secondary text-foreground hover:bg-muted'
+              : 'bg-transparent text-muted-foreground hover:bg-muted',
           )}
           key={filter.value}
           onClick={() => onDirectionFilterChange(filter.value)}
@@ -346,7 +346,7 @@ function SortIcon({
 
 function OrderBookState({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-white/6 bg-white/[0.01] px-6 text-center text-sm text-muted-foreground">
+    <div className="flex min-h-[420px] items-center justify-center rounded-lg bg-background shadow-[var(--sunk)] px-6 text-center text-sm text-muted-foreground">
       {children}
     </div>
   )
