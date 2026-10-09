@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-import { AlertTriangle, Info, SlidersHorizontal } from 'lucide-react'
-import { Tooltip } from '@base-ui/react/tooltip'
+import { AlertTriangle, SlidersHorizontal } from 'lucide-react'
 import { SLOT_DURATION_SECONDS } from '../constants'
 import { MIN_DURATION_SLOTS } from '../lib/duration'
 import { formatOrderDuration } from '../lib/duration-label'
@@ -12,6 +11,7 @@ import { OrderFinishTime } from './order-finish-time'
 import { OrderCostDetails } from './order-cost-details'
 import type { DurationPreviewInputs } from './duration-dialog'
 import { Input } from '@/components/ui/input'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,7 @@ export function OrderEntryCard({
   durationQuoteInputs,
   estimatedConversionText,
   indicativePrice,
+  executionPrice,
   feePercent,
   feeAmount,
   priceImpactCost,
@@ -61,6 +62,7 @@ export function OrderEntryCard({
   durationQuoteInputs?: DurationPreviewInputs
   estimatedConversionText: string
   indicativePrice: number | null
+  executionPrice: number | null
   feePercent: number | null
   feeAmount: number | null
   priceImpactCost: number | null
@@ -267,24 +269,12 @@ export function OrderEntryCard({
               </Button>
             </>
           ) : (
-            <Tooltip.Provider>
+            <>
               <span>Smart fill</span>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  aria-label="About Smart fill"
-                  className="inline-flex cursor-help items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Info aria-hidden="true" className="size-3.5" />
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Positioner sideOffset={8}>
-                    <Tooltip.Popup className="z-50 max-w-64 rounded-lg bg-[var(--float)] px-3 py-2 text-sm leading-5 text-popover-foreground shadow-[var(--float-ring),var(--shadow-tip)]">
-                      {smartFillTooltip}
-                    </Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
+              <InfoTooltip label="About Smart fill">
+                {smartFillTooltip}
+              </InfoTooltip>
+            </>
           )}
           {hasAmount && durationSeconds !== null ? (
             <OrderFinishTime durationSeconds={durationSeconds} />
@@ -325,6 +315,8 @@ export function OrderEntryCard({
           quoteTicker={side === 'buy' ? amountTokenTicker : receiveTokenTicker}
           receiveTokenTicker={receiveTokenTicker}
           indicativePrice={indicativePrice}
+          executionPrice={executionPrice}
+          side={side}
           priceImpactDisplay={priceImpactDisplay}
           priceImpactCost={priceImpactCost}
           hasHighPriceImpact={Boolean(priceImpactWarningText)}

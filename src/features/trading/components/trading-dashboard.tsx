@@ -902,6 +902,7 @@ export function TradingDashboard({
               isCustomDuration={isCustomDuration}
               estimatedConversionText={estimatedConversionText}
               indicativePrice={dashboardViewModel.onChainIndicativePrice}
+              executionPrice={dashboardViewModel.executionPrice}
               feePercent={dashboardViewModel.feePercent}
               feeAmount={dashboardViewModel.feeAmount}
               priceImpactCost={dashboardViewModel.priceImpactCost}
