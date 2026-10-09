@@ -71,7 +71,7 @@ export function OrderCostDetails({
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <span>
           1 {baseTicker} ≈{' '}
-          <span className="text-foreground">{number(rate, 2)}</span>{' '}
+          <span className="text-foreground">{number(rate, 4)}</span>{' '}
           {quoteTicker}
         </span>
         {hasAmount ? (
