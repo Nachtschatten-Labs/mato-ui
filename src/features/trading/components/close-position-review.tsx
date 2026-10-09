@@ -58,7 +58,7 @@ export function ClosePositionReview({
         aria-label="Close position"
         title="Close position"
         disabled={disabled}
-        className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border/60 text-muted-foreground outline-none transition-colors hover:border-negative/30 hover:bg-negative/5 hover:text-negative focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground outline-none transition-colors hover:border-negative/30 hover:bg-negative/5 hover:text-negative focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
       >
         {isPending ? (
           <LoaderCircle className="size-3.5 animate-spin" />
@@ -76,16 +76,16 @@ export function ClosePositionReview({
         >
           <Popover.Popup
             initialFocus={cancelRef}
-            className="max-h-[var(--available-height)] w-[360px] max-w-[calc(100vw-24px)] origin-[var(--transform-origin)] overflow-y-auto rounded-xl border border-border bg-popover p-4 text-popover-foreground shadow-2xl outline-none transition-[opacity,transform] duration-150 data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0"
+            className="max-h-[var(--available-height)] w-[360px] max-w-[calc(100vw-24px)] origin-[var(--transform-origin)] overflow-y-auto rounded-xl bg-popover p-4 text-popover-foreground shadow-[var(--ring-panel),var(--shadow-pop)] outline-none transition-[opacity,transform] duration-150 data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0"
           >
-            <Popover.Title className="text-base font-medium">
+            <Popover.Title className="text-base font-normal">
               Close this stream?
             </Popover.Title>
             <Popover.Description className="mt-2 text-xs leading-5 text-muted-foreground">
               This ends the stream. It can’t be resumed.
             </Popover.Description>
-            <div className="mt-4 rounded-lg border border-border/50 bg-background/70 p-3.5">
-              <p className="mb-3 text-xs font-medium">You’ll get back</p>
+            <div className="mt-4 rounded-lg bg-secondary p-3.5 shadow-[var(--ring-block)]">
+              <p className="mb-3 text-xs font-normal">You’ll get back</p>
               {isLoading && !preview ? (
                 <p
                   role="status"
@@ -122,17 +122,17 @@ export function ClosePositionReview({
                         : null
                     }
                   />
-                  <div className="space-y-1.5 border-t border-border/50 pt-3 text-[10px] text-muted-foreground">
+                  <div className="space-y-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
                     <div className="flex justify-between gap-2">
                       <span>Trading fee included</span>
-                      <span className="text-right font-mono">
+                      <span className="text-right tabular-nums">
                         {format(preview.feeAtoms, metrics.swappedDecimals)}{' '}
                         {metrics.swappedToken}
                       </span>
                     </div>
                     <div className="flex justify-between gap-2">
                       <span>Position rent returned</span>
-                      <span className="text-right font-mono">
+                      <span className="text-right tabular-nums">
                         {format(preview.positionRentLamports, 9)} SOL
                       </span>
                     </div>
@@ -226,7 +226,7 @@ function PayoutRow({
             <p className="mt-0.5 text-[10px] text-muted-foreground">{label}</p>
           </div>
         </div>
-        <span className="max-w-[55%] break-all text-right font-mono text-[13px]">
+        <span className="max-w-[55%] break-all text-right tabular-nums text-[13px]">
           {value}
         </span>
       </div>

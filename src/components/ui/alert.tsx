@@ -6,7 +6,7 @@ function Alert({ className, ...props }: React.ComponentProps<'div'>) {
     <div
       role="status"
       className={cn(
-        'rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-foreground shadow-sm backdrop-blur-sm',
+        'rounded-[var(--r-row)] border border-border bg-card px-4 py-3 text-sm text-foreground shadow-(--ring-ctrl)',
         className,
       )}
       {...props}

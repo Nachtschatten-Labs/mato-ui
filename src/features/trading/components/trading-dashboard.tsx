@@ -845,7 +845,7 @@ export function TradingDashboard({
     reclaimRent.isReclaiming
 
   return (
-    <main className="mx-auto min-h-[calc(100dvh-7rem)] max-w-[1400px] px-4 pb-12 pt-2 text-foreground sm:px-6">
+    <main className="mx-auto overflow-x-clip min-h-[calc(100dvh-7rem)] max-w-[1800px] px-4 pb-12 pt-2 text-foreground min-[601px]:px-6 min-[769px]:px-10 min-[1441px]:px-20">
       {address &&
       marketAddress &&
       isMarketReady &&
@@ -889,8 +889,8 @@ export function TradingDashboard({
           onReclaim={() => void handleReclaimRent()}
         />
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.24fr)_minmax(0,1fr)] lg:gap-8">
-          <div className="min-w-0 space-y-6 lg:col-start-2 lg:row-start-1">
+        <div className="isolate grid grid-cols-1 items-start gap-8 min-[1242px]:grid-cols-[minmax(650px,1fr)_minmax(480px,600px)]">
+          <div className="trade-panel-column min-w-0 space-y-8 min-[1242px]:sticky min-[1242px]:top-8 min-[1242px]:col-start-2 min-[1242px]:row-start-1">
             <OrderEntryCard
               amountInput={amountInput}
               amountValidationMessage={amountValidationMessage}
@@ -934,7 +934,7 @@ export function TradingDashboard({
             />
           </div>
 
-          <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1 lg:space-y-8">
+          <div className="min-w-0 space-y-8 min-[1242px]:col-start-1 min-[1242px]:row-start-1">
             <Card>
               <CardContent className="space-y-5 p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1005,7 +1005,7 @@ export function TradingDashboard({
                     quoteTicker={quoteTicker}
                   />
                 )}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                   <MarketPanelTabs
                     activeTab={marketPanelTab}
                     onTabChange={setMarketPanelTab}
@@ -1021,7 +1021,7 @@ export function TradingDashboard({
 
             <section
               aria-label="Your streams"
-              className="space-y-5 rounded-[20px] border border-white/[0.06] bg-card/95 p-5 sm:p-6"
+              className="space-y-5 rounded-[var(--r-panel)] bg-[var(--panel)] p-5 shadow-[var(--ring-panel)] backdrop-blur-[24px] sm:p-6"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
@@ -1385,7 +1385,7 @@ function PriceChartPanel({
           Price history will appear when market data is available.
         </ChartState>
       ) : (
-        <div className="overflow-hidden rounded-lg bg-[#111111]">
+        <div className="overflow-hidden rounded-lg bg-background shadow-[var(--sunk)]">
           <MarketPriceChart
             defaultVisibleBars={
               CHART_RANGES.find((range) => range.timeframe === chartTimeframe)
@@ -1455,7 +1455,7 @@ function PriceChartPanel({
 
 function ChartState({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-[300px] items-center justify-center rounded-lg bg-[#111111] px-8 text-center text-sm leading-6 text-muted-foreground lg:h-[480px]">
+    <div className="flex h-[300px] items-center justify-center rounded-lg bg-background shadow-[var(--sunk)] px-8 text-center text-sm leading-6 text-muted-foreground min-[1242px]:h-[480px]">
       {children}
     </div>
   )

@@ -1,0 +1,71 @@
+/* mato · Dark Forest · Round 02, Option 2. Canonical tokens for the reference UI. */
+:root {
+  /* surfaces */
+  --page: #0b1512; /* page; sunk boxes (amount, chart) */
+  --panel: rgba(17, 31, 26, 0.85); /* cards, with backdrop-filter: blur(24px) */
+  --panel-solid: #111f1a; /* dialogs, sheets, popovers */
+  --block: #1a2c25; /* raised blocks: Est. receive, chips, active tab */
+  --track: #263d33; /* tracks, hover on blocks, disabled button */
+  --float: #263d33; /* tooltips, toasts */
+  /* text */
+  --t1: #eff4ec; /* primary */
+  --t2: #cbd8cc; /* secondary values */
+  --t3: #a7b9ab; /* labels, captions */
+  --t4: #9aac9e; /* muted units and axes; readable on all solid surfaces */
+  /* icons */
+  --icon: #a7b9ab; /* default: chevrons, wallet, icon buttons, reset */
+  --icon-link: #bdcfbf; /* icons inside text links */
+  --icon-strong: #e1ebdc; /* icons on buttons, the rate flip */
+  /* colour */
+  --action: #a2bb9c; /* sage accent: price line, average fill, progress, limit; separate from positive status */
+  --good: #86d6ae; /* positive change, done toast */
+  --caution: #e6cf86; /* not enough SOL notice */
+  --risk: #e89a9a; /* worse than start, impact over 1%, declined */
+  --btn: #d7edc5; /* mint primary button; deep-green label (--btn-ink) */
+  --btn-hover: #e5f4da; /* primary button on hover */
+  /* lines */
+  --axis: #758b7c; /* start-price line on the order chart */
+  --grip: #496052; /* sheet grip, order chart axis */
+  --line: #d7edc50f; /* row separators */
+  --divider: #d7edc51f; /* dashed rules */
+  /* edges and depth */
+  --ring-panel: inset 0 0 0 1px #d7edc50d, inset 0 1px 0 0 #d7edc508;
+  --ring-block: inset 0 0 0 1px #d7edc508, inset 0 1px 0 0 #d7edc50d;
+  --ring-ctrl: inset 0 0 0 1px #d7edc50f, inset 0 1px 0 0 #d7edc508;
+  --sunk:
+    inset 0 1px 3px 0 #00000080, inset 0 0 0 1px #00000040, 0 1px 0 0 #d7edc50d;
+  --float-ring: inset 0 0 0 1px #d7edc514;
+  /* shadows */
+  --shadow-btn: 0 8px 20px -4px #00000080; /* main button */
+  --shadow-tip: 0 8px 24px -4px #00000099; /* tooltips */
+  --shadow-pop: 0 16px 40px -8px #000000cc; /* popovers, confirmations, toasts */
+  --shadow-dialog: 0 24px 64px -12px #000000cc; /* dialogs */
+  --shadow-sheet: 0 -16px 40px -8px #000000cc; /* bottom sheets */
+  /* radius */
+  --r-panel: 20px;
+  --r-row: 8px;
+  --r-ctrl: 8px;
+  --r-sheet: 20px;
+  --r-pill: 40px;
+  --r-chip: 20px;
+  /* motion */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 140ms;
+  --base: 220ms;
+  /* font */
+  --font: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* brand */
+  --brand-forest: #25473e; /* exact deep green from the approved Round 02 Option 2 assets */
+  --brand-mint: #d7edc5; /* exact mint from the approved assets; logo on dark surfaces */
+  --brand-sage: #a2bb9c; /* exact secondary sage from the banner */
+  --btn-ink: #25473e; /* labels and spinners on mint primary buttons */
+  --focus: #d7edc5; /* keyboard focus outline */
+  --glow-rgb: 37, 71, 62; /* deep-green ambient glow behind the trade panel */
+  --grid-vertical: rgba(215, 237, 197, 0.03); /* price chart vertical grid */
+  --grid-horizontal: rgba(
+    215,
+    237,
+    197,
+    0.04
+  ); /* price chart horizontal grid */
+}

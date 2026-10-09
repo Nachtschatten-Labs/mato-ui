@@ -32,7 +32,7 @@ export function HighPriceImpactDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent showCloseButton={!isSubmitting}>
         <DialogHeader>
-          <div className="flex items-center gap-2 text-warning">
+          <div className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="size-5" />
             <DialogTitle>High Price Impact</DialogTitle>
           </div>
@@ -75,11 +75,9 @@ export function HighPriceImpactDialog({
 
 function ImpactDetail({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-      <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </span>
-      <span className="break-words font-medium text-foreground sm:text-right">
+    <div className="flex flex-col gap-1 rounded-xl bg-secondary px-3 shadow-[var(--ring-block)] py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="break-words font-normal text-foreground sm:text-right">
         {value}
       </span>
     </div>

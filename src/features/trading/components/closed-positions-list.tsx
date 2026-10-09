@@ -64,7 +64,7 @@ export function ClosedPositionsList({
             <col className="w-[28%] sm:w-[26%]" />
           </colgroup>
           <thead>
-            <tr className="border-b border-border/60 text-muted-foreground">
+            <tr className="border-b border-border text-muted-foreground">
               <th scope="col" className="py-3 pl-6 pr-2 font-normal sm:pl-10">
                 Asset
               </th>
@@ -114,7 +114,7 @@ function ClosedPositionRow({
   return (
     <Fragment>
       <tr
-        className={`cursor-pointer transition-colors [clip-path:inset(0_round_var(--radius-sm))] hover:bg-white/[0.025] focus-within:bg-white/[0.025] ${expanded ? '' : 'border-b border-border/60'}`}
+        className={`cursor-pointer transition-colors [clip-path:inset(0_round_var(--radius-sm))] hover:bg-muted focus-within:bg-muted ${expanded ? '' : 'border-b border-border'}`}
         onClick={() => setExpanded((previous) => !previous)}
       >
         <td className="py-4 pr-2 align-top">
@@ -134,8 +134,8 @@ function ClosedPositionRow({
               className="hidden size-5 sm:inline-flex"
             />
             <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="break-all font-medium">{market.baseTicker}</span>
-              <span className="rounded bg-white/[0.07] px-1.5 py-0.5 text-xs text-foreground/80">
+              <span className="break-all font-normal">{market.baseTicker}</span>
+              <span className="rounded bg-secondary px-1.5 py-0.5 text-xs text-[var(--t2)]">
                 {summary.sideLabel}
               </span>
             </span>
@@ -174,7 +174,7 @@ function ClosedPositionRow({
         </td>
       </tr>
       {expanded ? (
-        <tr className="border-b border-border/60">
+        <tr className="border-b border-border">
           <td colSpan={3} className="pt-2 pb-5 sm:pl-10">
             <div id={detailsId}>
               <ClosedPositionDetails
@@ -240,7 +240,7 @@ function ClosedPositionDetails({
   const endLabel = formatPositionTime(times.endTimeMs, times.estimatedEnd)
 
   return (
-    <div className="space-y-5 rounded-lg border border-border/60 bg-white/[0.035] p-4 sm:p-5">
+    <div className="space-y-5 rounded-lg bg-secondary p-4 shadow-[var(--ring-block)] sm:p-5">
       <dl className="grid gap-4 sm:grid-cols-3">
         <Detail
           label="Started"
@@ -273,14 +273,14 @@ function ClosedPositionDetails({
         {points.length >= 2 ? (
           <MiniPriceChart
             averagePrice={summary.averageFillPrice}
-            averageClassName="stroke-foreground/40"
+            averageClassName="stroke-[var(--action)]"
             lineClassName="stroke-accent-strong"
             points={points}
           />
         ) : (
           <div
             role="status"
-            className="flex h-28 items-center justify-center rounded-lg border border-border/50 bg-background/50 text-xs text-muted-foreground"
+            className="flex h-28 items-center justify-center rounded-lg bg-background shadow-[var(--sunk)] text-xs text-muted-foreground"
           >
             {history.isLoading
               ? 'Loading price history…'

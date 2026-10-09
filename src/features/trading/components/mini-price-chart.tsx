@@ -73,9 +73,9 @@ function LegendSwatch({
 
 export function MiniPriceChart({
   averagePrice,
-  lineClassName = 'stroke-positive',
+  lineClassName = 'stroke-[var(--action)]',
   points,
-  averageClassName = 'stroke-positive/55',
+  averageClassName = 'stroke-[var(--action)]',
 }: {
   averagePrice: number | null
   averageClassName?: string
@@ -89,15 +89,15 @@ export function MiniPriceChart({
 
   if (!geometry) {
     return (
-      <div className="h-[96px] rounded-xl border border-border/50 bg-background/50" />
+      <div className="h-[96px] rounded-lg bg-[var(--page)] shadow-[var(--sunk)]" />
     )
   }
 
   const midpoint = geometry.min + (geometry.max - geometry.min) / 2
 
   return (
-    <div className="rounded-xl border border-border/50 bg-background/50 p-2">
-      <div className="mb-2 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+    <div className="rounded-lg bg-[var(--page)] shadow-[var(--sunk)] p-2">
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-[10px] text-[var(--t3)]">
         <span className="inline-flex items-center gap-1.5">
           <LegendSwatch className={lineClassName} />
           Price path
@@ -111,7 +111,7 @@ export function MiniPriceChart({
       </div>
 
       <div className="flex items-stretch gap-3">
-        <div className="flex h-[60px] w-14 shrink-0 flex-col justify-between text-[10px] tabular-nums text-muted-foreground">
+        <div className="flex h-[60px] w-14 shrink-0 flex-col justify-between text-[10px] tabular-nums text-[var(--t4)]">
           <span>{formatPrice(geometry.max)}</span>
           <span>{formatPrice(midpoint)}</span>
           <span>{geometry.min === 0 ? '0' : formatPrice(geometry.min)}</span>
@@ -119,7 +119,7 @@ export function MiniPriceChart({
 
         <svg
           aria-hidden="true"
-          className="h-[60px] flex-1 rounded-lg bg-black/20"
+          className="h-[60px] flex-1 rounded-lg bg-[var(--page)]"
           viewBox="0 0 240 60"
           preserveAspectRatio="none"
         >

@@ -14,16 +14,12 @@ export function TokenMark({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold leading-none',
+        'inline-flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none',
         isSol
           ? 'bg-[#282331]'
           : isUsdc
             ? 'bg-[#2775ca] text-white'
-            : symbol === 'MATO'
-              ? 'bg-[#bc7650] text-[#fff5e9]'
-              : symbol === 'SB'
-                ? 'bg-[#496857] text-[#e3f3e8]'
-                : 'bg-[#655c85] text-[#eee8ff]',
+            : 'bg-[var(--track)] text-[var(--t2)]',
         className,
       )}
     >

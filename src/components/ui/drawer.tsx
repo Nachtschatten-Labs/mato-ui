@@ -29,7 +29,7 @@ function DrawerOverlay({
     <DrawerPrimitive.Backdrop
       data-slot="drawer-overlay"
       className={cn(
-        'fixed inset-0 isolate z-50 bg-black/35 duration-200 supports-backdrop-filter:backdrop-blur-xs data-ending-style:opacity-0 data-starting-style:opacity-0',
+        'fixed inset-0 isolate z-50 bg-black/60 duration-200 supports-backdrop-filter:backdrop-blur-xs data-ending-style:opacity-0 data-starting-style:opacity-0',
         className,
       )}
       {...props}
@@ -60,11 +60,11 @@ function DrawerContent({
           <DrawerPrimitive.Content
             data-slot="drawer-content"
             className={cn(
-              'relative grid gap-4 rounded-t-xl border border-border/60 bg-popover p-4 text-popover-foreground shadow-[0_-20px_80px_-40px_rgba(0,0,0,0.8)] sm:p-5',
+              'relative grid gap-4 rounded-t-[var(--r-sheet)] bg-popover p-4 text-popover-foreground shadow-[var(--ring-panel),var(--shadow-sheet)] sm:p-5',
               className,
             )}
           >
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/35" />
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-[var(--grip)]" />
             {children}
             {showCloseButton && (
               <DrawerPrimitive.Close
@@ -115,7 +115,7 @@ function DrawerTitle({ className, ...props }: DrawerPrimitive.Title.Props) {
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
-      className={cn('text-base font-semibold leading-none', className)}
+      className={cn('text-base font-normal leading-none', className)}
       {...props}
     />
   )

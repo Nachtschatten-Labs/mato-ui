@@ -19,7 +19,7 @@ export function Progress({
   return (
     <div
       className={cn(
-        'h-2 overflow-hidden rounded-full bg-secondary/75',
+        'h-2 overflow-hidden rounded-full bg-[var(--track)]',
         className,
       )}
       aria-label={ariaLabel}
@@ -30,7 +30,7 @@ export function Progress({
     >
       <div
         className={cn(
-          'relative h-full overflow-hidden rounded-full bg-primary transition-[width] duration-500',
+          'relative h-full overflow-hidden rounded-full bg-[var(--action)] transition-[width] duration-500',
           indicatorClassName,
         )}
         style={{ width: `${clampedValue}%` }}

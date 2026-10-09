@@ -316,11 +316,11 @@ export function ActivePositionCardView({
       ? '—'
       : amount(metrics.consumedAtoms, metrics.depositedDecimals)
   const actionClass =
-    'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border/60 text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40'
+    'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40'
   return (
     <article
       aria-label={`${metrics.sideLabel} ${baseTicker} stream`}
-      className="min-w-0 rounded-xl border border-border/45 bg-background/15"
+      className="min-w-0 rounded-lg border border-border"
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-4 px-3 py-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:gap-x-3 sm:px-4">
         <div className="min-w-0">
@@ -355,7 +355,7 @@ export function ActivePositionCardView({
                 className="size-5 ring-2 ring-card"
               />
             </span>
-            <span className="truncate text-xs font-medium">
+            <span className="truncate text-xs font-normal">
               {metrics.depositedToken}
             </span>
             <ArrowRight className="size-3 shrink-0 text-muted-foreground" />
@@ -390,13 +390,13 @@ export function ActivePositionCardView({
             </span>
           </p>
           {metrics.progressPercent === null ? (
-            <div className="mt-2 h-1 rounded-full bg-secondary" />
+            <div className="mt-2 h-1 rounded-full bg-muted" />
           ) : (
             <Progress
               animated={!metrics.isPaused && !metrics.hasPositionEnded}
               ariaLabel={`${metrics.sideLabel} position progress`}
               value={metrics.progressPercent}
-              className="mt-2 h-1 bg-secondary"
+              className="mt-2 h-1 bg-muted"
               indicatorClassName="bg-accent-strong"
             />
           )}
@@ -440,7 +440,7 @@ export function ActivePositionCardView({
       {expanded && (
         <div
           id={detailsId}
-          className="mx-3 mb-3 space-y-5 rounded-lg border border-border/30 bg-secondary/35 p-3.5 sm:mx-4 sm:mb-4 sm:p-4"
+          className="mx-3 mb-3 space-y-5 rounded-lg bg-secondary p-3.5 shadow-[var(--ring-block)] sm:mx-4 sm:mb-4 sm:p-4"
         >
           <div className="grid grid-cols-1 gap-x-4 gap-y-5 min-[380px]:grid-cols-2 sm:grid-cols-3">
             <div className="min-w-0">
@@ -478,7 +478,7 @@ export function ActivePositionCardView({
                 }
                 onClick={onWithdraw}
                 variant="outline"
-                className="mt-3 h-7 rounded-md border-border/60 bg-transparent px-2.5 text-[11px]"
+                className="mt-3 h-7 rounded-md border-border bg-transparent px-2.5 text-[11px]"
               >
                 <ArrowDownToLine className="size-3" />
                 {isWithdrawing ? 'Withdrawing…' : 'Withdraw swapped'}

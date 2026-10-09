@@ -40,6 +40,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
+        name: 'theme-color',
+        content: '#0B1512',
+      },
+      {
         title: 'Mato',
       },
       {
@@ -97,6 +101,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         rel: 'icon',
+        type: 'image/svg+xml',
+        sizes: 'any',
+        href: '/favicon.svg',
+      },
+      {
+        rel: 'icon',
         type: 'image/png',
         sizes: '32x32',
         href: '/favicon-32.png',
@@ -136,7 +146,7 @@ function RootLayout() {
         <WalletConnectionButton marketId={marketId} />
       </Navbar>
       {!transactionsEnabled() && (
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-[11px] leading-4 text-muted-foreground sm:px-6">
+        <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2 text-[11px] leading-4 text-muted-foreground min-[601px]:px-6 min-[769px]:px-10 min-[1441px]:px-20">
           <span role="status" className="text-warning">
             Read-only · Trading disabled
           </span>

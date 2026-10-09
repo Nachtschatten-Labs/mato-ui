@@ -177,8 +177,8 @@ export function DurationImpactSlider({
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--chart-1)" stopOpacity="0.18" />
-            <stop offset="1" stopColor="var(--chart-1)" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--action)" stopOpacity="0.22" />
+            <stop offset="1" stopColor="var(--action)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {samples.every((point) => point.impact !== null) && (
@@ -194,7 +194,7 @@ export function DurationImpactSlider({
               y1={top - 10}
               x2={left - 24}
               y2={baseline}
-              stroke="var(--muted-foreground)"
+              stroke="var(--t4)"
               strokeOpacity="0.5"
             />
             {yTicks.map((tick) => (
@@ -204,7 +204,7 @@ export function DurationImpactSlider({
                 y={y(tick) + 4}
                 textAnchor="end"
                 fontSize="12"
-                fill="var(--muted-foreground)"
+                fill="var(--t3)"
               >
                 {Number(tick.toPrecision(3))}%
               </text>
@@ -216,7 +216,7 @@ export function DurationImpactSlider({
           y1={y(referenceImpact)}
           x2={right}
           y2={y(referenceImpact)}
-          stroke="var(--muted-foreground)"
+          stroke="var(--t4)"
           strokeDasharray="3 4"
         />
         <text
@@ -224,17 +224,17 @@ export function DurationImpactSlider({
           y={y(referenceImpact) - 8}
           textAnchor="end"
           fontSize="12"
-          fill="var(--muted-foreground)"
+          fill="var(--t3)"
         >
           {referenceImpact}% impact
         </text>
-        <path d={path} fill="none" stroke="var(--chart-1)" strokeWidth="2" />
+        <path d={path} fill="none" stroke="var(--action)" strokeWidth="2" />
         <line
           x1={compact ? left : left - 24}
           y1={baseline}
           x2={right}
           y2={baseline}
-          stroke="var(--muted-foreground)"
+          stroke="var(--t4)"
           strokeOpacity="0.5"
         />
         {steps.map((seconds) => (
@@ -244,7 +244,7 @@ export function DurationImpactSlider({
             x2={x(seconds)}
             y1={baseline}
             y2={baseline + 3}
-            stroke="var(--border)"
+            stroke="var(--divider)"
           />
         ))}
         {ticks.map(([seconds, text]) => (
@@ -254,7 +254,7 @@ export function DurationImpactSlider({
               x2={x(seconds)}
               y1={baseline}
               y2={baseline + 6}
-              stroke="var(--muted-foreground)"
+              stroke="var(--t4)"
             />
             <text
               x={x(seconds)}
@@ -267,7 +267,7 @@ export function DurationImpactSlider({
                     : 'middle'
               }
               fontSize={compact ? 12 : 14}
-              fill="var(--muted-foreground)"
+              fill="var(--t3)"
             >
               {text}
             </text>
@@ -278,8 +278,8 @@ export function DurationImpactSlider({
             cx={x(recommended)}
             cy={y(pickImpact)}
             r="6"
-            fill="var(--card)"
-            stroke="var(--chart-1)"
+            fill="var(--panel-solid)"
+            stroke="var(--action)"
             strokeWidth="2"
           >
             <title>Smart fill: {formatDuration(recommended)}</title>
@@ -290,15 +290,15 @@ export function DurationImpactSlider({
           x2={handleX}
           y1={handleY}
           y2={baseline}
-          stroke="var(--muted-foreground)"
+          stroke="var(--t4)"
           strokeDasharray="3 3"
         />
         <g transform={`translate(${handleX}, ${handleY})`}>
-          <circle r="22" fill="var(--primary)" />
+          <circle r="22" fill="var(--btn)" />
           <path
             d="M-8,-5 L-13,0 L-8,5 M8,-5 L13,0 L8,5"
             fill="none"
-            stroke="var(--primary-foreground)"
+            stroke="var(--btn-ink)"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -312,7 +312,7 @@ export function DurationImpactSlider({
               width={bubbleWidth}
               height="30"
               rx="8"
-              fill="var(--secondary)"
+              fill="var(--float)"
             />
             <text
               y="5"

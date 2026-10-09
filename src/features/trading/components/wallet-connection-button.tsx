@@ -125,7 +125,7 @@ export function WalletConnectionButton({
         size="lg"
         variant="outline"
         disabled
-        className="h-9 justify-center gap-2 rounded-full border-white/6 bg-card px-4 text-[12px] font-normal shadow-none"
+        className="h-9 justify-center gap-2 rounded-full border-transparent bg-secondary px-4 text-[12px] font-normal shadow-[var(--ring-ctrl)]"
       >
         <Wallet className="size-3.5" />
         <span className="text-muted-foreground">Loading wallets</span>
@@ -181,7 +181,7 @@ export function WalletConnectionButton({
         variant="outline"
         aria-controls={open ? dropdownId : undefined}
         aria-expanded={open}
-        className="h-9 max-w-full justify-between gap-3 rounded-full border-white/6 bg-card px-4 text-[12px] font-normal shadow-none hover:bg-secondary"
+        className="h-9 max-w-full justify-between gap-3 rounded-full border-transparent bg-secondary px-4 text-[12px] font-normal shadow-[var(--ring-ctrl)] hover:bg-muted"
         onClick={() => setOpen((previous) => !previous)}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -198,12 +198,12 @@ export function WalletConnectionButton({
       {open ? (
         <Card
           id={dropdownId}
-          className="absolute right-0 z-[80] mt-3 w-[19rem] max-w-[calc(100vw-2.5rem)] rounded-2xl border-white/6 bg-card shadow-[0_24px_80px_-24px_rgba(0,0,0,0.75)]"
+          className="absolute right-0 z-[80] mt-3 w-[19rem] max-w-[calc(100vw-2.5rem)] rounded-2xl bg-popover shadow-[var(--ring-panel),var(--shadow-pop)]"
         >
           <CardContent className="space-y-3 p-4">
             {connected ? (
               <>
-                <div className="max-w-full rounded-xl bg-secondary p-4">
+                <div className="max-w-full rounded-xl bg-secondary p-4 shadow-[var(--ring-block)]">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="size-1.5 rounded-full bg-positive" />
@@ -274,7 +274,7 @@ export function WalletConnectionButton({
             ) : (
               <>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Connect a wallet</p>
+                  <p className="text-sm font-normal">Connect a wallet</p>
                   <p className="text-xs leading-5 text-muted-foreground">
                     {connectors.length > 0
                       ? 'Choose your wallet to start trading.'

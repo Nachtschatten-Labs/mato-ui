@@ -99,7 +99,7 @@ export function OrderEntryCard({
       <CardContent className="p-5 sm:p-10">
         <div
           aria-label="Order side"
-          className="mb-6 grid grid-cols-2 rounded-full border border-border bg-input p-1"
+          className="mb-6 grid grid-cols-2 rounded-full bg-background p-1 shadow-[var(--sunk)]"
           role="group"
         >
           {(['buy', 'sell'] as const).map((orderSide) => (
@@ -124,12 +124,14 @@ export function OrderEntryCard({
 
         <div
           className={cn(
-            'rounded-xl border bg-input p-4 sm:p-5',
-            amountValidationMessage ? 'border-destructive/60' : 'border-border',
+            'rounded-xl border border-transparent bg-background p-4 shadow-[var(--sunk)] focus-within:border-ring sm:p-5',
+            amountValidationMessage
+              ? 'border-destructive'
+              : 'border-transparent',
           )}
         >
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <label className="font-medium" htmlFor="order-amount">
+            <label className="font-normal" htmlFor="order-amount">
               You pay
             </label>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -162,14 +164,14 @@ export function OrderEntryCard({
               aria-describedby="order-amount-help"
               aria-invalid={amountValidationMessage ? true : undefined}
               autoComplete="off"
-              className="h-12 w-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-[32px] font-normal tracking-tight shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
+              className="h-12 w-0 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-[32px] font-normal tracking-tight shadow-none placeholder:text-[var(--t4)] focus-visible:ring-0"
               id="order-amount"
               inputMode="decimal"
               onChange={(event) => onAmountChange(event.target.value)}
               placeholder="0.00"
               value={amountInput}
             />
-            <span className="flex shrink-0 items-center gap-2 text-base font-medium">
+            <span className="flex shrink-0 items-center gap-2 text-base font-normal">
               <TokenMark symbol={amountTokenTicker} />
               {amountTokenTicker}
             </span>
@@ -243,7 +245,7 @@ export function OrderEntryCard({
                     : `Customize duration: ${formatOrderDuration(durationSeconds, isCustomDuration)}`
                 }
                 aria-haspopup="dialog"
-                className="h-auto min-h-7 max-w-full gap-2 rounded-full border-border bg-secondary px-3 py-1 text-xs font-normal whitespace-normal text-foreground/80 hover:text-foreground"
+                className="h-auto min-h-7 max-w-full gap-2 rounded-full border-border bg-secondary px-3 py-1 text-xs font-normal whitespace-normal text-[var(--t2)] hover:text-foreground"
                 onClick={openDurationDialog}
                 ref={durationTriggerRef}
                 variant="secondary"
@@ -266,7 +268,7 @@ export function OrderEntryCard({
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
                   <Tooltip.Positioner sideOffset={8}>
-                    <Tooltip.Popup className="z-50 max-w-64 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-5 text-popover-foreground shadow-lg">
+                    <Tooltip.Popup className="z-50 max-w-64 rounded-lg bg-[var(--float)] px-3 py-2 text-sm leading-5 text-popover-foreground shadow-[var(--float-ring),var(--shadow-tip)]">
                       {smartFillTooltip}
                     </Tooltip.Popup>
                   </Tooltip.Positioner>
@@ -281,7 +283,7 @@ export function OrderEntryCard({
           ) : null}
         </div>
 
-        <div className="min-h-[140px] rounded-xl border border-white/[0.06] bg-secondary p-4 sm:p-5">
+        <div className="min-h-[140px] rounded-xl bg-secondary p-4 shadow-[var(--ring-block)] sm:p-5">
           <div className="flex items-center justify-between gap-2 text-sm">
             <span className="text-muted-foreground">Est. receive</span>
             {receiveBalanceDisplay !== undefined ? (
@@ -297,7 +299,7 @@ export function OrderEntryCard({
             >
               {receiveAmount}
             </span>
-            <span className="flex shrink-0 items-center gap-2 text-base font-medium">
+            <span className="flex shrink-0 items-center gap-2 text-base font-normal">
               <TokenMark symbol={receiveTokenTicker} />
               {receiveTokenTicker}
             </span>
@@ -309,16 +311,14 @@ export function OrderEntryCard({
             Est. price{' '}
             <span className="text-foreground">{executionPriceDisplay}</span>
           </span>
-          <span
-            className={cn(priceImpactWarningText && 'text-warning-foreground')}
-          >
+          <span className={cn(priceImpactWarningText && 'text-destructive')}>
             Price impact {priceImpactDisplay}
           </span>
         </div>
 
         {priceImpactWarningText ? (
           <div
-            className="mb-4 flex items-start gap-2 rounded-xl border border-warning/25 bg-warning/5 px-3 py-2 text-sm leading-6 text-warning-foreground"
+            className="mb-4 flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm leading-6 text-destructive"
             role="alert"
           >
             <AlertTriangle className="mt-1 size-4 shrink-0" />
