@@ -28,6 +28,7 @@ export function OrderEntryCard({
   isConnected,
   isCustomDuration = false,
   minimumAmountDisplay,
+  nativeSolWarning,
   onAmountChange,
   onDurationChange,
   onResetDuration,
@@ -58,6 +59,7 @@ export function OrderEntryCard({
   isConnected: boolean
   isCustomDuration?: boolean
   minimumAmountDisplay: string
+  nativeSolWarning?: string | null
   onAmountChange: (value: string) => void
   onDurationChange: (seconds: number) => void
   onResetDuration?: () => void
@@ -326,7 +328,29 @@ export function OrderEntryCard({
           </div>
         ) : null}
 
+        {nativeSolWarning ? (
+          <div
+            className="mb-4 flex items-start gap-3 rounded-[var(--r-row)] bg-warning/8 px-4 py-3 text-warning shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--caution)_20%,transparent)]"
+            id="order-native-sol-warning"
+            role="status"
+          >
+            <AlertTriangle
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0"
+            />
+            <div className="flex flex-col gap-0.5 text-sm leading-5 text-[var(--t2)]">
+              <span className="font-medium text-foreground">
+                Add SOL for network fees
+              </span>
+              <span>{nativeSolWarning}</span>
+            </div>
+          </div>
+        ) : null}
+
         <Button
+          aria-describedby={
+            nativeSolWarning ? 'order-native-sol-warning' : undefined
+          }
           className="h-12 w-full rounded-full text-sm font-medium"
           disabled={!isConnected || !canSubmit}
           onClick={onSubmit}

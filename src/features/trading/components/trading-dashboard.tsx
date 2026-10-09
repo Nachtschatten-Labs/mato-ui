@@ -287,7 +287,7 @@ export function TradingDashboard({
       ? null
       : formatAtoms(nativeSolBalance.lamports, NATIVE_SOL_DECIMALS)
   const lowSubmitNativeSolWarning = hasLowSubmitNativeSolBalance
-    ? `Your wallet has ${nativeSolBalanceDisplay} SOL. Add SOL before submitting orders; at least ${requiredSubmitNativeSolDisplay} SOL is required for fees and rent.`
+    ? `Your wallet has ${nativeSolBalanceDisplay} SOL. A stream needs at least ${requiredSubmitNativeSolDisplay} SOL for fees and rent to start.`
     : null
   const lowMaintenanceNativeSolWarning = hasLowMaintenanceNativeSolBalance
     ? `Your wallet has ${nativeSolBalanceDisplay} SOL. Add SOL before updating positions; at least ${requiredMaintenanceNativeSolDisplay} SOL is required for fees.`
@@ -462,7 +462,7 @@ export function TradingDashboard({
                 : isMarketPaused
                   ? 'Market paused'
                   : hasLowSubmitNativeSolBalance
-                    ? 'Add SOL to submit'
+                    ? 'Not enough SOL'
                     : !amountAtoms || amountAtoms <= 0n
                       ? 'Enter an amount'
                       : durationSeconds === null ||
@@ -875,13 +875,6 @@ export function TradingDashboard({
           </Alert>
         ) : null}
 
-        {lowSubmitNativeSolWarning ? (
-          <Alert className="mb-5 flex items-start gap-3 border-warning/35 bg-warning/10 text-warning-foreground">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <span>{lowSubmitNativeSolWarning}</span>
-          </Alert>
-        ) : null}
-
         <ReclaimRentBanner
           closeableCount={reclaimRent.closeableCount}
           isReclaiming={reclaimRent.isReclaiming}
@@ -911,6 +904,7 @@ export function TradingDashboard({
               executionPriceDisplay={executionPriceDisplay}
               isConnected={walletConnection.connected}
               minimumAmountDisplay={minimumAmountDisplay}
+              nativeSolWarning={lowSubmitNativeSolWarning}
               onAmountChange={(value) => {
                 setAmountInput(sanitizeAmountInput(value))
               }}
