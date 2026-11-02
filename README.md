@@ -4,6 +4,11 @@ Mainnet SOL/USDC streaming trades for program
 `TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A`, including order book, positions,
 pause/resume, withdrawals, closed history, and interval rent reclamation.
 
+The DCA landing page is at `/`, with interactive illustrations of spending
+pace and continuous clearing. Its examples are illustrative, not live quotes.
+The trading app is at `/trade`. Existing `/?market=1` links redirect to the trading
+app, and `/welcome` redirects to the homepage.
+
 ```sh
 nvm use
 pnpm install --frozen-lockfile --ignore-scripts

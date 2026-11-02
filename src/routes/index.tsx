@@ -1,29 +1,39 @@
-import { createFileRoute } from '@tanstack/react-router'
-import type { MarketId } from '@/features/trading/constants'
-import { TradingDashboard } from '@/features/trading/components/trading-dashboard'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { parseMarketSearch } from '@/features/trading/constants'
-import { tradingQueries } from '@/features/trading/queries'
+import { LandingPage } from '@/features/landing/landing-page'
+import landingCss from '@/features/landing/landing.css?url'
+
+const title = 'Mato · Give your trade time'
+const description =
+  'A calmer way to DCA on Solana. Stream SOL and USDC over time with one shared clearing price, transparent fees, and control over your pace.'
 
 export const Route = createFileRoute('/')({
-  validateSearch: parseMarketSearch,
-  loaderDeps: ({ search }) => ({ marketId: search.market }),
-  loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
-      tradingQueries.marketAddress(deps.marketId),
-    )
+  beforeLoad: ({ location }) => {
+    // Keep existing bookmarks and shared links opening their selected market.
+    if (new URLSearchParams(location.searchStr).has('market')) {
+      throw redirect({
+        to: '/trade',
+        search: parseMarketSearch(location.search),
+        replace: true,
+      })
+    }
   },
-  component: App,
+  head: () => ({
+    meta: [
+      { title },
+      { name: 'description', content: description },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      {
+        property: 'og:url',
+        content:
+          import.meta.env.VITE_SITE_URL?.replace(/\/$/, '') ??
+          'https://mato.markets',
+      },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+    ],
+    links: [{ rel: 'stylesheet', href: landingCss }],
+  }),
+  component: LandingPage,
 })
-
-function App() {
-  const { market: marketId } = Route.useSearch()
-  const navigate = Route.useNavigate()
-
-  function handleMarketChange(nextMarketId: MarketId) {
-    void navigate({ search: { market: nextMarketId } })
-  }
-
-  return (
-    <TradingDashboard marketId={marketId} onMarketChange={handleMarketChange} />
-  )
-}
