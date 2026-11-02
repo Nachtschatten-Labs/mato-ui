@@ -16,8 +16,9 @@ overrides:
   'miniflare>sharp': 0.35.5
   # Undici fixes include GHSA-2m5v-pch6-74hx (TLS validation) and GHSA-4w7w-5xrc-9h26 (redirects).
   undici: 7.30.1
-  # Seroval deserialization fixes, including GHSA-97r2-qh9m-474h and GHSA-f86p-h4j2-7qgj.
+  # Patched Seroval versions must stay aligned: plugins 1.7.x require APIs absent in 1.6.x.
   seroval: 1.6.11
+  seroval-plugins: 1.6.11
   # GHSA-mrhx-c7xc-m3w5 (memory exhaustion on oversized constrained collections).
   zod: 4.6.6
 

@@ -59,11 +59,13 @@ integrity. See [MAINNET.md](MAINNET.md) for interface provenance and validation.
 pnpm exec wrangler login
 pnpm deploy:preview       # read-only, optional
 pnpm deploy:production    # verifies mainnet, scans source, checks types/tests,
-                         # builds production, scans bundle, then publishes
+                         # builds production, smoke-tests pages, scans bundle, then publishes
 ```
 
-For build-only verification, run `pnpm build`, `pnpm security:bundle`, then
-`pnpm deploy:dry-run`. The Vite build selects the Cloudflare target and generates
+For build-only verification, run `pnpm build`, `pnpm test:production`,
+`pnpm security:bundle`, then `pnpm deploy:dry-run`. The production smoke check runs
+the built Worker locally and checks page rendering and redirects. The Vite build
+selects the Cloudflare target and generates
 `dist/server/wrangler.json`; never reuse a build from another branch or mode.
 GitHub Actions validates code and builds without deployment credentials. Publication
 remains manual in this checkout; review any separately configured Git integration
