@@ -110,6 +110,7 @@ overrides:
   miniflare>sharp: 0.35.5
   undici: 7.30.1
   seroval: 1.6.11
+  seroval-plugins: 1.6.11
   zod: 4.6.6
 
 importers:
@@ -2939,9 +2940,9 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  seroval-plugins@1.7.6:
-    resolution: {integrity: sha512-/TPCAd6q5stAZnugD2fsvNKtM2UpgwrS8/fO1cXTgPC0EqCsGB+UfkEEsToFCfg35CDTMlWkppfr/zWnLJGpBA==}
-    engines: {node: '>=20'}
+  seroval-plugins@1.6.11:
+    resolution: {integrity: sha512-LmB3nd8pL39jKHKvnpTUjcjBtNwR8MLty/ydAR8qbfXt5j6/6KqR1atuw8cVmD2/lDxAkvAwq5tI/HsisD9Fqg==}
+    engines: {node: '>=10'}
     peerDependencies:
       seroval: 1.6.11
 
@@ -5295,7 +5296,7 @@ snapshots:
       '@tanstack/history': 1.162.4
       cookie-es: 3.1.1
       seroval: 1.6.11
-      seroval-plugins: 1.7.6(seroval@1.6.11)
+      seroval-plugins: 1.6.11(seroval@1.6.11)
 
   '@tanstack/router-generator@1.167.40(supports-color@10.2.2)':
     dependencies:
@@ -6073,7 +6074,7 @@ snapshots:
 
   semver@7.8.5: {}
 
-  seroval-plugins@1.7.6(seroval@1.6.11):
+  seroval-plugins@1.6.11(seroval@1.6.11):
     dependencies:
       seroval: 1.6.11
 
