@@ -1,13 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import type { MarketId } from '@/features/trading/constants'
 
-export function Navbar({
-  children,
-  marketId,
-}: {
-  children?: React.ReactNode
-  marketId: MarketId
-}) {
+export function Navbar({ children }: { children?: React.ReactNode }) {
   return (
     <nav
       aria-label="Main navigation"
@@ -16,7 +9,7 @@ export function Navbar({
       <Link
         aria-label="Mato home"
         className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        search={{ market: marketId }}
+        search={{}}
         to="/"
       >
         <img

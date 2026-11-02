@@ -30,7 +30,7 @@ const siteUrl =
   import.meta.env.VITE_SITE_URL?.replace(/\/$/, '') ?? PRODUCTION_SITE_URL
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
+  head: ({ matches }) => ({
     meta: [
       {
         charSet: 'utf-8',
@@ -64,7 +64,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         property: 'og:url',
-        content: siteUrl,
+        content: `${siteUrl}${matches.at(-1)?.pathname.replace(/\/$/, '') ?? ''}`,
       },
       {
         property: 'og:type',
@@ -93,7 +93,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     links: [
       {
         rel: 'canonical',
-        href: siteUrl,
+        href: `${siteUrl}${matches.at(-1)?.pathname.replace(/\/$/, '') ?? ''}`,
       },
       {
         rel: 'stylesheet',
@@ -135,14 +135,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootLayout() {
   const location = useRouterState({ select: (state) => state.location })
+  const pathname = location.pathname.replace(/\/$/, '') || '/'
+  if (pathname === '/' || pathname === '/welcome') return <Outlet />
+
   const marketId =
-    location.pathname === '/'
+    pathname === '/trade'
       ? parseMarketSearch(location.search).market
       : DEFAULT_MARKET_ID
 
   return (
     <>
-      <Navbar marketId={marketId}>
+      <Navbar>
         <WalletConnectionButton marketId={marketId} />
       </Navbar>
       {!transactionsEnabled() && (
