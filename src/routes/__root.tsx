@@ -136,7 +136,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootLayout() {
   const location = useRouterState({ select: (state) => state.location })
   const pathname = location.pathname.replace(/\/$/, '') || '/'
-  if (pathname === '/' || pathname === '/welcome') return <Outlet />
+  if (['/', '/welcome', '/terms', '/privacy'].includes(pathname))
+    return <Outlet />
 
   const marketId =
     pathname === '/trade'

@@ -1,0 +1,28 @@
+# Mato
+
+> Mato is a Solana trading venue for continuous DCA and TWAP-style execution using continuous clearing auctions. It is not a router that schedules separate swaps at other venues.
+
+## Product facts
+
+- The app currently supports SOL/USDC.
+- A trader funds one stream and chooses an amount and duration, from 5 seconds to months.
+- The market sets a shared clearing price every 200ms from the ratio of aggregate buy and sell flows, including liquidity providers. Buyers and sellers in the same slot share the price before fees. Slot timing can vary with the network; 200ms is not a transaction-confirmation guarantee.
+- The platform fee is 0.02% to 0.1%, depending on the asset, without an additional destination-venue fee. Network fees and account rent can also apply. Consult the app for the current fee.
+- No bid–ask spread does not mean no price impact, no fees, or a guaranteed execution price. Longer durations reduce flow per moment for the same amount; prices can still move against the trader.
+- Shared slot pricing reduces transaction-ordering advantages; it does not guarantee elimination of MEV or sandwich attacks.
+- Active streams can be paused, resumed, or closed. Available output can be withdrawn. These actions require wallet transactions and network fees.
+- If there is no opposing flow, execution does not accrue for those slots; unused input remains refundable.
+- Clearing prices can be recomputed from on-chain flow data.
+- Mato is experimental, has limited liquidity, and has not been fully audited. An audit with Neodyme is scheduled for December 2026, as of November 6, 2026. This is a planned audit, not a completed audit or security endorsement.
+- Mato does not recommend when to buy or sell. Trading involves market and smart-contract risk, including loss of funds.
+
+## Links
+
+- [Homepage and FAQ](https://mato.markets/)
+- [Trading app](https://mato.markets/trade?market=1)
+- [Mato on X](https://x.com/MatoMarkets)
+- [Telegram community](https://t.me/+MIhTBMAU_q1lZmNi)
+- [UI source](https://github.com/Nachtschatten-Labs/mato-ui)
+- [Solana program](https://explorer.solana.com/address/TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A)
+- [Terms of Service](https://mato.markets/terms)
+- [Privacy Notice](https://mato.markets/privacy)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { faqs, MATO_X_URL, MATO_TELEGRAM_URL, MATO_GITHUB_URL } from './content'
 import {
   ArrowDown,
   ArrowRight,
@@ -147,11 +148,11 @@ function StreamIllustration() {
           </p>
         </div>
         <span className="stream-continuous">
-          <Waves size={16} aria-hidden="true" /> Streamed continuously
+          <Waves size={16} aria-hidden="true" /> Clears every 200ms
         </span>
       </div>
       <p className="stream-footnote">
-        Same amount. More time. A smaller footprint.
+        A smaller flow over your duration. A clearing price every 200ms.
       </p>
     </div>
   )
@@ -318,39 +319,6 @@ function AuctionIllustration() {
   )
 }
 
-const faqs = [
-  {
-    question: 'How is this different from a regular DCA?',
-    answer:
-      "Scheduled DCA tools typically send separate swaps to other trading venues at set times. That can mean a DCA service fee on top of the destination venue's trading fee. Each swap also faces that venue's toxic flow: fast, opportunistic trading that can make execution more costly. Mato is a standalone trading venue built around a new market structure, the continuous clearing auction. Your funded stream trades directly in Mato's market over your chosen duration, alongside other traders and liquidity providers. You pay Mato's platform fee without an additional destination-venue fee. Continuous execution spreads your trade over time and is designed to reduce toxic flow.",
-  },
-  {
-    question: 'Does no spread mean no trading costs?',
-    answer:
-      'No. Buyers and sellers share the same clearing price before fees, so there is no separate bid–ask spread. Platform fees, network fees, and account rent can still apply. Your stream also changes market flow and can affect the clearing price. Check the app for the current fee and estimated price impact.',
-  },
-  {
-    question: 'Why use a longer duration?',
-    answer:
-      'For the same total amount, a longer duration means less input entering the market per moment. With otherwise unchanged liquidity, that reduces your stream’s price impact. It also spreads execution across more market prices. A longer stream does not guarantee a better final price, and the market can move against you.',
-  },
-  {
-    question: 'Can I pause or stop my stream?',
-    answer:
-      'Yes. You can pause an active stream, resume it, send available output to your wallet, or close it to receive the available output and refundable input. These actions are wallet transactions and require network fees.',
-  },
-  {
-    question: 'Is the price fixed when I start?',
-    answer:
-      'No. The estimate reflects liquidity now. The clearing price changes with the market’s aggregate flows while your stream runs. If there is no opposing flow, trading does not accrue for those slots and the unused input remains refundable.',
-  },
-  {
-    question: 'What should I know before starting?',
-    answer:
-      'Mato is an experimental protocol. Liquidity is limited, and the smart contracts have not been fully audited. Trading involves market and smart-contract risk, including loss of funds. Review the fee, duration, estimated price impact, and risk notice in the app before you start.',
-  },
-]
-
 export function LandingPage() {
   return (
     <div className="mato-landing">
@@ -371,7 +339,7 @@ export function LandingPage() {
           <a href="#how-it-works">How it works</a>
           <a href="#questions">FAQ</a>
         </nav>
-        <AppLink className="landing-button-small">Open app</AppLink>
+        <AppLink className="landing-button-small" />
       </header>
 
       <main id="main">
@@ -384,15 +352,15 @@ export function LandingPage() {
               <span className="landing-dot" /> CONTINUOUS DCA ON SOLANA
             </p>
             <h1 id="hero-title">
-              Give your
-              <br />
-              trade <span>time.</span>
+              The DCA that prices <span>every 200ms.</span>
             </h1>
             <p className="hero-description">
-              Build a position. Unwind at your pace.
-              <br />
-              Stream your swaps over time with low fees and one shared clearing
-              price.
+              Most DCA tools send a separate swap every few minutes or hours. A
+              Mato stream trades continuously, at one shared price every 200ms.
+            </p>
+            <p className="hero-fees">
+              <strong>0.02%–0.1% platform fee</strong>, depending on the asset.
+              No additional destination-venue fee.
             </p>
             <div className="hero-actions">
               <AppLink />
@@ -401,16 +369,25 @@ export function LandingPage() {
               </a>
             </div>
             <p className="hero-detail">
-              SOL / USDC <span>·</span> Your amount. Your duration.
+              SOL / USDC <span>·</span> From 5 seconds to months.
             </p>
           </div>
           <StreamIllustration />
         </section>
 
+        <ul
+          className="landing-use-cases landing-container"
+          aria-label="Ways to use Mato"
+        >
+          <li>Build a position over days or weeks.</li>
+          <li>Exit a large position with less price impact.</li>
+          <li>Spread a treasury or buyback order over time.</li>
+        </ul>
+
         <div className="landing-principles landing-container">
           <div>
             <Waves size={19} aria-hidden="true" />
-            <span>Continuous execution</span>
+            <span>A clearing price every 200ms</span>
           </div>
           <div>
             <span className="principle-equals" aria-hidden="true">
@@ -435,29 +412,26 @@ export function LandingPage() {
         >
           <div className="section-heading">
             <div>
-              <p className="landing-eyebrow">MADE FOR THE LONGER TRADE</p>
+              <p className="landing-eyebrow">BUILT FOR YOUR SIZE</p>
               <h2 id="benefits-title">
-                Less friction.
-                <br />
-                <span>More room to breathe.</span>
+                Your stream clears with the market <span>every 200ms.</span>
               </h2>
             </div>
             <p>
-              A larger trade doesn't have to happen all at once. Give it time,
-              and let a smaller stream do the work.
+              Choose how much you trade and how long it runs. Mato turns it into
+              a continuous flow, with the same clearing price for everyone
+              trading in the same slot.
             </p>
           </div>
           <div className="benefit-grid">
             <article>
               <BenefitGraphic kind="price" />
               <span className="benefit-number">01 / CLEARER COSTS</span>
-              <h3>
-                A shared price.
-                <br />A transparent fee.
-              </h3>
+              <h3>One price, with a 0.02%–0.1% fee.</h3>
               <p>
-                Buyers and sellers meet at one clearing price, before platform
-                fees. No separate bid–ask spread to cross on every swap.
+                Buyers and sellers share one price before fees. Pay Mato’s
+                platform fee, depending on the asset, with no additional
+                destination-venue fee and no separate bid–ask spread.
               </p>
               <a href="#questions" className="benefit-link">
                 Understand the costs{' '}
@@ -478,30 +452,119 @@ export function LandingPage() {
                 price impact.
               </p>
               <span className="benefit-detail">
-                Your pace is part of your execution.
+                A new clearing price every 200ms, at any duration.
               </span>
             </article>
             <article>
               <BenefitGraphic kind="flow" />
-              <span className="benefit-number">03 / CALMER FLOW</span>
-              <h3>
-                Built for patience.
-                <br />
-                Made for steady flow.
-              </h3>
+              <span className="benefit-number">03 / FAIRER EXECUTION</span>
+              <h3>Much harder to sandwich.</h3>
               <p>
-                Long streams trade gradually instead of reacting with a whole
-                order at once. The design aims to reduce toxic, opportunistic
-                flow.
+                Everyone trading in the same slot gets the same price before
+                fees. That reduces the incentive to get in front of your order
+                and sell back to you at a higher price.
               </p>
               <span className="benefit-detail">
-                A market designed around time.
+                Shared pricing reduces ordering advantages; it does not
+                eliminate all MEV.
               </span>
             </article>
           </div>
           <p className="benefits-note">
-            No spread does not mean no price impact. Fees apply, and prices can
-            move while your stream runs.
+            No spread does not mean no price impact. Network fees and account
+            rent can also apply. Prices can move while your stream runs.
+          </p>
+        </section>
+
+        <section
+          className="landing-comparison landing-container"
+          aria-labelledby="comparison-title"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="landing-eyebrow">BEYOND SCHEDULED SWAPS</p>
+              <h2 id="comparison-title">
+                One stream replaces a schedule of swaps.
+              </h2>
+            </div>
+            <p>
+              Your trade stays in Mato’s market, with a shared clearing price
+              every 200ms.
+            </p>
+          </div>
+          <div
+            className="comparison-scroll"
+            role="region"
+            aria-label="DCA comparison"
+            tabIndex={0}
+          >
+            <table className="comparison-table">
+              <caption>How scheduled DCA compares with a Mato stream</caption>
+              <thead>
+                <tr>
+                  <th scope="col">What changes</th>
+                  <th scope="col">A regular DCA</th>
+                  <th scope="col">A Mato stream</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">How it executes</th>
+                  <td>
+                    Separate swaps on a schedule, often minutes or hours apart.
+                  </td>
+                  <td>
+                    One continuous stream, with a new clearing price every
+                    200ms.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">What you pay</th>
+                  <td>
+                    Service, routing, and destination-venue fees may apply to
+                    each slice, depending on the provider.
+                  </td>
+                  <td>
+                    One platform fee of 0.02%–0.1%, depending on the asset. No
+                    additional destination-venue fee.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Who gets ahead</th>
+                  <td>
+                    Each slice is a separate swap, with its own place in the
+                    transaction order.
+                  </td>
+                  <td>
+                    Every matching order in the same slot gets the same price
+                    before fees.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="comparison-note">
+            Network fees and account rent can apply to both. Scheduled DCA
+            features and fees vary by provider.
+          </p>
+        </section>
+
+        <section
+          className="landing-problem landing-container landing-section"
+          aria-labelledby="problem-title"
+        >
+          <p className="landing-eyebrow">WHY STREAM A TRADE?</p>
+          <h2 id="problem-title">A big swap can be an expensive moment.</h2>
+          <p>
+            On many DEXs, a big swap hits the market all at once. You take the
+            price impact, and traders who get in front of your order can profit
+            from it. That is why large traders already split their orders over
+            time.
+          </p>
+          <p>
+            Many use a DCA tool, but each slice is still a separate swap with
+            its own fees and its own place in line. A Mato stream does it in one
+            order, with a shared clearing price every 200ms.
           </p>
         </section>
 
@@ -522,8 +585,8 @@ export function LandingPage() {
               </div>
               <p>
                 Mato's continuous clearing auction brings buy and sell flows
-                together. Their ratio sets a shared price, which changes as the
-                flows change.
+                together. Their ratio sets a shared clearing price every 200ms,
+                which changes as the flows change.
               </p>
             </div>
             <div className="how-grid">
@@ -534,7 +597,7 @@ export function LandingPage() {
                     <h3>Turn your trade into a stream.</h3>
                     <p>
                       Choose what to swap, your total amount, and how long it
-                      should run.
+                      should run, from 5 seconds to months.
                     </p>
                   </div>
                 </li>
@@ -551,7 +614,7 @@ export function LandingPage() {
                 <li>
                   <span>03</span>
                   <div>
-                    <h3>Clear together, continuously.</h3>
+                    <h3>Clear together, every 200ms.</h3>
                     <p>
                       Both sides exchange at the same price before fees. Your
                       output accrues as the stream runs.
@@ -570,14 +633,10 @@ export function LandingPage() {
         >
           <div>
             <p className="landing-eyebrow">SET THE PACE. KEEP THE CONTROL.</p>
-            <h2 id="control-title">
-              Let your plan run.
-              <br />
-              <span>Get on with your day.</span>
-            </h2>
+            <h2 id="control-title">Manage the whole trade in one stream.</h2>
             <p>
-              One funded stream. No need to come back for every swap. Follow its
-              progress and change course when you need to.
+              Fund once and trade at a shared clearing price every 200ms. Follow
+              your stream’s progress and change course when you need to.
             </p>
             <AppLink />
           </div>
@@ -612,7 +671,7 @@ export function LandingPage() {
           <div>
             <p className="landing-eyebrow">A LITTLE MORE CLARITY</p>
             <h2 id="faq-title">Good questions.</h2>
-            <p>The details behind a slower, steadier way to swap.</p>
+            <p>What to know before you start a stream.</p>
           </div>
           <div className="faq-list">
             {faqs.map((faq) => (
@@ -628,16 +687,74 @@ export function LandingPage() {
         </section>
 
         <section
+          className="landing-trust landing-container landing-section"
+          aria-labelledby="trust-title"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="landing-eyebrow">CHECK THE WORK</p>
+              <h2 id="trust-title">Built to be verifiable.</h2>
+            </div>
+            <p>
+              See how prices are formed, where the audit stands, and what we are
+              building next.
+            </p>
+          </div>
+          <div className="trust-grid">
+            <article>
+              <span className="landing-eyebrow">ON-CHAIN PRICING</span>
+              <h3>Recompute every clearing price.</h3>
+              <p>
+                Clearing prices come from on-chain flows. Every clearing price
+                can be recomputed from that data.
+              </p>
+              <a
+                className="landing-text-link"
+                href="https://explorer.solana.com/address/TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A"
+              >
+                View the Solana program{' '}
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </a>
+            </article>
+            <article>
+              <span className="landing-eyebrow">AUDIT SCHEDULED</span>
+              <h3>Neodyme · December 2026</h3>
+              <p>
+                An audit with Neodyme is scheduled for December 2026. The smart
+                contracts have not yet been fully audited.
+              </p>
+            </article>
+            <article>
+              <span className="landing-eyebrow">FOLLOW THE BUILD</span>
+              <h3>Stay close to what comes next.</h3>
+              <p>
+                Follow product updates on X or join the Mato community on
+                Telegram.
+              </p>
+              <div className="trust-links">
+                <a className="landing-text-link" href={MATO_X_URL}>
+                  Follow @MatoMarkets{' '}
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </a>
+                <a className="landing-text-link" href={MATO_TELEGRAM_URL}>
+                  Join Telegram <ArrowUpRight size={15} aria-hidden="true" />
+                </a>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section
           className="landing-closing landing-container"
           aria-labelledby="closing-title"
         >
-          <p className="landing-eyebrow">YOUR NEXT MOVE, AT YOUR PACE</p>
+          <p className="landing-eyebrow">YOUR NEXT STREAM</p>
           <h2 id="closing-title">
-            Think long.
+            Choose your size and your duration.
             <br />
-            <span>Trade gradually.</span>
+            <span>Mato prices it every 200ms.</span>
           </h2>
-          <AppLink>Find your pace</AppLink>
+          <AppLink />
           <p>Start with SOL / USDC on Solana.</p>
         </section>
       </main>
@@ -652,11 +769,18 @@ export function LandingPage() {
               alt="mato"
             />
           </a>
-          <span>A little at a time.</span>
+          <span>Continuous DCA on Solana.</span>
           <a href={APP_URL}>
-            Open app <ArrowRight size={16} aria-hidden="true" />
+            Start a stream <ArrowRight size={16} aria-hidden="true" />
           </a>
         </div>
+        <nav className="footer-links" aria-label="Mato links">
+          <a href={MATO_X_URL}>X / @MatoMarkets</a>
+          <a href={MATO_TELEGRAM_URL}>Telegram</a>
+          <a href={MATO_GITHUB_URL}>GitHub</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="/privacy">Privacy</a>
+        </nav>
         <div className="footer-bottom">
           <p>
             Experimental protocol. Limited liquidity. Smart contracts have not
