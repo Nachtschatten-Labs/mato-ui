@@ -185,8 +185,10 @@ end
 
 local function chart_xy(point)
   if type(point) ~= "table" then return nil end
-  local along = point[1] or point.p
-  local value = point[2] or point.c
+  local along = point[1]
+  local value = point[2]
+  if along == nil then along = point.p end
+  if value == nil then value = point.c end
   if type(along) ~= "number" or type(value) ~= "number" then return nil end
   return along, value
 end
@@ -240,7 +242,7 @@ local function draw_chart(canvas, points, color)
   axis.lo:text(cents_label(ymin))
   local function xy(i)
     local x = math.floor(parsed[i][1] * (w - 2) / 1000)
-    if x < 1 then x = 1 end
+    if x < 0 then x = 0 end
     if x > w - 1 then x = w - 1 end
     local y = 1 + math.floor((ymax - parsed[i][2]) * (h - 2) / (ymax - ymin))
     if y < 1 then y = 1 end

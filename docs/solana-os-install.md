@@ -307,11 +307,16 @@ Controls:
 - Cancel returns to the ticket, or leaves the app from the ticket. Home
   always leaves.
 
-A player can have ten open streams. The server stores each sample's position
-along the order (0 to 1000) and sends the chart for the stream on screen, at
-most 12 points. An older order without those positions simply has an empty
-chart until new samples arrive. The other streams are short summaries, so ten
-of them still fit in one badge response.
+A player can have ten open streams. The chart is that stream's execution
+price, the same price as the average (the clearing price after the fee), from
+the start of the order. The server splits the full duration into 24 fixed
+time buckets. A finished bucket is never changed, and the buckets are written
+to the state file so a restart keeps them. The badge places each point by its
+position in the order, so the line starts at the order's start and ends at
+the fraction that has elapsed. Only the stream on screen includes the series.
+The other streams are short summaries, so ten of them still fit in one badge
+response. An order saved by an older server keeps whatever samples were still
+in its short window; samples that server had already dropped cannot be rebuilt.
 
 ## What is not verified without a badge
 

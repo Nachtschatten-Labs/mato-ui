@@ -34,13 +34,95 @@ import {
   secondsLeft,
 } from './clearing.mjs'
 
-const CHART_POINTS = 12
-const CHART_KEEP = 48
-const CHART_GAP_MS = 5_000
+const CHART_BUCKETS = 24
+
+function emptyBuckets() {
+  return Array.from({ length: CHART_BUCKETS }, () => null)
+}
+
+function bucketRange(index) {
+  const start = Math.floor((index * 1000) / CHART_BUCKETS)
+  const end = Math.floor(((index + 1) * 1000) / CHART_BUCKETS)
+  return { end: Math.max(end, start + 1), start }
+}
+
+function emptySlot() {
+  return { closed: false, sum: 0, w: 0 }
+}
+
+function bucketsFromSamples(samples) {
+  const buckets = emptyBuckets()
+  let maxP = 0
+  for (const sample of samples ?? []) {
+    const p = Number(sample?.p)
+    const c = Number(sample?.c)
+    if (!Number.isFinite(p) || !Number.isFinite(c)) continue
+    maxP = Math.max(maxP, p)
+    const index = Math.min(
+      CHART_BUCKETS - 1,
+      Math.floor((p * CHART_BUCKETS) / 1000),
+    )
+    const slot = buckets[index] ?? emptySlot()
+    slot.sum += c
+    slot.w += 1
+    buckets[index] = slot
+  }
+  for (let index = 0; index < CHART_BUCKETS; index += 1) {
+    const slot = buckets[index]
+    if (slot && bucketRange(index).end <= maxP) slot.closed = true
+  }
+  return { buckets, chartFrom: maxP }
+}
+
+function addBucketPrice(buckets, from, to, price) {
+  if (to <= from) return
+  for (let index = 0; index < CHART_BUCKETS; index += 1) {
+    const { end, start } = bucketRange(index)
+    const lo = Math.max(start, from)
+    const hi = Math.min(end, to)
+    if (hi <= lo) continue
+    const slot = buckets[index] ?? emptySlot()
+    if (slot.closed) continue
+    slot.sum += price * (hi - lo)
+    slot.w += hi - lo
+    if (to >= end) slot.closed = true
+    buckets[index] = slot
+  }
+}
+
+function chartSeries(buckets, now) {
+  const points = []
+  if (!buckets || now <= 0) return points
+  for (let index = 0; index < CHART_BUCKETS; index += 1) {
+    const slot = buckets[index]
+    if (!slot || slot.w <= 0 || !slot.closed) continue
+    const { end, start } = bucketRange(index)
+    if (end > now) continue
+    points.push([start, Math.round(slot.sum / slot.w)])
+  }
+  const openIndex = Math.min(
+    CHART_BUCKETS - 1,
+    Math.floor((now * CHART_BUCKETS) / 1000),
+  )
+  const open = buckets[openIndex]
+  if (open && open.w > 0 && !open.closed) {
+    const { start } = bucketRange(openIndex)
+    const avg = Math.round(open.sum / open.w)
+    if (points.length === 0) points.push([start, avg])
+    if (now > start) points.push([now, avg])
+  } else if (points.length > 0 && points[points.length - 1][0] < now) {
+    points.push([now, points[points.length - 1][1]])
+  }
+  return points
+}
 
 function cloneOrder(order) {
   return {
     amountAtoms: order.amountAtoms.toString(),
+    buckets: Array.isArray(order.buckets)
+      ? order.buckets.map((slot) => (slot ? { ...slot } : null))
+      : null,
+    chartFrom: order.chartFrom ?? 0,
     finishedAt: order.finishedAt,
     grossOut: order.grossOut.toString(),
     id: order.id,
@@ -50,9 +132,6 @@ function cloneOrder(order) {
     scaledFlow: order.scaledFlow.toString(),
     seconds: order.seconds,
     side: order.side,
-    samples: Array.isArray(order.samples)
-      ? order.samples.slice(-CHART_KEEP)
-      : [],
     slotsLeft: order.slotsLeft,
     spent: order.spent.toString(),
     status: order.status,
@@ -60,43 +139,23 @@ function cloneOrder(order) {
 }
 
 function reviveOrder(order) {
-  const samples = Array.isArray(order.samples)
-    ? order.samples
-        .filter((sample) => sample && Number.isFinite(Number(sample.c)))
-        .slice(-CHART_KEEP)
-        .map((sample) => ({
-          c: Math.round(Number(sample.c)),
-          p: Number.isFinite(Number(sample.p))
-            ? Math.round(Number(sample.p))
-            : null,
-          t: Number(sample.t) || 0,
-        }))
-    : []
+  const migrated = Array.isArray(order.buckets)
+    ? {
+        buckets: order.buckets,
+        chartFrom: Number(order.chartFrom) || 0,
+      }
+    : bucketsFromSamples(order.samples)
   return {
     ...order,
     amountAtoms: BigInt(order.amountAtoms),
+    buckets: migrated.buckets,
+    chartFrom: migrated.chartFrom,
     grossOut: BigInt(order.grossOut),
     netCredited: BigInt(order.netCredited),
     remainingAtoms: BigInt(order.remainingAtoms),
-    samples,
     scaledFlow: BigInt(order.scaledFlow),
     spent: BigInt(order.spent),
   }
-}
-
-function downsample(samples, max) {
-  const placed = samples.filter(
-    (sample) => Number.isFinite(sample.p) && Number.isFinite(sample.c),
-  )
-  if (placed.length === 0) return []
-  const pick =
-    placed.length <= max
-      ? placed
-      : Array.from({ length: max }, (_, index) => {
-          const at = Math.round((index * (placed.length - 1)) / (max - 1))
-          return placed[at]
-        })
-  return pick.map((sample) => [sample.p, sample.c])
 }
 
 export function sanitizeName(raw) {
@@ -218,7 +277,10 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       if (step <= 0) return processed
       const flows = aggregateFlows(live, active)
       if (flows.baseFlow <= 0n || flows.quoteFlow <= 0n) {
-        for (const order of active) order.slotsLeft -= step
+        for (const order of active) {
+          order.slotsLeft -= step
+          order.chartFrom = progressPermille(order)
+        }
       } else {
         for (const order of active) {
           const player = players.get(order.playerId)
@@ -258,35 +320,32 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return Math.round((done * 1000) / total)
   }
 
-  function notePx(order, baseFlow, quoteFlow, at) {
+  function executionCents(order, baseFlow, quoteFlow) {
     const cents = priceCents(baseFlow, quoteFlow)
-    if (cents == null) return
-    if (!order.samples) order.samples = []
-    const point = { c: Number(cents), p: progressPermille(order), t: at }
-    if (order.samples.length === 0) {
-      order.samples.push({ c: point.c, p: 0, t: at })
-      if (point.p > 0) order.samples.push(point)
-      return
-    }
-    const origin = order.samples[0]
-    if (origin.p !== 0) origin.p = 0
-    const last = order.samples[order.samples.length - 1]
-    if (order.samples.length === 1) {
-      if (point.p > 0) order.samples.push(point)
-      return
-    }
-    if (at - last.t < CHART_GAP_MS) {
-      last.c = point.c
-      last.p = point.p
-      return
-    }
-    order.samples.push(point)
-    if (order.samples.length > CHART_KEEP) order.samples.splice(1, 1)
+    if (cents == null) return null
+    const keep = BigInt(10_000 - feeBps)
+    if (keep <= 0n) return Number(cents)
+    const adjusted =
+      order.side === 'buy'
+        ? (cents * 10_000n + keep / 2n) / keep
+        : (cents * keep + 5_000n) / 10_000n
+    return Number(adjusted)
+  }
+
+  function notePx(order, baseFlow, quoteFlow, _at) {
+    const price = executionCents(order, baseFlow, quoteFlow)
+    if (price == null) return
+    if (!order.buckets) order.buckets = emptyBuckets()
+    const to = progressPermille(order)
+    const from = order.chartFrom ?? 0
+    addBucketPrice(order.buckets, from, to, price)
+    order.chartFrom = to
   }
 
   function burn(elapsed, at) {
     for (const order of openOrders()) {
       order.slotsLeft -= Math.min(order.slotsLeft, elapsed)
+      order.chartFrom = progressPermille(order)
       if (order.slotsLeft <= 0) finish(order, at)
     }
     return elapsed
@@ -471,7 +530,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       pct: pctValue.toFixed(2),
       px:
         chartId && order.id === chartId
-          ? downsample(order.samples ?? [], CHART_POINTS)
+          ? chartSeries(order.buckets, progressPermille(order))
           : undefined,
       sec: order.seconds,
       right:
@@ -717,7 +776,8 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
         scaledFlow: scaled,
         seconds,
         side,
-        samples: [],
+        buckets: emptyBuckets(),
+        chartFrom: 0,
         slotsLeft: slots,
         spent: 0n,
         status: 'open',

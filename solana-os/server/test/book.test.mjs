@@ -256,7 +256,7 @@ test('a ticket quote and stream chart stay inside one badge response', () => {
     ord: placed.orderId,
   })
   assert.ok(shot.orders[0].px.length >= 2)
-  assert.ok(shot.orders[0].px.length <= 12)
+  assert.ok(shot.orders[0].px.length <= 25)
   assert.equal(shot.orders[0].px[0][0], 0)
   assert.ok(shot.orders[0].px.at(-1)[0] > 0)
   assert.ok(shot.orders[0].px.at(-1)[0] < 1000)
@@ -390,4 +390,163 @@ test('ten open streams and one chart fit in a badge response', () => {
   assert.ok(open.every((order) => typeof order.inR === 'number'))
   const bytes = Buffer.byteLength(JSON.stringify(shot))
   assert.ok(bytes < 3500, `ten-stream snapshot is ${bytes} bytes`)
+})
+
+function bucketStartsBefore(permille) {
+  const starts = []
+  for (let index = 0; index < 24; index += 1) {
+    const start = Math.floor((index * 1000) / 24)
+    const end = Math.floor(((index + 1) * 1000) / 24)
+    if (end <= permille) starts.push(start)
+  }
+  return starts
+}
+
+test('chart history stays fixed when the price changes and after a restart', () => {
+  const time = clock()
+  const book = openBook(time)
+  book.hello('a', 'Ann', time.now())
+  const placed = book.place(
+    'a',
+    { amount: '1000', seconds: 3600, side: 'buy' },
+    time.now(),
+  )
+  const view = {
+    amount: '1000',
+    ord: placed.orderId,
+    seconds: 3600,
+    side: 'buy',
+    ticket: true,
+  }
+  time.advance(720_000)
+  book.setMarket(
+    { baseFlow: BASE, fetchedAt: time.now(), quoteFlow: QUOTE, slot: 30 },
+    time.now(),
+  )
+  const early = book.snapshot('a', time.now(), view).orders[0]
+  assert.equal(early.px.at(-1)[0], 200)
+  const earlyHistory = early.px.filter((point) => point[0] < 200)
+  assert.deepEqual(
+    earlyHistory.map((point) => point[0]),
+    bucketStartsBefore(200),
+  )
+  const plotted = earlyHistory.map((point) => point[1])
+  assert.ok(Math.max(...plotted) - Math.min(...plotted) <= 1)
+  assert.ok(Math.abs(Number(early.avg) - plotted[0] / 100) <= 0.02)
+  assert.ok(plotted[0] > 10_000)
+
+  time.advance(720_000)
+  book.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 31,
+    },
+    time.now(),
+  )
+  const later = book.snapshot('a', time.now(), view).orders[0]
+  assert.equal(later.px.at(-1)[0], 400)
+  for (const point of earlyHistory) {
+    assert.deepEqual(
+      later.px.find((item) => item[0] === point[0]),
+      point,
+    )
+  }
+  assert.ok(
+    later.px.some((point) => point[0] >= 200 && point[1] > plotted[0] + 50),
+  )
+  const prices = later.px.map((point) => point[1])
+  const avgCents = Math.round(Number(later.avg) * 100)
+  assert.ok(avgCents + 1 >= Math.min(...prices))
+  assert.ok(avgCents - 1 <= Math.max(...prices))
+
+  const saved = JSON.parse(JSON.stringify(book.serialize()))
+  assert.ok(saved.orders[0].buckets.some((slot) => slot && slot.closed))
+  const restored = createBook({ now: time.now, state: saved })
+  restored.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 32,
+    },
+    time.now(),
+  )
+  time.advance(30_000)
+  restored.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 33,
+    },
+    time.now(),
+  )
+  const again = restored.snapshot('a', time.now(), view).orders[0]
+  for (const point of earlyHistory) {
+    assert.deepEqual(
+      again.px.find((item) => item[0] === point[0]),
+      point,
+    )
+  }
+  assert.ok(again.px.at(-1)[0] > 400)
+
+  const legacy = JSON.parse(JSON.stringify(saved))
+  legacy.orders[0].samples = [
+    { c: 10_000, p: 0, t: 1 },
+    { c: 13_000, p: 50, t: 2 },
+  ]
+  delete legacy.orders[0].buckets
+  delete legacy.orders[0].chartFrom
+  const migrated = createBook({ now: time.now, state: legacy })
+  migrated.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 34,
+    },
+    time.now(),
+  )
+  time.advance(60_000)
+  migrated.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 35,
+    },
+    time.now(),
+  )
+  const migratedPx = migrated.snapshot('a', time.now(), view).orders[0].px
+  assert.deepEqual(
+    migratedPx.find((point) => point[0] === 0),
+    [0, 10_000],
+  )
+})
+
+test('a sell chart matches the average execution price', () => {
+  const time = clock()
+  const book = openBook(time)
+  book.hello('a', 'Ann', time.now())
+  const placed = book.place(
+    'a',
+    { amount: '10', seconds: 600, side: 'sell' },
+    time.now(),
+  )
+  time.advance(120_000)
+  book.setMarket(
+    { baseFlow: BASE, fetchedAt: time.now(), quoteFlow: QUOTE, slot: 40 },
+    time.now(),
+  )
+  const order = book.snapshot('a', time.now(), {
+    ord: placed.orderId,
+    ticket: true,
+  }).orders[0]
+  assert.equal(order.px.at(-1)[0], 200)
+  const prices = order.px.map((point) => point[1])
+  assert.ok(Math.max(...prices) - Math.min(...prices) <= 1)
+  assert.ok(prices[0] < 10_000)
+  assert.ok(Math.abs(Number(order.avg) - prices[0] / 100) <= 0.02)
 })
