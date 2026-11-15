@@ -98,8 +98,8 @@ check(
   'Market mints mismatch',
 )
 check(
-  data.readUInt32LE(152) === 1 && data[160] === 1,
-  'Dedicated market identity mismatch',
+  data.readUInt32LE(152) === 1 && data[160] === 0,
+  'Open-liquidity market identity mismatch',
 )
 check(data[161] === 0, 'Market is paused')
 check(
@@ -152,6 +152,8 @@ console.log(
       slot: context.slot,
       program: target.programId,
       market,
+      marketKind: 'open-liquidity',
+      feeBps: data[156],
       baseVaultAtoms: bytes(accounts[5]).readBigUInt64LE(64).toString(),
       quoteVaultAtoms: bytes(accounts[6]).readBigUInt64LE(64).toString(),
       activeFlows: baseFlow > 0n && quoteFlow > 0n,
@@ -162,5 +164,5 @@ console.log(
 )
 if (baseFlow === 0n || quoteFlow === 0n)
   console.log(
-    'Market quoting is inactive. The maker must provide flows before the trading launch.',
+    'Market quoting is inactive. Ordinary liquidity providers must supply active flows for trading to accrue.',
   )

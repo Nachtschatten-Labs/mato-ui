@@ -18,6 +18,8 @@ export interface MarketDefinition {
   readonly quoteDecimals: number
   readonly minimumBaseDepositAtoms: bigint
   readonly minimumQuoteDepositAtoms: bigint
+  /** Display cutoff for the main price chart; position history stays complete. */
+  readonly chartHistoryStartMs?: number
 }
 
 export const MARKET_DEFINITIONS = [
@@ -34,6 +36,8 @@ export const MARKET_DEFINITIONS = [
     quoteDecimals: 6,
     minimumBaseDepositAtoms: 1_000_000n,
     minimumQuoteDepositAtoms: 100_000n,
+    // Hide the initial permissionless market-maker history from the main chart.
+    chartHistoryStartMs: Date.parse('2026-11-11T08:35:03Z'),
   },
 ] as const satisfies ReadonlyArray<MarketDefinition>
 

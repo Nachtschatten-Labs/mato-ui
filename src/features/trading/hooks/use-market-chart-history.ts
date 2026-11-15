@@ -4,6 +4,7 @@ import {
   CHART_HISTORY_REQUEST_BUFFER_BARS,
   CHART_RANGES,
   CHART_TIMEFRAMES,
+  getMarketDefinition,
 } from '../constants'
 import { mergeLivePriceIntoCandles } from '../lib/market'
 import type { CandleInterval, MarketCandle } from '../api/market-repository'
@@ -73,6 +74,7 @@ export function useMarketChartHistory({
   marketId,
   timeframe,
 }: UseMarketChartHistoryOptions) {
+  const historyStartMs = getMarketDefinition(marketId).chartHistoryStartMs ?? 0
   const [candles, setCandles] = useState<Array<TradingViewAggregatedCandle>>([])
   const [hasMoreHistory, setHasMoreHistory] = useState(true)
   const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState(false)
@@ -107,6 +109,7 @@ export function useMarketChartHistory({
       const mergedCandles = mergeLivePriceIntoCandles({
         candles: currentCandles,
         intervalMs: chartIntervalMs,
+        minimumTimeMs: historyStartMs,
         priceSnapshot: latestPrice,
       })
 
@@ -118,7 +121,7 @@ export function useMarketChartHistory({
       oldestLoadedCandleTimeRef.current ??= mergedCandles[0]?.time ?? null
       return mergedCandles
     })
-  }, [chartIntervalMs, latestPrice])
+  }, [chartIntervalMs, historyStartMs, latestPrice])
 
   useEffect(() => {
     requestEpochRef.current += 1
@@ -128,6 +131,10 @@ export function useMarketChartHistory({
       minimumCandleCount + CHART_HISTORY_REQUEST_BUFFER_BARS,
     )
     const now = Date.now()
+    const requestFromMs = Math.max(
+      historyStartMs,
+      now - initialCount * chartIntervalMs,
+    )
     setCandles([])
     oldestLoadedCandleTimeRef.current = null
     candlesRef.current = []
@@ -140,7 +147,7 @@ export function useMarketChartHistory({
     const loadInitialCandles = async () => {
       try {
         const nextCandles = await fetchMarketCandles({
-          from: new Date(now - initialCount * chartIntervalMs),
+          from: new Date(requestFromMs),
           interval,
           marketId,
           maxPoints: MAX_POINTS,
@@ -150,16 +157,24 @@ export function useMarketChartHistory({
           return
         }
 
-        const mapped = nextCandles.map(toTradingViewCandle)
+        // Drop buckets straddling the cutoff, which can include old price spikes.
+        const mapped = nextCandles
+          .filter((candle) => candle.time * 1000 >= historyStartMs)
+          .map(toTradingViewCandle)
         const liveMerged = mergeLivePriceIntoCandles({
           candles: mapped,
           intervalMs: chartIntervalMs,
+          minimumTimeMs: historyStartMs,
           priceSnapshot: latestPriceRef.current,
         })
         setCandles(liveMerged)
         candlesRef.current = liveMerged
         oldestLoadedCandleTimeRef.current = liveMerged[0]?.time ?? null
-        setHasMoreHistory(mapped.length > 0)
+        setHasMoreHistory(
+          mapped.length > 0 &&
+            requestFromMs > historyStartMs &&
+            liveMerged[0].time * 1000 > historyStartMs,
+        )
       } catch (fetchError) {
         if (cancelled || requestEpochRef.current !== requestEpoch) {
           return
@@ -182,7 +197,7 @@ export function useMarketChartHistory({
     return () => {
       cancelled = true
     }
-  }, [chartIntervalMs, interval, marketId, minimumCandleCount])
+  }, [chartIntervalMs, historyStartMs, interval, marketId, minimumCandleCount])
 
   const loadOlderHistory = useCallback(
     async ({ visibleBarCount }: OlderChartHistoryRequest) => {
@@ -204,7 +219,7 @@ export function useMarketChartHistory({
       )
       const requestToMs = currentOldestTime * 1000
       const requestFromMs = Math.max(
-        0,
+        historyStartMs,
         requestToMs - barsToLoad * chartIntervalMs,
       )
 
@@ -231,7 +246,9 @@ export function useMarketChartHistory({
           return
         }
 
-        const mappedOlderCandles = olderCandles.map(toTradingViewCandle)
+        const mappedOlderCandles = olderCandles
+          .filter((candle) => candle.time * 1000 >= historyStartMs)
+          .map(toTradingViewCandle)
         const mergedCandles = mergeCandlesAscending(
           existingCandles,
           mappedOlderCandles,
@@ -243,7 +260,9 @@ export function useMarketChartHistory({
         const nextOldestTime = mergedCandles[0].time
         oldestLoadedCandleTimeRef.current = nextOldestTime
 
-        setHasMoreHistory(nextOldestTime < currentOldestTime)
+        setHasMoreHistory(
+          requestFromMs > historyStartMs && nextOldestTime < currentOldestTime,
+        )
       } catch (fetchError) {
         if (requestEpochRef.current !== requestEpoch) {
           return
@@ -259,7 +278,14 @@ export function useMarketChartHistory({
         }
       }
     },
-    [chartIntervalMs, hasMoreHistory, isLoadingMoreHistory, interval, marketId],
+    [
+      chartIntervalMs,
+      hasMoreHistory,
+      historyStartMs,
+      isLoadingMoreHistory,
+      interval,
+      marketId,
+    ],
   )
 
   useEffect(() => {

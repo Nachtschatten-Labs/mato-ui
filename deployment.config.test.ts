@@ -9,7 +9,7 @@ describe('deployment configuration', () => {
     expect(target.programId).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
   })
   it.each(['production'])(
-    'allows %s trading with the verified dedicated-market program',
+    'allows %s trading with the verified mainnet program',
     (mode) => {
       const result = deploymentEnvironment(mode, {
         ...configured,

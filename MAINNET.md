@@ -15,9 +15,36 @@
 | Interval layout                  | 1176 bytes, 16 entries × 11 slots                  |
 | Position layout                  | 312 bytes                                          |
 
+## Open-liquidity replacement — 10 November 2026
+
+The SOL/USDC market was recreated at the same address as an open-liquidity
+market (`kind: 0`). Its trading fee is 0 bps, unhealthy-liquidity fee is 5 bps,
+debt horizon is 10 slots, and liquidity amplification is 50. The program
+deployment slot, account layouts, mints, market ID, vault addresses, and minimum
+trade deposits are unchanged. The UI reads fees and minimums from the current
+market account; both market kinds use the same trader instructions.
+
+`mainnet-open-market.json` captures the replacement at slot `467790427`.
+The previous dedicated-market fixture remains a historical decoder regression.
+The release verifier now requires the open-liquidity kind and reports its current
+fee and whether both flows are active. Quoting requires ordinary liquidity
+positions with active flows; a historical read-API price alone is insufficient.
+
 The UI only lists this verified market. Wallets use `solana:mainnet-beta`; charts,
 prices, history, and SSE use the market address. Query keys include the cluster,
 program, and market address. Devnet selections and favorites are discarded.
+
+## Validation on 2026-11-10
+
+- Read-only release verification at slot `467790711`: open-liquidity kind, unchanged
+  program deployment and account identities, matching read-API configuration.
+- TypeScript, source and bundle checks, 622 unit/component tests, production build,
+  page/redirect smoke checks, and Cloudflare deployment dry run passed.
+- A fresh localhost mainnet fork passed the UI's complete buy/sell, pause/resume,
+  withdrawal, settlement, batch-close, and rent-reclamation lifecycle with an
+  ordinary liquidity position. All keys and balances were generated on the fork.
+- Live vaults were funded, but both flows were zero at the verification slot.
+  Activating live LP quotes remains an operational step.
 
 ## Interface provenance
 
@@ -48,17 +75,19 @@ UI's actual transaction builders against the deployed bytecode on a mainnet fork
   resume, swapped-SOL withdrawal, exact end-slot snapshot, two-position close,
   and single-account interval rent reclamation.
 
-The fork test creates fresh in-memory keys and simulated SOL/USDC, substitutes the
-local market's maker/operator, initializes local bookkeeping, and provides local
-maker flows. It never sends to mainnet and does not load real signing keys. It
-checks program compatibility; production wallet extensions still need a release
-smoke test.
+The fork test creates fresh in-memory keys and simulated SOL/USDC. It substitutes
+only the fork's ProgramConfig authority, then initializes a separate market
+(ID `4294967294`) with the live market's parameters using the deployed program.
+An unrelated wallet funds an ordinary liquidity position with active flows.
+The live market's positions and intervals are not modified. It never sends to
+mainnet and does not load real signing keys. It checks program compatibility;
+production wallet extensions still need a release smoke test.
 
 To repeat, start a fresh fork in a temporary directory:
 
 ```sh
 surfpool start --network mainnet --no-deploy --no-tui --host 127.0.0.1 \
-  --port 19899 --ws-port 19900 --studio-port 19901
+  --port 19899 --ws-port 19900 --studio-port 19901 --airdrop-amount 0
 # In the UI checkout, in another terminal:
 pnpm test:mainnet-fork
 ```
@@ -73,10 +102,11 @@ for the isolated account and clock controls used by the test.
 1. Confirm the production Worker's HTTP and WebSocket RPC secrets target mainnet.
    Existing local provider settings were for devnet; do not upload those settings
    to `mato-ui`. Keep existing production secrets if they already target mainnet.
-2. Start the mainnet maker with the correct market/operator configuration. At the
-   verification slot, vaults held 1 SOL and 100 USDC, but both market flows were zero.
-   The UI correctly shows unavailable prices until quotes exist. Size inventory
-   and quote parameters for the intended launch separately.
+2. Fund ordinary liquidity positions and activate their flows. Both market flows
+   were zero at the replacement fixture's slot. Configure the open-liquidity
+   keeper and liquidity provider for the replacement market; dedicated-maker flow
+   instructions cannot quote this market. Size inventory and quote parameters
+   for the intended launch separately.
 3. Build/publish the UI using [DEPLOYMENT.md](DEPLOYMENT.md), then perform a small
    operator wallet smoke test when opening the service.
 4. Remove the separate `mato-maintenance` route only when ready to open the site.

@@ -1,4 +1,5 @@
 import mainnetMarket from './fixtures/mainnet-market.json'
+import mainnetOpenMarket from './fixtures/mainnet-open-market.json'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   AccountRole,
@@ -174,6 +175,47 @@ afterEach(() => {
 })
 
 describe('v1 protocol compatibility', () => {
+  it('decodes the replacement open-liquidity market with zero trading fees', async () => {
+    expect(mainnetOpenMarket.address).toBe(MARKET)
+    expect(mainnetOpenMarket.account.owner).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
+    const data = accounts
+      .getMarketDecoder()
+      .decode(Buffer.from(mainnetOpenMarket.account.data[0], 'base64'))
+    expect(data).toMatchObject({
+      id: 1,
+      baseMint: BASE,
+      quoteMint: QUOTE,
+      kind: 0,
+      isPaused: 0,
+      feeBps: 0,
+      minimumBaseDepositAtoms: 1_000_000n,
+      minimumQuoteDepositAtoms: 100_000n,
+      makerAuthority: WALLET,
+      quoteOperator: WALLET,
+      makerBaseFlowAtoms: 0n,
+      makerQuoteFlowAtoms: 0n,
+      unhealthyLiquidityFeeBps: 5,
+      slotsUntilDebt: 10,
+      liquidityAmplification: 50,
+    })
+    expect(data.startSlot).toBeLessThanOrEqual(BigInt(mainnetOpenMarket.slot))
+    const { client } = createContext()
+    vi.mocked(accounts.fetchMarket).mockResolvedValue({
+      data,
+    } as Awaited<ReturnType<typeof accounts.fetchMarket>>)
+    await expect(
+      fetchStreamingMarketState(client.runtime.rpc, MARKET),
+    ).resolves.toMatchObject({
+      marketId: 1,
+      baseMint: BASE,
+      quoteMint: QUOTE,
+      isPaused: false,
+      feeBps: 0,
+      minimumBaseDepositAtoms: 1_000_000n,
+      minimumQuoteDepositAtoms: 100_000n,
+    })
+  })
+
   it('decodes the observed mainnet market at slot 453870292', () => {
     expect(mainnetMarket.account.owner).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
     const market = accounts

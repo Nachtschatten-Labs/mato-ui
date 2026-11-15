@@ -1,11 +1,13 @@
 import { afterAll, beforeAll, expect, it, vi } from 'vitest'
 import { createClient } from '@solana/client'
 import type { WalletSession } from '@solana/client'
-import { generateKeyPairSigner } from '@solana/kit'
+import { address, generateKeyPairSigner } from '@solana/kit'
 import type { KeyPairSigner } from '@solana/kit'
 import { getMarketDefinition } from '../src/features/trading/constants'
 import {
+  deriveMarketAddress,
   deriveMarketIntervalAddress,
+  deriveProgramConfigAddress,
   fetchEndSlotBookkeepingSnapshot,
   fetchTradePositions,
   getApprovalSafeReferenceIndex,
@@ -18,12 +20,14 @@ import {
 } from '../src/features/trading/api/twob-client'
 import {
   fetchMarket,
+  fetchProgramConfig,
   fetchTradePosition,
-  getMarketEncoder,
+  getProgramConfigEncoder,
 } from '../src/lib/generated/twob/src/generated/accounts'
 import {
+  getInitializeMarketInstructionAsync,
+  getProvideLiquidityInstructionAsync,
   getUpdateBooksInstruction,
-  getUpdateDedicatedFlowsInstruction,
 } from '../src/lib/generated/twob/src/generated/instructions'
 import { getTradePositionEndSlot } from '../src/features/trading/lib/trade-position'
 import { TWOB_ANCHOR_PROGRAM_ADDRESS } from '../src/lib/generated/twob/src/generated/programs'
@@ -39,7 +43,10 @@ vi.mock('@solana/client', async (original) => ({
   ...(await original<typeof import('@solana/client')>()),
   createWalletTransactionSigner: () => ({ signer }),
 }))
-const market = getMarketDefinition(1)
+const productionMarket = getMarketDefinition(1)
+// A separate pair/id namespace keeps live positions and intervals out of the test.
+const market = { ...productionMarket, id: 0xffff_fffe }
+const tokenProgram = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
 async function rpc(method: string, params: unknown[] = []) {
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -103,42 +110,104 @@ beforeAll(async () => {
     signer.address,
     market.quoteMint,
     { amount: 100000000 },
-    'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    tokenProgram,
   ])
-  const state = await fetchMarket(client!.runtime.rpc, market.address)
+  const state = await fetchMarket(client!.runtime.rpc, productionMarket.address)
   expect(state.programAddress).toBe(TWOB_ANCHOR_PROGRAM_ADDRESS)
-  expect(state.data.openPositions).toBe(0n)
-  // Substitute only the local clone's maker/operator; seed current books because the live keeper is not running on the fork.
-  const slot = await client!.runtime.rpc.getSlot().send()
-  const data = getMarketEncoder().encode({
-    ...state.data,
-    makerAuthority: signer.address,
-    quoteOperator: signer.address,
-    makerLastUpdateSlot: slot,
-    bookkeeping: { ...state.data.bookkeeping, lastUpdateSlot: slot },
-  })
+  expect(state.data.kind).toBe(0)
+  expect(state.data.isPaused).toBe(0)
+  market.address = await deriveMarketAddress(market)
+
+  // Replace only the fork's config authority with a throwaway signer, then use
+  // real instructions to create an isolated market with the live parameters.
+  const programConfig = await deriveProgramConfigAddress()
+  const config = await fetchProgramConfig(client!.runtime.rpc, programConfig)
   await rpc('surfnet_setAccount', [
-    market.address,
-    { data: Buffer.from(data).toString('hex') },
+    programConfig,
+    {
+      data: Buffer.from(
+        getProgramConfigEncoder().encode({
+          ...config.data,
+          authority: signer.address,
+        }),
+      ).toString('hex'),
+    },
   ])
   await client!.transaction.prepareAndSend({
     authority: signer,
     instructions: [
-      getUpdateDedicatedFlowsInstruction({
+      await getInitializeMarketInstructionAsync({
         authority: signer,
+        payer: signer,
+        programConfig,
+        baseMint: market.baseMint,
+        quoteMint: market.quoteMint,
         market: market.address,
+        id: market.id,
+        minimumBaseDeposit: state.data.minimumBaseDepositAtoms,
+        minimumQuoteDeposit: state.data.minimumQuoteDepositAtoms,
+        startSlot: await client!.runtime.rpc.getSlot().send(),
+        feeBps: state.data.feeBps,
+        unhealthyLiquidityFeeBps: state.data.unhealthyLiquidityFeeBps,
+        slotsUntilDebt: state.data.slotsUntilDebt,
+        liquidityAmplification: state.data.liquidityAmplification,
+        baseTokenProgram: tokenProgram,
+        quoteTokenProgram: tokenProgram,
+      }),
+    ],
+  })
+
+  // An unrelated wallet supplies ordinary permissionless liquidity. All funds
+  // and keys exist only on the local fork; no production signer is loaded.
+  const liquidityProvider = await generateKeyPairSigner()
+  await rpc('surfnet_setAccount', [
+    liquidityProvider.address,
+    { lamports: 10000000000 },
+  ])
+  await rpc('surfnet_setTokenAccount', [
+    liquidityProvider.address,
+    market.quoteMint,
+    { amount: 100000000 },
+    tokenProgram,
+  ])
+  const wrap = await client!.wsol.prepareWrap({
+    authority: liquidityProvider,
+    owner: liquidityProvider.address,
+    amount: 1_000_000_000n,
+  })
+  await client!.transaction.prepareAndSend({
+    authority: liquidityProvider,
+    instructions: wrap.message.instructions,
+  })
+  await client!.transaction.prepareAndSend({
+    authority: liquidityProvider,
+    instructions: [
+      await getProvideLiquidityInstructionAsync({
+        authority: liquidityProvider,
+        market: market.address,
+        baseMint: market.baseMint,
+        quoteMint: market.quoteMint,
+        baseTokenProgram: tokenProgram,
+        quoteTokenProgram: tokenProgram,
         ...(await references()),
+        baseDepositAtoms: 1_000_000_000n,
+        quoteDepositAtoms: 100_000_000n,
         baseFlowAtoms: 100000n,
         quoteFlowAtoms: 15000n,
       }),
     ],
   })
+  const fundedMarket = await fetchMarket(client!.runtime.rpc, market.address)
+  expect(fundedMarket.data.kind).toBe(0)
+  expect(fundedMarket.data.openPositions).toBe(1n)
+  expect(fundedMarket.data.baseFlow).toBeGreaterThan(0n)
+  expect(fundedMarket.data.quoteFlow).toBeGreaterThan(0n)
 }, 60000)
 afterAll(() => {
   vi.unstubAllEnvs()
 })
 it.skipIf(!enabled)(
-  'runs buy/sell, pause/resume, withdrawal, settlement, batch close and interval reclamation against deployed bytecode',
+  'runs buy/sell, pause/resume, withdrawal, settlement, batch close and interval reclamation with ordinary liquidity against deployed bytecode',
   async () => {
     const session = { account: { address: signer.address } } as WalletSession
     const sendTransaction = { send: client!.transaction.prepareAndSend }

@@ -37,6 +37,9 @@ prefix. Builds reject browser RPC URL overrides.
 The public read API is `https://read-api-production-f8ea.up.railway.app`.
 `pnpm mainnet:verify` checks the configured local RPC's genesis hash, observed
 program upgrade slot, market/mints/config/vaults, and the API's market address.
+The SOL/USDC release expects the open-liquidity market (`kind: 0`) recreated on
+2026-11-10; the address and trader instruction interface are unchanged. The
+verifier reports active flows separately from account compatibility.
 It does not read Cloudflare secret contents. Existing production RPC secrets must
 be confirmed independently before opening the service.
 

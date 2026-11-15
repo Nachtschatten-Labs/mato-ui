@@ -224,10 +224,12 @@ export function aggregateTradingViewCandles(
 export function mergeLivePriceIntoCandles({
   candles,
   intervalMs,
+  minimumTimeMs = 0,
   priceSnapshot,
 }: {
   candles: Array<TradingViewAggregatedCandle>
   intervalMs: number
+  minimumTimeMs?: number
   priceSnapshot: MarketPriceSnapshot | null | undefined
 }) {
   const price = priceSnapshot?.price
@@ -240,13 +242,18 @@ export function mergeLivePriceIntoCandles({
     typeof eventTimeMs !== 'number' ||
     !Number.isFinite(price) ||
     !Number.isFinite(eventTimeMs) ||
+    eventTimeMs < minimumTimeMs ||
     price <= 0 ||
     intervalMs <= 0
   ) {
     return candles
   }
 
-  const bucketStartMs = Math.floor(eventTimeMs / intervalMs) * intervalMs
+  // Fresh prices can start a partial first candle without restoring old history.
+  const bucketStartMs = Math.max(
+    minimumTimeMs,
+    Math.floor(eventTimeMs / intervalMs) * intervalMs,
+  )
   const bucketTime = Math.floor(bucketStartMs / 1000)
   const latestCandle = candles.at(-1)
 
