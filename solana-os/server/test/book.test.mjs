@@ -26,7 +26,7 @@ function openBook(time, flows = { baseFlow: BASE, quoteFlow: QUOTE }) {
   return book
 }
 
-test('a new player is flat versus the contest mark', () => {
+test('a new player opens at zero PnL', () => {
   const time = clock()
   const book = openBook(time)
   const joined = book.hello('7K2Q9M', 'Ada', time.now())
@@ -176,7 +176,7 @@ test('a stale market pauses fills instead of trading at an old price', () => {
   assert.equal(book.snapshot('a', time.now()).stale, true)
 })
 
-test('state reloads with the same balances and contest mark', () => {
+test('state reloads with the same balances and join price', () => {
   const time = clock()
   const book = openBook(time)
   book.hello('a', 'Ann', time.now())
@@ -215,4 +215,91 @@ test('a badge snapshot stays inside the proxy body limit', () => {
     JSON.stringify(book.snapshot('badge0', time.now())),
   )
   assert.ok(bytes < 3000, `snapshot is ${bytes} bytes`)
+})
+
+const HIGHER_QUOTE = 1_100_000_000_000_000_000n
+
+test('each player opens at zero against the price when they join', () => {
+  const time = clock()
+  const book = openBook(time)
+  book.hello('early', 'Ann', time.now())
+  assert.equal(book.snapshot('early', time.now()).me.pnl, '+0.00')
+
+  time.advance(1_000)
+  book.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 20,
+    },
+    time.now(),
+  )
+  assert.equal(book.snapshot('early', time.now()).me.pnl, '+1000.00')
+
+  book.hello('late', 'Bea', time.now())
+  assert.equal(book.snapshot('late', time.now()).me.pnl, '+0.00')
+  assert.equal(book.snapshot('early', time.now()).me.pnl, '+1000.00')
+
+  const saved = book.serialize()
+  assert.equal(saved.mark0, undefined)
+  assert.equal(
+    saved.players.find((player) => player.id === 'late').startQuoteFlow,
+    HIGHER_QUOTE.toString(),
+  )
+})
+
+test('a player who joins before a price is flat once the market arrives', () => {
+  const time = clock()
+  const book = createBook({ now: time.now })
+  const waiting = book.hello('a', 'Ann', time.now())
+  assert.equal(waiting.snapshot.me.pnl, '--')
+  book.setMarket(
+    { baseFlow: BASE, fetchedAt: time.now(), quoteFlow: QUOTE, slot: 21 },
+    time.now(),
+  )
+  assert.equal(book.snapshot('a', time.now()).me.pnl, '+0.00')
+})
+
+test('an old shared mark is kept as each existing player baseline', () => {
+  const time = clock()
+  const book = createBook({
+    now: time.now,
+    state: {
+      feeBps: 2,
+      mark0: { baseFlow: BASE.toString(), quoteFlow: QUOTE.toString() },
+      nextOrder: 1,
+      orders: [],
+      players: [
+        {
+          createdAt: time.now(),
+          id: 'old',
+          name: 'Old',
+          sol: '100000000000',
+          usdc: '10000000000',
+        },
+      ],
+      settledAtMs: time.now(),
+      version: 1,
+    },
+  })
+  book.setMarket(
+    {
+      baseFlow: BASE,
+      fetchedAt: time.now(),
+      quoteFlow: HIGHER_QUOTE,
+      slot: 22,
+    },
+    time.now(),
+  )
+  assert.equal(book.snapshot('old', time.now()).me.pnl, '+1000.00')
+  book.hello('new', 'New', time.now())
+  assert.equal(book.snapshot('new', time.now()).me.pnl, '+0.00')
+  const saved = book.serialize()
+  assert.equal(saved.version, 2)
+  assert.equal(saved.mark0, undefined)
+  assert.equal(
+    saved.players.find((player) => player.id === 'old').startBaseFlow,
+    BASE.toString(),
+  )
 })

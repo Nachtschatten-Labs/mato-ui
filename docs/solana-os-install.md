@@ -109,20 +109,28 @@ warning.
 
 Mark-to-market uses the **live** ratio, not the ratio after paper flow.
 Execution is at the impacted price, so a stream that lifts the price buys SOL
-for more than the mark and shows a loss if the market does not move. The
-contest mark is the first good live ratio after the state file is created.
-Every player, including someone who joins later, is measured against that same
-mark:
+for more than the mark and shows a loss if that player's market does not move.
+Each player has their own baseline, captured at registration from the live
+ratio at that moment. Someone who joins later is not scored against an earlier
+player's price. A player who registers while the read API is down gets the
+first live ratio after that, before a stream can fill, so they still open at
+zero.
 
 ```text
 equity = USDC balance + SOL balance * live price
-start  = 10000 USDC + 100 SOL * contest mark
+start  = 10000 USDC + 100 SOL * that player's join price
 PnL    = equity - start
 ```
 
-Unfilled input is still in the wallet, so it is already inside equity.
-Wiping the state file starts a new contest. Restarting the process does not,
-as long as the file is still there.
+Unfilled input is still in the wallet, so it is already inside equity. Holding
+the starting SOL after the live price moves changes PnL, because the join
+price is fixed. The baseline is stored on the player in the state file.
+Restarting the process keeps it.
+
+An older state file stored one shared `mark0` instead. On load, every player
+without their own baseline keeps that shared price as their personal baseline.
+Their PnL is not reset. After the next save, `mark0` is dropped and only the
+per-player prices are written. Deleting the state file starts everyone over.
 
 ## Run the leaderboard server
 
@@ -303,8 +311,9 @@ seconds, cancel stops it, a second badge or the laptop board shows both names.
 ## Assumptions
 
 - One SOL/USDC market, the mainnet address already used by this UI.
-- Contest PnL is mark-to-market against the server's first live price, not
-  against each player's join price, so late joiners are on the same scale.
+- Each player's PnL starts at 0 against the live price when they register.
+  SOL price moves after that still change PnL, because the starting 100 SOL
+  is marked to the new live price.
 - The paper fee defaults to 2 bps. Set `PAPER_FEE_BPS` when the live market
   account uses a different fee.
 - Players trust the server operator. The badge signature proves which badge

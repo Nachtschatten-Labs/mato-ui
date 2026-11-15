@@ -87,24 +87,35 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
   const orders = []
   let nextOrder = 1
   let settledAtMs = null
-  let mark0 = null
   let market = null
 
   if (state) {
     settledAtMs = state.settledAtMs ?? null
     nextOrder = state.nextOrder ?? 1
-    if (state.mark0) {
-      mark0 = {
-        baseFlow: BigInt(state.mark0.baseFlow),
-        quoteFlow: BigInt(state.mark0.quoteFlow),
-      }
-    }
+    // Older books stored one shared mark. Keep it as each player's own
+    // baseline instead of resetting their PnL. New files store the baseline
+    // on the player and do not write mark0.
+    const legacy =
+      state.mark0?.baseFlow != null && state.mark0?.quoteFlow != null
+        ? {
+            baseFlow: BigInt(state.mark0.baseFlow),
+            quoteFlow: BigInt(state.mark0.quoteFlow),
+          }
+        : null
     for (const player of state.players ?? []) {
+      const hasOwn =
+        player.startBaseFlow != null && player.startQuoteFlow != null
       players.set(player.id, {
         createdAt: player.createdAt,
         id: player.id,
         name: player.name,
         sol: BigInt(player.sol),
+        startBaseFlow: hasOwn
+          ? BigInt(player.startBaseFlow)
+          : (legacy?.baseFlow ?? null),
+        startQuoteFlow: hasOwn
+          ? BigInt(player.startQuoteFlow)
+          : (legacy?.quoteFlow ?? null),
         usdc: BigInt(player.usdc),
       })
     }
@@ -254,6 +265,8 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
         id,
         name: clean || defaultName(id),
         sol: START_SOL_ATOMS,
+        startBaseFlow: null,
+        startQuoteFlow: null,
         usdc: START_USDC_ATOMS,
       }
       players.set(id, player)
@@ -263,13 +276,29 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return { player }
   }
 
+  function captureMissing(at) {
+    const live = tradable(at)
+    if (!live) return
+    for (const player of players.values()) {
+      if (player.startBaseFlow != null) continue
+      player.startBaseFlow = live.baseFlow
+      player.startQuoteFlow = live.quoteFlow
+    }
+  }
+
   function pnlAtoms(player, live) {
-    if (!mark0 || !live) return null
+    if (
+      player.startBaseFlow == null ||
+      player.startQuoteFlow == null ||
+      !live
+    ) {
+      return null
+    }
     const solQuote = markQuoteAtoms(player.sol, live.baseFlow, live.quoteFlow)
     const startQuote = markQuoteAtoms(
       START_SOL_ATOMS,
-      mark0.baseFlow,
-      mark0.quoteFlow,
+      player.startBaseFlow,
+      player.startQuoteFlow,
     )
     if (solQuote === null || startQuote === null) return null
     return player.usdc + solQuote - (START_USDC_ATOMS + startQuote)
@@ -465,6 +494,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       settle(at)
       const result = ensurePlayer(id, name, at)
       if (result.error) return { error: result.error, ok: false }
+      captureMissing(at)
       return { ok: true, snapshot: snapshot(id, at) }
     },
     place(playerId, input, at = now()) {
@@ -472,6 +502,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       const player = players.get(playerId)
       if (!player) return { error: 'Join first', ok: false }
       if (!tradable(at)) return { error: 'Market offline', ok: false }
+      captureMissing(at)
       const preset = input?.preset ? presetById(input.preset) : null
       if (input?.preset && !preset)
         return { error: 'Unknown stream', ok: false }
@@ -533,12 +564,6 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     serialize() {
       return {
         feeBps,
-        mark0: mark0
-          ? {
-              baseFlow: mark0.baseFlow.toString(),
-              quoteFlow: mark0.quoteFlow.toString(),
-            }
-          : null,
         nextOrder,
         orders: orders.map(cloneOrder),
         players: [...players.values()].map((player) => ({
@@ -546,17 +571,23 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
           id: player.id,
           name: player.name,
           sol: player.sol.toString(),
+          startBaseFlow:
+            player.startBaseFlow == null
+              ? null
+              : player.startBaseFlow.toString(),
+          startQuoteFlow:
+            player.startQuoteFlow == null
+              ? null
+              : player.startQuoteFlow.toString(),
           usdc: player.usdc.toString(),
         })),
         settledAtMs,
-        version: 1,
+        version: 2,
       }
     },
     setMarket(next, at = now()) {
       market = next
-      if (!mark0 && next.baseFlow > 0n && next.quoteFlow > 0n) {
-        mark0 = { baseFlow: next.baseFlow, quoteFlow: next.quoteFlow }
-      }
+      captureMissing(at)
       settle(at)
     },
     settle,

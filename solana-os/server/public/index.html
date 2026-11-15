@@ -170,7 +170,7 @@
           : body.price + ' USDC'
         document.querySelector('#status').textContent =
           body.players +
-          ' players. Play money, marked against the contest open.'
+          ' players. Play money. Each PnL starts at 0 when that player joins.'
         const rows = document.querySelector('#rows')
         rows.replaceChildren()
         for (const row of body.rows) {
