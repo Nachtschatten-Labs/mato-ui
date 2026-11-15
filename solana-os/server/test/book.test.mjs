@@ -234,7 +234,7 @@ test('a ticket quote and stream chart stay inside one badge response', () => {
     view,
   )
   assert.equal(placed.snapshot.presets, undefined)
-  assert.equal(typeof placed.snapshot.quote.impact, 'string')
+  assert.match(placed.snapshot.quote.impact, /^[+-]\d+\.\d{4}%$/)
   assert.ok(
     Number(placed.snapshot.me.freeUsdc) < Number(placed.snapshot.me.usdc),
   )
@@ -253,6 +253,11 @@ test('a ticket quote and stream chart stay inside one badge response', () => {
   const shot = book.snapshot('a', time.now(), view)
   assert.ok(shot.orders[0].px.length >= 2)
   assert.ok(shot.orders[0].px.length <= 12)
+  assert.equal(shot.orders[0].px[0][0], 0)
+  assert.ok(shot.orders[0].px.at(-1)[0] > 0)
+  assert.ok(shot.orders[0].px.at(-1)[0] < 1000)
+  assert.match(shot.orders[0].pct, /^\d+\.\d{2}$/)
+  assert.match(shot.orders[0].flow, /^spent .+ -> got /)
   assert.notEqual(shot.orders[0].avg, '--')
   const bytes = Buffer.byteLength(JSON.stringify(shot))
   assert.ok(bytes < 3500, `ticket snapshot is ${bytes} bytes`)

@@ -36,34 +36,33 @@ local buy_amt = 1000
 local sell_amt = 10
 local dur_i = 1
 local focus = 2
-local nav = 2
 local stream_i = 1
 local board_i = 1
 local poll_timer = nil
 local poll_ms = 0
 
 ui.bg("bg")
-ui.label(8, 2, "Mato", {size = 14, color = "green"})
-local price = ui.label(120, 2, "--", {size = 14, w = 192, align = "right"})
-local usdc = ui.label(8, 20, "10000.00 USDC", {size = 20, w = 304})
-local sol = ui.label(8, 44, "100.0000 SOL", {size = 20, w = 304})
-local pnl = ui.label(8, 68, "PnL --", {size = 32, w = 304, align = "center"})
+local price = ui.label(214, 2, "--", {size = 14, w = 98, align = "right"})
+local bal = ui.label(8, 4, "10000.00 USDC  100.0000 SOL", {size = 12, w = 206})
+local pnl = ui.label(8, 22, "PnL --", {size = 32, w = 304, align = "center"})
 
 local ticket = {
-  ui.label(8, 104, "", {size = 20, w = 304}),
-  ui.label(8, 128, "", {size = 20, w = 304}),
+  ui.label(8, 64, "", {size = 20, w = 160}),
+  ui.label(8, 90, "", {size = 20, w = 160}),
+  ui.label(8, 116, "", {size = 20, w = 160}),
+  ui.label(176, 64, "Price impact", {size = 12, w = 136}),
+  ui.label(176, 82, "--", {size = 14, w = 136}),
   ui.label(8, 152, "", {size = 20, w = 304}),
-  ui.label(8, 176, "", {size = 14, w = 304}),
-  ui.label(8, 194, "", {size = 14, w = 304}),
+  ui.label(8, 178, "", {size = 20, w = 304}),
 }
 local charts = {}
 for i = 1, 3 do
-  charts[i] = {label = ui.label(8, 0, "", {size = 12, w = 304})}
+  charts[i] = {label = ui.label(8, 0, "", {size = 14, w = 304})}
   charts[i].label:show(false)
-  if ui.canvas then
-    charts[i].canvas = ui.canvas(8, 0, 304, 16, {color = "bg"})
-    charts[i].canvas:show(false)
-  end
+end
+if ui.canvas then
+  charts[1].canvas = ui.canvas(8, 0, 304, 40, {color = "bg"})
+  charts[1].canvas:show(false)
 end
 local board = {}
 for i = 1, 7 do
@@ -115,8 +114,8 @@ local function hide_all()
   for i = 1, #ticket do ticket[i]:show(false) end
   for i = 1, 3 do
     charts[i].label:show(false)
-    if charts[i].canvas then charts[i].canvas:show(false) end
   end
+  if charts[1].canvas then charts[1].canvas:show(false) end
   for i = 1, #board do board[i]:show(false) end
 end
 
@@ -139,42 +138,67 @@ local function paint_trade()
   ticket[2]:color(tone(focus == 2))
   ticket[3]:text((focus == 3 and "> " or "  ") .. DUR[dur_i])
   ticket[3]:color(tone(focus == 3))
-  ticket[4]:text("impact " .. tostring(impact))
+  ticket[4]:text("Price impact")
   ticket[4]:color("dim")
-  local dest = nav == 3 and "Leaderboard" or "Open streams"
-  ticket[5]:text((focus == 4 and "> " or "  ") .. dest)
-  ticket[5]:color(tone(focus == 4))
+  ticket[5]:text(tostring(impact))
+  ticket[5]:color("text")
+  ticket[6]:text((focus == 4 and "> " or "  ") .. "Open streams")
+  ticket[6]:color(tone(focus == 4))
+  ticket[7]:text((focus == 5 and "> " or "  ") .. "Leaderboard")
+  ticket[7]:color(tone(focus == 5))
   for i = 1, #ticket do ticket[i]:show(true) end
   if focus == 2 then
     set_hint(side == "buy" and "L/R 100 USDC   SEL go" or "L/R 1 SOL   SEL go")
   elseif focus == 3 then
     set_hint("L/R time   SEL go")
-  elseif focus == 4 then
-    set_hint("L/R screen   SEL open")
+  elseif focus == 4 or focus == 5 then
+    set_hint("SEL open")
   else
     set_hint("L/R side   SEL go")
   end
 end
 
+local function chart_xy(point)
+  if type(point) ~= "table" then return nil end
+  local along = point[1] or point.p
+  local value = point[2] or point.c
+  if type(along) ~= "number" or type(value) ~= "number" then return nil end
+  return along, value
+end
+
 local function draw_chart(canvas, points, color)
   canvas:clear("bg")
-  if type(points) ~= "table" or #points < 1 then return end
-  local minv, maxv = points[1], points[1]
-  for i = 2, #points do
-    if points[i] < minv then minv = points[i] end
-    if points[i] > maxv then maxv = points[i] end
+  local parsed = {}
+  if type(points) == "table" then
+    for i = 1, #points do
+      local along, value = chart_xy(points[i])
+      if along then parsed[#parsed + 1] = {along, value} end
+    end
+  end
+  if #parsed == 0 then return end
+  local minv, maxv = parsed[1][2], parsed[1][2]
+  for i = 2, #parsed do
+    if parsed[i][2] < minv then minv = parsed[i][2] end
+    if parsed[i][2] > maxv then maxv = parsed[i][2] end
   end
   if maxv == minv then maxv = minv + 1 end
-  local w, h, n = 303, 15, #points
-  if n == 1 then
-    canvas:pixel(0, 8, color)
+  local w, h = 303, 39
+  local function xy(i)
+    local x = math.floor(parsed[i][1] * w / 1000)
+    if x < 0 then x = 0 end
+    if x > w then x = w end
+    local y = math.floor((maxv - parsed[i][2]) * h / (maxv - minv))
+    return x, y
+  end
+  if #parsed == 1 then
+    local x, y = xy(1)
+    canvas:pixel(x, y, color)
     return
   end
-  local prevx, prevy
-  for i = 1, n do
-    local x = math.floor((i - 1) * w / (n - 1))
-    local y = math.floor((maxv - points[i]) * h / (maxv - minv))
-    if prevx then canvas:line(prevx, prevy, x, y, color) end
+  local prevx, prevy = xy(1)
+  for i = 2, #parsed do
+    local x, y = xy(i)
+    canvas:line(prevx, prevy, x, y, color)
     prevx, prevy = x, y
   end
 end
@@ -191,34 +215,36 @@ end
 local function paint_streams()
   local list = open_orders()
   if #list == 0 then
-    ticket[1]:text("No open streams")
-    ticket[1]:color("dim")
-    ticket[1]:show(true)
-    set_hint("CANCEL trade   L/R screen")
+    charts[1].label:text("No open streams")
+    charts[1].label:pos(8, 70)
+    charts[1].label:color("dim")
+    charts[1].label:show(true)
+    set_hint("CANCEL ticket")
     return
   end
   if stream_i > #list then stream_i = 1 end
-  if stream_i < 1 then stream_i = #list end
-  for i = 1, 3 do
-    local order = list[i]
-    local row = charts[i]
-    if order then
-      local y = 104 + (i - 1) * 32
-      local mark = i == stream_i and "> " or "  "
-      local kind = order.side == "sell" and "Sell" or "Buy"
-      row.label:text(mark .. kind .. " " .. (order.filled or "0") .. "  avg " .. (order.avg or "--") .. "  " .. tostring(order.pct or 0) .. "%")
-      row.label:pos(8, y)
-      row.label:color(i == stream_i and "aqua" or "text")
-      row.label:show(true)
-      if row.canvas then
-        row.canvas:pos(8, y + 14)
-        row.canvas:show(true)
-        local color = order.side == "sell" and "pink" or "green"
-        draw_chart(row.canvas, order.px, color)
-      end
-    end
+  if stream_i < 1 then stream_i = 1 end
+  local order = list[stream_i]
+  local kind = order.side == "sell" and "Sell" or "Buy"
+  charts[1].label:text(stream_i .. "/" .. #list .. "  " .. kind)
+  charts[1].label:pos(8, 62)
+  charts[1].label:color("aqua")
+  charts[1].label:show(true)
+  charts[2].label:text(order.flow or ("spent " .. (order.filled or "0")))
+  charts[2].label:pos(8, 82)
+  charts[2].label:color("text")
+  charts[2].label:show(true)
+  charts[3].label:text("avg " .. (order.avg or "--") .. "   " .. tostring(order.pct or "0.00") .. "%")
+  charts[3].label:pos(8, 102)
+  charts[3].label:color("text")
+  charts[3].label:show(true)
+  if charts[1].canvas then
+    charts[1].canvas:pos(8, 132)
+    charts[1].canvas:show(true)
+    local color = order.side == "sell" and "pink" or "green"
+    draw_chart(charts[1].canvas, order.px, color)
   end
-  set_hint("U/D pick   SEL stop   L/R screen")
+  set_hint("U/D order   SEL stop   CANCEL ticket")
 end
 
 local function paint_board()
@@ -301,8 +327,7 @@ local function apply(data)
       price:text(data.price or "--")
       price:color("text")
     end
-    usdc:text((me.usdc or "--") .. " USDC")
-    sol:text((me.sol or "--") .. " SOL")
+    bal:text((me.usdc or "--") .. " USDC  " .. (me.sol or "--") .. " SOL")
     pnl:text("PnL " .. (me.pnl or "--"))
     if type(me.pnl) == "string" and me.pnl:sub(1, 1) == "-" then
       pnl:color("pink")
@@ -409,10 +434,10 @@ end
 local function trade_key(key)
   if key == "up" then
     focus = focus - 1
-    if focus < 1 then focus = 4 end
+    if focus < 1 then focus = 5 end
   elseif key == "down" then
     focus = focus + 1
-    if focus > 4 then focus = 1 end
+    if focus > 5 then focus = 1 end
   elseif key == "left" or key == "right" then
     local delta = key == "right" and 1 or -1
     if focus == 1 then
@@ -421,12 +446,12 @@ local function trade_key(key)
       bump(delta)
     elseif focus == 3 then
       dur_i = (dur_i - 1 + delta) % 3 + 1
-    else
-      nav = nav == 2 and 3 or 2
     end
   elseif key == "select" then
     if focus == 4 then
-      screen = nav
+      screen = 2
+    elseif focus == 5 then
+      screen = 3
     else
       place()
       return true
@@ -440,22 +465,12 @@ end
 
 local function stream_key(key)
   local list = open_orders()
-  if key == "up" or key == "down" then
-    if #list > 0 then
-      local delta = key == "down" and 1 or -1
+  if key == "up" or key == "down" or key == "left" or key == "right" then
+    if #list > 1 then
+      local delta = (key == "down" or key == "right") and 1 or -1
       stream_i = (stream_i - 1 + delta) % #list + 1
       paint()
     end
-    return true
-  end
-  if key == "left" then
-    screen = 1
-    paint()
-    return true
-  end
-  if key == "right" then
-    screen = 3
-    paint()
     return true
   end
   if key == "select" and list[stream_i] then

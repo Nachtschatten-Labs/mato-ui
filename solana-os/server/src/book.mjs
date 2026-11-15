@@ -63,6 +63,9 @@ function reviveOrder(order) {
         .slice(-CHART_KEEP)
         .map((sample) => ({
           c: Math.round(Number(sample.c)),
+          p: Number.isFinite(Number(sample.p))
+            ? Math.round(Number(sample.p))
+            : null,
           t: Number(sample.t) || 0,
         }))
     : []
@@ -79,15 +82,18 @@ function reviveOrder(order) {
 }
 
 function downsample(samples, max) {
-  if (samples.length === 0) return []
-  if (samples.length <= max) return samples.map((sample) => sample.c)
-  const last = samples.length - 1
-  const points = []
-  for (let index = 0; index < max; index += 1) {
-    const at = Math.round((index * last) / (max - 1))
-    points.push(samples[at].c)
-  }
-  return points
+  const placed = samples.filter(
+    (sample) => Number.isFinite(sample.p) && Number.isFinite(sample.c),
+  )
+  if (placed.length === 0) return []
+  const pick =
+    placed.length <= max
+      ? placed
+      : Array.from({ length: max }, (_, index) => {
+          const at = Math.round((index * (placed.length - 1)) / (max - 1))
+          return placed[at]
+        })
+  return pick.map((sample) => [sample.p, sample.c])
 }
 
 export function sanitizeName(raw) {
@@ -229,8 +235,8 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
             slots: step,
           })
           credit(order, player, spend, gross)
-          notePx(order, flows.baseFlow, flows.quoteFlow, at)
           order.slotsLeft -= step
+          notePx(order, flows.baseFlow, flows.quoteFlow, at)
         }
       }
       for (const order of active) {
@@ -242,22 +248,37 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return processed
   }
 
+  function progressPermille(order) {
+    const total = durationSlots(order.seconds)
+    if (total <= 0) return 0
+    const done = Math.max(0, Math.min(total, total - order.slotsLeft))
+    return Math.round((done * 1000) / total)
+  }
+
   function notePx(order, baseFlow, quoteFlow, at) {
     const cents = priceCents(baseFlow, quoteFlow)
     if (cents == null) return
     if (!order.samples) order.samples = []
-    const point = { c: Number(cents), t: at }
+    const point = { c: Number(cents), p: progressPermille(order), t: at }
+    if (order.samples.length === 0) {
+      order.samples.push({ c: point.c, p: 0, t: at })
+      if (point.p > 0) order.samples.push(point)
+      return
+    }
+    const origin = order.samples[0]
+    if (origin.p !== 0) origin.p = 0
     const last = order.samples[order.samples.length - 1]
-    if (!last) {
-      order.samples.push(point)
+    if (order.samples.length === 1) {
+      if (point.p > 0) order.samples.push(point)
       return
     }
     if (at - last.t < CHART_GAP_MS) {
       last.c = point.c
+      last.p = point.p
       return
     }
     order.samples.push(point)
-    if (order.samples.length > CHART_KEEP) order.samples.shift()
+    if (order.samples.length > CHART_KEEP) order.samples.splice(1, 1)
   }
 
   function burn(elapsed, at) {
@@ -403,15 +424,24 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
           ? (spent * 100_000n) / order.netCredited
           : (order.netCredited * 100_000n) / spent
         : null
-    const pct =
-      order.amountAtoms > 0n ? Number((spent * 100n) / order.amountAtoms) : 0
-    const filled =
-      order.side === 'buy' ? formatUnits(spent, 6, 2) : formatUnits(spent, 9, 2)
+    const pctValue =
+      order.amountAtoms > 0n
+        ? Number((spent * 10000n) / order.amountAtoms) / 100
+        : 0
+    const inText =
+      order.side === 'buy' ? formatUnits(spent, 6, 2) : formatUnits(spent, 9, 4)
+    const outText =
+      order.side === 'buy'
+        ? formatUnits(order.netCredited, 9, 4)
+        : formatUnits(order.netCredited, 6, 2)
+    const inUnit = order.side === 'buy' ? 'USDC' : 'SOL'
+    const outUnit = order.side === 'buy' ? 'SOL' : 'USDC'
     return {
       avg: formatCents(avgCents),
-      filled,
+      filled: inText,
+      flow: `spent ${inText} ${inUnit} -> got ${outText} ${outUnit}`,
       id: order.id,
-      pct,
+      pct: pctValue.toFixed(2),
       px: withChart ? downsample(order.samples ?? [], CHART_POINTS) : undefined,
       right:
         order.status === 'open' && flows
@@ -661,6 +691,11 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       }
       nextOrder += 1
       orders.push(order)
+      const liveNow = tradable(at)
+      if (liveNow) {
+        const flows = aggregateFlows(liveNow, openOrders())
+        notePx(order, flows.baseFlow, flows.quoteFlow, at)
+      }
       return {
         ok: true,
         orderId: order.id,

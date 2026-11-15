@@ -68,7 +68,7 @@ test('buy impact matches the UI formula when duration is not haircut', () => {
   const effective = BigInt(slots) * 2n
   const ui = (Number(amountFlowTwice) / Number(marketFlow * effective)) * 100
   assert.ok(Math.abs(ours - ui) < 1e-9)
-  assert.match(formatImpact('buy', ours), /^\+0\.\d\d%$/)
+  assert.match(formatImpact('buy', ours), /^\+\d+\.\d{4}%$/)
 })
 
 test('the default 2 bps fee rounds up and net output never goes backwards', () => {

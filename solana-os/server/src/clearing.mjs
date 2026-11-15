@@ -167,9 +167,8 @@ export function formatCents(cents) {
 export function formatImpact(side, percent) {
   if (percent === null || !Number.isFinite(percent)) return '--'
   const signed = side === 'buy' ? percent : -percent
-  if (Math.abs(signed) < 0.005) return '0.00%'
-  const text = `${Math.abs(signed).toFixed(2)}%`
-  return signed > 0 ? `+${text}` : `-${text}`
+  const text = `${Math.abs(signed).toFixed(4)}%`
+  return signed < 0 ? `-${text}` : `+${text}`
 }
 
 export function formatDuration(seconds) {

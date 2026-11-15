@@ -279,31 +279,36 @@ shows the peak heap.
 
 On the badge the app is named Mato. The store id stays `mato-paper`.
 
-Balances and PnL sit in large type under the live price. PnL is green when
-it is up and pink when it is down. The badge polls every 4 seconds, and every
-1.5 seconds while a stream is open (40 requests a minute, under the proxy's
-60).
+USDC and SOL share one line. PnL is large, green when it is up and pink when
+it is down. The live price sits at the top right. The badge polls every 4
+seconds, and every 1.5 seconds while a stream is open (40 requests a minute,
+under the proxy's 60).
 
 Controls:
 
 - Up and down move the highlight.
-- On the order ticket, left and right change the highlighted field: Buy/Sell,
-  the amount (100 USDC or 1 SOL), or the duration (10 min, 30 min, 1 hour).
-  Buy starts at 1000 USDC and sell starts at 10 SOL. Amounts stay above zero
-  and within the free balance. Impact for that ticket is shown under the
+- On the order ticket, left and right change Buy/Sell, the amount (100 USDC
+  or 1 SOL), or the duration (10 min, 30 min, 1 hour). Buy starts at 1000
+  USDC and sell starts at 10 SOL. Amounts stay above zero and within the free
+  balance. Price impact, to 4 decimal places, sits to the right of those
   fields.
-- Select on the ticket asks you to confirm the stream. Select on the bottom
-  row opens Streams or the leaderboard (left/right chooses which).
-- Streams: up/down pick a stream, Select stops it. Each row has the average
-  fill so far and a short chart of the execution price. Left returns to the
-  ticket, right opens the board.
+- Select on Buy, the amount, or the duration asks you to confirm the stream.
+  Open streams and Leaderboard are separate rows. Select opens that screen.
+- Streams shows one order at a time, with `1/3` when there are several. Up,
+  down, left, and right move between orders. The row shows what was spent and
+  what was received, the average price, and the fill percent to 2 decimals.
+  The chart's width is the whole duration, so the line only covers the
+  fraction that has elapsed. Select stops the stream that is showing. Cancel
+  returns to the ticket.
 - Board: up/down move, Select on Rename edits the nickname. Left returns to
   the ticket, right opens streams.
 - Cancel returns to the ticket, or leaves the app from the ticket. Home
   always leaves.
 
-A player can have three open streams. The server keeps a short price sample
-about every 5 seconds and sends at most 12 points per stream.
+A player can have three open streams. The server stores each sample's
+position along the order (0 to 1000) and sends at most 12 points. An older
+order without those positions simply has an empty chart until new samples
+arrive.
 
 ## What is not verified without a badge
 
