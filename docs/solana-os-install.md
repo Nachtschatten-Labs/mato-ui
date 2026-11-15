@@ -230,8 +230,10 @@ Edit both of these to the same hostname, with no scheme and no path:
 `app.json` `id` stays `mato-paper` unless you also set `PAPER_APP_ID`. The
 badge will refuse any other host. Ship a new version if the hostname changes.
 
-Build the zip from inside the app directory so `main.lua` is at the root of
-the archive:
+This branch already points both files at
+`mato-ui-mainnet.up.railway.app` and ships
+`solana-os/mato-paper.zip` with `app.json`, `config.json`, and `main.lua` at
+the archive root. Rebuild it the same way if the host changes:
 
 ```sh
 cd solana-os/app

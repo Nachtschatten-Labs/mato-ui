@@ -8,5 +8,5 @@
   "accent": "14F195",
   "category": "tools",
   "permissions": ["http"],
-  "hosts": ["paper.example.com"]
+  "hosts": ["mato-ui-mainnet.up.railway.app"]
 }
