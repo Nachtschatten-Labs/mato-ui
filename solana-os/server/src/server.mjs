@@ -216,7 +216,7 @@ export function start(options = {}) {
   const book =
     options.book ??
     createBook({
-      feeBps: Number(process.env.PAPER_FEE_BPS ?? 10),
+      feeBps: Number(process.env.PAPER_FEE_BPS ?? 2),
       state: statePath ? readState(statePath) : null,
     })
   const app = createApp({

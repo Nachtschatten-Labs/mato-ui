@@ -2,7 +2,7 @@ import { createHash, generateKeyPairSync, sign } from 'node:crypto'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createBook } from '../src/book.mjs'
-import { createApp } from '../src/server.mjs'
+import { createApp, start } from '../src/server.mjs'
 
 const { privateKey, publicKey } = generateKeyPairSync('ed25519')
 const rawKey = publicKey.export({ format: 'der', type: 'spki' }).subarray(-32)
@@ -21,7 +21,7 @@ function close(server) {
 
 test('dev badges can stream and show up on the public board', async () => {
   let now = 1_700_000_000_000
-  const book = createBook({ feeBps: 10, now: () => now })
+  const book = createBook({ now: () => now })
   book.setMarket(
     {
       baseFlow: 10_000_000_000_000_000_000n,
@@ -53,6 +53,7 @@ test('dev badges can stream and show up on the public board', async () => {
     const body = await joined.json()
     assert.equal(body.me.name, 'ada')
     assert.equal(body.me.pnl, '+0.00')
+    assert.equal(body.feeBps, 2)
 
     const ordered = await fetch(`http://127.0.0.1:${port}/v1/badge/orders`, {
       body: JSON.stringify({ name: 'ada', preset: 'buy-100-60' }),
@@ -87,7 +88,7 @@ test('dev badges can stream and show up on the public board', async () => {
 
 test('signed badge requests are accepted once and rejected on replay', async () => {
   const now = 1_800_000_000_000
-  const book = createBook({ feeBps: 10, now: () => now })
+  const book = createBook({ now: () => now })
   book.setMarket(
     {
       baseFlow: 10_000_000_000_000_000_000n,
@@ -131,6 +132,30 @@ test('signed badge requests are accepted once and rejected on replay', async () 
     assert.equal(dev.status, 401)
   } finally {
     await close(server)
+  }
+})
+
+test('PAPER_FEE_BPS overrides the 2 bps default', async () => {
+  const previous = process.env.PAPER_FEE_BPS
+  process.env.PAPER_FEE_BPS = '7'
+  const running = start({
+    allowDev: true,
+    host: '127.0.0.1',
+    poll: false,
+    port: 0,
+  })
+  try {
+    const address = await running.listening
+    const response = await fetch(
+      `http://127.0.0.1:${address.port}/v1/badge?name=ada`,
+      { headers: { 'x-dev-badge': 'fee' } },
+    )
+    assert.equal(response.status, 200)
+    assert.equal((await response.json()).feeBps, 7)
+  } finally {
+    if (previous === undefined) delete process.env.PAPER_FEE_BPS
+    else process.env.PAPER_FEE_BPS = previous
+    await running.close()
   }
 })
 

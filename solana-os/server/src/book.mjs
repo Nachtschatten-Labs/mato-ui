@@ -78,7 +78,7 @@ function presetById(id) {
   return PRESETS.find((preset) => preset.id === id) ?? null
 }
 
-export function createBook({ feeBps = 10, now = Date.now, state = null } = {}) {
+export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
   if (!Number.isInteger(feeBps) || feeBps < 0 || feeBps > 100) {
     throw new Error('feeBps must be an integer from 0 to 100')
   }

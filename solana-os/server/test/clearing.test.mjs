@@ -71,12 +71,12 @@ test('buy impact matches the UI formula when duration is not haircut', () => {
   assert.match(formatImpact('buy', ours), /^\+0\.\d\d%$/)
 })
 
-test('fee rounds up and net output never goes backwards', () => {
-  assert.equal(tradeFeeAtoms(1n, 10), 1n)
-  assert.equal(tradeFeeAtoms(1000n, 10), 1n)
+test('the default 2 bps fee rounds up and net output never goes backwards', () => {
+  assert.equal(tradeFeeAtoms(1n, 2), 1n)
+  assert.equal(tradeFeeAtoms(5_000n, 2), 1n)
   let previous = 0n
   for (let gross = 0n; gross <= 5_000n; gross += 1n) {
-    const net = netOutput(gross, 10)
+    const net = netOutput(gross, 2)
     assert.ok(net >= previous)
     previous = net
   }

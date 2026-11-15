@@ -21,7 +21,7 @@ function clock() {
 }
 
 function openBook(time, flows = { baseFlow: BASE, quoteFlow: QUOTE }) {
-  const book = createBook({ feeBps: 10, now: time.now })
+  const book = createBook({ now: time.now })
   book.setMarket({ ...flows, fetchedAt: time.now(), slot: 10 }, time.now())
   return book
 }
@@ -35,6 +35,7 @@ test('a new player is flat versus the contest mark', () => {
   assert.equal(joined.snapshot.me.usdc, '10000.00')
   assert.equal(joined.snapshot.me.sol, '100.0000')
   assert.equal(joined.snapshot.price, '100.00')
+  assert.equal(joined.snapshot.feeBps, 2)
 })
 
 test('a buy lifts the clearing price and loses to the unimpacted mark', () => {
@@ -60,7 +61,7 @@ test('a buy lifts the clearing price and loses to the unimpacted mark', () => {
   const received = player.sol - START_SOL_ATOMS
   const spent = START_USDC_ATOMS - player.usdc
   assert.equal(spent, 1_000_000_000n)
-  const noImpact = netOutput(10_000_000_000n, 10)
+  const noImpact = netOutput(10_000_000_000n, 2)
   assert.ok(received < noImpact)
   assert.ok(received > 9_000_000_000n)
   const view = book.snapshot('buyer', time.now())
@@ -187,7 +188,6 @@ test('state reloads with the same balances and contest mark', () => {
   )
   const saved = book.serialize()
   const restored = createBook({
-    feeBps: 10,
     now: time.now,
     state: JSON.parse(JSON.stringify(saved)),
   })

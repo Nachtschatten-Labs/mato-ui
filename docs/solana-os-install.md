@@ -86,10 +86,9 @@ interval is not applied.
 
 Output uses the program's truncated bookkeeping
 (`src/features/trading/lib/position-progress.ts`). The fee is taken from
-output and rounded up, matching `tradeFeeAtoms`. The default is **10 bps
-(0.10%)**, which is the fee the mainnet UI reads from the market account in
-its tests. The read API config payload does not include `feeBps`; set
-`PAPER_FEE_BPS` if you have read a different value from the account.
+output and rounded up, matching `tradeFeeAtoms`. The default is **2 bps
+(0.02%)**. The read API config payload does not include `feeBps`; set
+`PAPER_FEE_BPS` if the live market account uses a different fee.
 
 If either side of the book is zero, or the read API has been failing for more
 than 15 seconds, the slot does not trade and the unspent input stays in the
@@ -161,7 +160,7 @@ host a stranger can reach. The Docker image sets it off.
 | `PORT`                 | `8080`                          | Listen port                        |
 | `PUBLIC_BASE_URL`      | request host, forced to `https` | URL covered by the badge signature |
 | `PAPER_STATE_PATH`     | none (memory only)              | Book file. Set this in production  |
-| `PAPER_FEE_BPS`        | `10`                            | Output fee, 0–100                  |
+| `PAPER_FEE_BPS`        | `2`                             | Output fee, 0–100                  |
 | `PAPER_POLL_MS`        | `2000`                          | How often the read API is polled   |
 | `MATO_READ_API_URL`    | the production read API above   | Mato market data                   |
 | `PAPER_APP_ID`         | `mato-paper`                    | Must match `id` in `app.json`      |
@@ -306,8 +305,8 @@ seconds, cancel stops it, a second badge or the laptop board shows both names.
 - One SOL/USDC market, the mainnet address already used by this UI.
 - Contest PnL is mark-to-market against the server's first live price, not
   against each player's join price, so late joiners are on the same scale.
-- 10 bps is the right fee until someone reads the live market account and
-  sets `PAPER_FEE_BPS`.
+- The paper fee defaults to 2 bps. Set `PAPER_FEE_BPS` when the live market
+  account uses a different fee.
 - Players trust the server operator. The badge signature proves which badge
   and user id called `mato-paper`. It does not prove they ran this exact Lua,
   so the server is what enforces balances, sizes, and the three-stream cap.
