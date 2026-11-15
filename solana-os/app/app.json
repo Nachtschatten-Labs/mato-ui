@@ -1,0 +1,12 @@
+{
+  "id": "mato-paper",
+  "name": "Mato Paper",
+  "version": "1.0.0",
+  "author": "Mato",
+  "summary": "Play-money SOL streams on live Mato prices.",
+  "icon": "shuffle",
+  "accent": "14F195",
+  "category": "tools",
+  "permissions": ["http"],
+  "hosts": ["paper.example.com"]
+}

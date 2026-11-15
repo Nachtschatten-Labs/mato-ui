@@ -25,3 +25,7 @@ to show “Mato is temporarily offline” until its route is removed.
 
 This is recovered application source with fresh build tooling and dependency
 lockfile. See [RECOVERY.md](RECOVERY.md) for the recovery scope and limitations.
+
+Play-money streaming for the Solana Breakpoint 2026 badge is in
+[solana-os/](solana-os/). Install steps, the clearing model, and the
+leaderboard server are in [docs/solana-os-install.md](docs/solana-os-install.md).

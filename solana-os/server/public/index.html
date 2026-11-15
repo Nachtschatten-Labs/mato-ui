@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mato paper leaderboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110d;
+        --panel: #10211a;
+        --line: #1d3b2e;
+        --text: #e7f6ee;
+        --dim: #8eae9d;
+        --up: #14f195;
+        --down: #ff6b8a;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.45 ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 28px 16px 64px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      h2 {
+        margin: 28px 0 8px;
+        font-size: 18px;
+      }
+      p {
+        color: var(--dim);
+      }
+      .price {
+        color: var(--up);
+        font-size: 22px;
+        font-variant-numeric: tabular-nums;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+      th.num,
+      td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .up {
+        color: var(--up);
+      }
+      .down {
+        color: var(--down);
+      }
+      form {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        align-items: end;
+      }
+      label {
+        display: grid;
+        gap: 4px;
+        color: var(--dim);
+        font-size: 13px;
+      }
+      input,
+      select,
+      button {
+        font: inherit;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #07140f;
+        color: var(--text);
+      }
+      button {
+        background: var(--up);
+        color: #042116;
+        border: 0;
+        cursor: pointer;
+      }
+      #dev[hidden] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Mato paper</h1>
+      <p id="status">Loading the live Mato price…</p>
+      <p class="price" id="price">--</p>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th class="num">PnL</th>
+            <th class="num">Equity</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <section id="dev" hidden>
+        <h2>Dev badge</h2>
+        <p>
+          This form is on because the server was started with dev badges
+          allowed. It is play money. Turn that off on a public host.
+        </p>
+        <form id="trade">
+          <label>
+            Badge
+            <input id="badge" name="badge" value="alice" maxlength="16" />
+          </label>
+          <label>
+            Name
+            <input id="name" name="name" value="ada" maxlength="12" />
+          </label>
+          <label>
+            Side
+            <select id="side" name="side">
+              <option value="buy">Buy SOL</option>
+              <option value="sell">Sell SOL</option>
+            </select>
+          </label>
+          <label>
+            Amount
+            <input id="amount" name="amount" value="100" />
+          </label>
+          <label>
+            Seconds
+            <input id="seconds" name="seconds" value="60" />
+          </label>
+          <button type="submit">Stream</button>
+        </form>
+        <p id="me"></p>
+      </section>
+    </main>
+    <script>
+      const dev = window.PAPER_DEV === true
+      if (dev) document.querySelector('#dev').hidden = false
+
+      function cls(pnl) {
+        if (typeof pnl !== 'string') return ''
+        if (pnl.startsWith('-')) return 'down'
+        if (pnl.startsWith('+') && pnl !== '+0.00') return 'up'
+        return ''
+      }
+
+      async function loadBoard() {
+        const response = await fetch('/v1/board', { cache: 'no-store' })
+        const body = await response.json()
+        document.querySelector('#price').textContent = body.stale
+          ? body.price + ' (stale)'
+          : body.price + ' USDC'
+        document.querySelector('#status').textContent =
+          body.players +
+          ' players. Play money, marked against the contest open.'
+        const rows = document.querySelector('#rows')
+        rows.replaceChildren()
+        for (const row of body.rows) {
+          const tr = document.createElement('tr')
+          for (const [text, numeric] of [
+            [String(row.rank), false],
+            [row.name, false],
+            [row.pnl, true],
+            [row.eq, true],
+          ]) {
+            const td = document.createElement('td')
+            td.textContent = text
+            if (numeric) td.className = 'num'
+            if (text === row.pnl) td.classList.add(cls(row.pnl))
+            tr.append(td)
+          }
+          rows.append(tr)
+        }
+        if (body.rows.length === 0) {
+          const tr = document.createElement('tr')
+          const td = document.createElement('td')
+          td.colSpan = 4
+          td.textContent = 'No badges yet.'
+          tr.append(td)
+          rows.append(tr)
+        }
+      }
+
+      async function refreshMe() {
+        if (!dev) return
+        const badge = document.querySelector('#badge').value.trim()
+        const name = document.querySelector('#name').value.trim()
+        const response = await fetch(
+          '/v1/badge?name=' + encodeURIComponent(name),
+          { headers: { 'x-dev-badge': badge }, cache: 'no-store' },
+        )
+        const body = await response.json()
+        const me = document.querySelector('#me')
+        if (!response.ok) {
+          me.textContent = body.error || 'Could not join'
+          return
+        }
+        me.textContent =
+          body.me.name +
+          '  ' +
+          body.me.usdc +
+          ' USDC  ' +
+          body.me.sol +
+          ' SOL  PnL ' +
+          body.me.pnl
+      }
+
+      document
+        .querySelector('#trade')
+        .addEventListener('submit', async (event) => {
+          event.preventDefault()
+          const badge = document.querySelector('#badge').value.trim()
+          const response = await fetch('/v1/badge/orders', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              'x-dev-badge': badge,
+            },
+            body: JSON.stringify({
+              amount: document.querySelector('#amount').value,
+              name: document.querySelector('#name').value,
+              seconds: Number(document.querySelector('#seconds').value),
+              side: document.querySelector('#side').value,
+            }),
+          })
+          const body = await response.json()
+          const me = document.querySelector('#me')
+          if (!response.ok) {
+            me.textContent = body.error || 'Order rejected'
+            return
+          }
+          await refreshMe()
+          await loadBoard()
+        })
+
+      loadBoard().catch((error) => {
+        document.querySelector('#status').textContent = String(error)
+      })
+      refreshMe().catch(() => {})
+      setInterval(() => {
+        loadBoard().catch(() => {})
+        refreshMe().catch(() => {})
+      }, 3000)
+    </script>
+  </body>
+</html>
