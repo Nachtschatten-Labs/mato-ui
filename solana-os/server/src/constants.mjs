@@ -23,7 +23,7 @@ export const MIN_BASE_ATOMS = 1_000_000n
 
 export const MIN_SECONDS = 10
 export const MAX_SECONDS = 60 * 60
-export const MAX_OPEN_ORDERS = 3
+export const MAX_OPEN_ORDERS = 10
 export const MAX_PLAYERS = 5_000
 export const STALE_MS = 15_000
 export const DONE_VISIBLE_MS = 15_000

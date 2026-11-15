@@ -143,6 +143,7 @@ export function createApp({
       const view = {
         amount: url.searchParams.get('amount') || payload.amount,
         seconds: Number(url.searchParams.get('seconds') || payload.seconds),
+        ord: url.searchParams.get('ord') || payload.ord,
         side: url.searchParams.get('side') || payload.side,
         ticket:
           url.searchParams.get('ticket') === '1' ||

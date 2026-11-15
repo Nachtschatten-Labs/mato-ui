@@ -148,10 +148,15 @@ export function priceCents(baseFlow, quoteFlow) {
 }
 
 export function formatPrice(baseFlow, quoteFlow) {
-  const cents = priceCents(baseFlow, quoteFlow)
-  if (cents == null) return '--'
-  const whole = cents / 100n
-  const frac = (cents % 100n).toString().padStart(2, '0')
+  return formatPricePlaces(baseFlow, quoteFlow, 2)
+}
+
+export function formatPricePlaces(baseFlow, quoteFlow, places) {
+  if (baseFlow <= 0n || quoteFlow <= 0n) return '--'
+  const scale = 10n ** BigInt(places)
+  const scaled = (quoteFlow * 1000n * scale + baseFlow / 2n) / baseFlow
+  const whole = scaled / scale
+  const frac = (scaled % scale).toString().padStart(places, '0')
   return `${whole}.${frac}`
 }
 

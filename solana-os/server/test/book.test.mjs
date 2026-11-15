@@ -235,6 +235,7 @@ test('a ticket quote and stream chart stay inside one badge response', () => {
   )
   assert.equal(placed.snapshot.presets, undefined)
   assert.match(placed.snapshot.quote.impact, /^[+-]\d+\.\d{4}%$/)
+  assert.match(placed.snapshot.quote.px, /^\d+\.\d{4}$/)
   assert.ok(
     Number(placed.snapshot.me.freeUsdc) < Number(placed.snapshot.me.usdc),
   )
@@ -250,7 +251,10 @@ test('a ticket quote and stream chart stay inside one badge response', () => {
       time.now(),
     )
   }
-  const shot = book.snapshot('a', time.now(), view)
+  const shot = book.snapshot('a', time.now(), {
+    ...view,
+    ord: placed.orderId,
+  })
   assert.ok(shot.orders[0].px.length >= 2)
   assert.ok(shot.orders[0].px.length <= 12)
   assert.equal(shot.orders[0].px[0][0], 0)
@@ -348,4 +352,42 @@ test('an old shared mark is kept as each existing player baseline', () => {
     saved.players.find((player) => player.id === 'old').startBaseFlow,
     BASE.toString(),
   )
+})
+
+test('ten open streams and one chart fit in a badge response', () => {
+  const time = clock()
+  const book = openBook(time)
+  book.hello('a', 'Ann', time.now())
+  let last
+  for (let index = 0; index < 10; index += 1) {
+    last = book.place(
+      'a',
+      { amount: '100', seconds: 600, side: 'buy' },
+      time.now(),
+    )
+    assert.equal(last.ok, true)
+  }
+  assert.equal(
+    book.place('a', { amount: '100', seconds: 600, side: 'buy' }, time.now())
+      .error,
+    'Too many streams',
+  )
+  time.advance(6_000)
+  book.setMarket(
+    { baseFlow: BASE, fetchedAt: time.now(), quoteFlow: QUOTE, slot: 90 },
+    time.now(),
+  )
+  const shot = book.snapshot('a', time.now(), {
+    amount: '100',
+    ord: last.orderId,
+    seconds: 600,
+    side: 'buy',
+    ticket: true,
+  })
+  const open = shot.orders.filter((order) => order.status === 'open')
+  assert.equal(open.length, 10)
+  assert.equal(open.filter((order) => order.px).length, 1)
+  assert.ok(open.every((order) => typeof order.inR === 'number'))
+  const bytes = Buffer.byteLength(JSON.stringify(shot))
+  assert.ok(bytes < 3500, `ten-stream snapshot is ${bytes} bytes`)
 })

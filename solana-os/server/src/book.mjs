@@ -6,6 +6,7 @@ import {
   MIN_BASE_ATOMS,
   MIN_QUOTE_ATOMS,
   MIN_SECONDS,
+  FLOW_PRECISION,
   PRESETS,
   START_SOL_ATOMS,
   START_USDC_ATOMS,
@@ -21,8 +22,10 @@ import {
   formatDuration,
   formatImpact,
   formatPrice,
+  formatPricePlaces,
   formatUnits,
   impactPercent,
+  priceNumber,
   markQuoteAtoms,
   netOutput,
   parseAtoms,
@@ -398,7 +401,11 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return rows
   }
 
-  function orderView(order, live, withChart) {
+  function round6(value) {
+    return Math.round(value * 1e6) / 1e6
+  }
+
+  function orderView(order, live, chartId) {
     const book = live
       ? aggregateFlows(
           live,
@@ -436,13 +443,37 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
         : formatUnits(order.netCredited, 6, 2)
     const inUnit = order.side === 'buy' ? 'USDC' : 'SOL'
     const outUnit = order.side === 'buy' ? 'SOL' : 'USDC'
+    const inScale = order.side === 'buy' ? 1e6 : 1e9
+    const outScale = order.side === 'buy' ? 1e9 : 1e6
+    const in0 = Number(order.spent) / inScale
+    const out0 = Number(order.netCredited) / outScale
+    const cap = Number(order.amountAtoms) / inScale
+    let inR = 0
+    let outR = 0
+    if (order.status === 'open' && flows) {
+      const perSlot = Number(order.scaledFlow / FLOW_PRECISION)
+      inR = (perSlot * 5) / inScale
+      const px = priceNumber(flows.baseFlow, flows.quoteFlow)
+      const keep = 1 - feeBps / 10_000
+      if (px && order.side === 'buy') outR = (inR / px) * keep
+      if (px && order.side === 'sell') outR = inR * px * keep
+    }
     return {
       avg: formatCents(avgCents),
+      cap: round6(cap),
       filled: inText,
       flow: `spent ${inText} ${inUnit} -> got ${outText} ${outUnit}`,
       id: order.id,
+      in0: round6(in0),
+      inR: round6(inR),
+      out0: round6(out0),
+      outR: round6(outR),
       pct: pctValue.toFixed(2),
-      px: withChart ? downsample(order.samples ?? [], CHART_POINTS) : undefined,
+      px:
+        chartId && order.id === chartId
+          ? downsample(order.samples ?? [], CHART_POINTS)
+          : undefined,
+      sec: order.seconds,
       right:
         order.status === 'open' && flows
           ? formatPrice(flows.baseFlow, flows.quoteFlow)
@@ -545,7 +576,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     const flows = executionFlows(side, book.baseFlow, book.quoteFlow, scaled)
     return {
       impact: formatImpact(side, percent),
-      px: formatPrice(flows.baseFlow, flows.quoteFlow),
+      px: formatPricePlaces(flows.baseFlow, flows.quoteFlow, 4),
     }
   }
 
@@ -566,7 +597,9 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     const body = {
       feeBps,
       me: player ? meView(player, at) : null,
-      orders: mine.map((order) => orderView(order, live, ticket)),
+      orders: mine.map((order) =>
+        orderView(order, live, ticket ? view?.ord : undefined),
+      ),
       players: players.size,
       price: live ? formatPrice(live.baseFlow, live.quoteFlow) : '--',
       slot: live?.slot ?? null,

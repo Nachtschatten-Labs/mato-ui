@@ -40,6 +40,9 @@ local stream_i = 1
 local board_i = 1
 local poll_timer = nil
 local poll_ms = 0
+local tick_timer = nil
+local snap_ms = 0
+local arm_tick
 
 ui.bg("bg")
 local price = ui.label(214, 2, "--", {size = 14, w = 98, align = "right"})
@@ -61,9 +64,21 @@ for i = 1, 3 do
   charts[i].label:show(false)
 end
 if ui.canvas then
-  charts[1].canvas = ui.canvas(8, 0, 304, 40, {color = "bg"})
+  charts[1].canvas = ui.canvas(52, 0, 260, 44, {color = "bg"})
   charts[1].canvas:show(false)
 end
+local exec = ui.label(176, 100, "--", {size = 12, w = 136})
+exec:show(false)
+local axis = {
+  hi = ui.label(4, 0, "", {size = 12, w = 46}),
+  lo = ui.label(4, 0, "", {size = 12, w = 46}),
+  t0 = ui.label(52, 0, "0", {size = 12, w = 40}),
+  t1 = ui.label(180, 0, "", {size = 12, w = 132, align = "right"}),
+}
+axis.hi:show(false)
+axis.lo:show(false)
+axis.t0:show(false)
+axis.t1:show(false)
 local board = {}
 for i = 1, 7 do
   board[i] = ui.label(8, 0, "", {size = 14, w = 304})
@@ -116,6 +131,11 @@ local function hide_all()
     charts[i].label:show(false)
   end
   if charts[1].canvas then charts[1].canvas:show(false) end
+  exec:show(false)
+  axis.hi:show(false)
+  axis.lo:show(false)
+  axis.t0:show(false)
+  axis.t1:show(false)
   for i = 1, #board do board[i]:show(false) end
 end
 
@@ -142,6 +162,11 @@ local function paint_trade()
   ticket[4]:color("dim")
   ticket[5]:text(tostring(impact))
   ticket[5]:color("text")
+  local px = "--"
+  if snap and type(snap.quote) == "table" and snap.quote.px then px = snap.quote.px end
+  exec:text("~" .. tostring(px))
+  exec:color("dim")
+  exec:show(true)
   ticket[6]:text((focus == 4 and "> " or "  ") .. "Open streams")
   ticket[6]:color(tone(focus == 4))
   ticket[7]:text((focus == 5 and "> " or "  ") .. "Leaderboard")
@@ -166,6 +191,22 @@ local function chart_xy(point)
   return along, value
 end
 
+local function cents_label(cents)
+  if cents < 0 then cents = 0 end
+  local whole = math.floor(cents / 100)
+  local frac = math.floor(cents % 100)
+  if frac < 10 then return whole .. ".0" .. frac end
+  return whole .. "." .. frac
+end
+
+local function dur_label(sec)
+  sec = tonumber(sec) or 0
+  if sec <= 0 then return "" end
+  if sec % 3600 == 0 then return (sec / 3600) .. "h" end
+  if sec % 60 == 0 then return (sec / 60) .. "m" end
+  return sec .. "s"
+end
+
 local function draw_chart(canvas, points, color)
   canvas:clear("bg")
   local parsed = {}
@@ -175,19 +216,35 @@ local function draw_chart(canvas, points, color)
       if along then parsed[#parsed + 1] = {along, value} end
     end
   end
-  if #parsed == 0 then return end
+  local w, h = 259, 43
+  canvas:line(0, h, w, h, "dim")
+  canvas:line(0, 0, 0, h, "dim")
+  if #parsed == 0 then
+    axis.hi:text("")
+    axis.lo:text("")
+    return
+  end
   local minv, maxv = parsed[1][2], parsed[1][2]
   for i = 2, #parsed do
     if parsed[i][2] < minv then minv = parsed[i][2] end
     if parsed[i][2] > maxv then maxv = parsed[i][2] end
   end
-  if maxv == minv then maxv = minv + 1 end
-  local w, h = 303, 39
+  local span = maxv - minv
+  if span < 4 then span = 4 end
+  local pad = math.floor(span / 5)
+  if pad < 2 then pad = 2 end
+  local ymin = minv - pad
+  local ymax = maxv + pad
+  if ymax <= ymin then ymax = ymin + 1 end
+  axis.hi:text(cents_label(ymax))
+  axis.lo:text(cents_label(ymin))
   local function xy(i)
-    local x = math.floor(parsed[i][1] * w / 1000)
-    if x < 0 then x = 0 end
-    if x > w then x = w end
-    local y = math.floor((maxv - parsed[i][2]) * h / (maxv - minv))
+    local x = math.floor(parsed[i][1] * (w - 2) / 1000)
+    if x < 1 then x = 1 end
+    if x > w - 1 then x = w - 1 end
+    local y = 1 + math.floor((ymax - parsed[i][2]) * (h - 2) / (ymax - ymin))
+    if y < 1 then y = 1 end
+    if y > h - 1 then y = h - 1 end
     return x, y
   end
   if #parsed == 1 then
@@ -235,15 +292,25 @@ local function paint_streams()
   charts[2].label:color("text")
   charts[2].label:show(true)
   charts[3].label:text("avg " .. (order.avg or "--") .. "   " .. tostring(order.pct or "0.00") .. "%")
-  charts[3].label:pos(8, 102)
+  charts[3].label:pos(8, 96)
   charts[3].label:color("text")
   charts[3].label:show(true)
+  local plot_y = 128
   if charts[1].canvas then
-    charts[1].canvas:pos(8, 132)
+    charts[1].canvas:pos(52, plot_y)
     charts[1].canvas:show(true)
     local color = order.side == "sell" and "pink" or "green"
     draw_chart(charts[1].canvas, order.px, color)
   end
+  axis.hi:pos(4, plot_y)
+  axis.lo:pos(4, plot_y + 30)
+  axis.t0:pos(52, plot_y + 46)
+  axis.t1:pos(180, plot_y + 46)
+  axis.t1:text(dur_label(order.sec))
+  axis.hi:show(true)
+  axis.lo:show(true)
+  axis.t0:show(true)
+  axis.t1:show(true)
   set_hint("U/D order   SEL stop   CANCEL ticket")
 end
 
@@ -282,6 +349,7 @@ local function paint()
     screen = 1
     paint_trade()
   end
+  arm_tick()
 end
 
 local function show_net(text)
@@ -308,12 +376,59 @@ end
 
 local refresh
 
+local function fmt_num(n, places)
+  if type(n) ~= "number" or n ~= n or n < 0 then n = 0 end
+  local scale = 1
+  local i = 0
+  while i < places do
+    scale = scale * 10
+    i = i + 1
+  end
+  local scaled = math.floor(n * scale + 0.5)
+  local whole = math.floor(scaled / scale)
+  local frac = scaled - whole * scale
+  if frac < 0 then frac = 0 end
+  local digits = tostring(frac)
+  while #digits < places do digits = "0" .. digits end
+  return tostring(whole) .. "." .. digits
+end
+
+local function tick()
+  if screen ~= 2 or modal then return end
+  local list = open_orders()
+  local order = list[stream_i]
+  if not order or type(order.inR) ~= "number" then return end
+  local now_ms = sys and sys.millis and sys.millis() or snap_ms
+  local dt = (now_ms - snap_ms) / 1000
+  if dt < 0 then dt = 0 end
+  if dt > 2.5 then dt = 2.5 end
+  local inn = (order.in0 or 0) + order.inR * dt
+  if type(order.cap) == "number" and inn > order.cap then inn = order.cap end
+  local out = (order.out0 or 0) + (order.outR or 0) * dt
+  if out < 0 then out = 0 end
+  local in_unit = order.side == "sell" and "SOL" or "USDC"
+  local out_unit = order.side == "sell" and "USDC" or "SOL"
+  local in_places = order.side == "sell" and 4 or 2
+  local out_places = order.side == "sell" and 2 or 4
+  charts[2].label:text("spent " .. fmt_num(inn, in_places) .. " " .. in_unit .. " -> got " .. fmt_num(out, out_places) .. " " .. out_unit)
+end
+
 local function set_poll()
   local want = open_count() > 0 and FAST_MS or SLOW_MS
   if poll_timer and want == poll_ms then return end
   if poll_timer then timer.cancel(poll_timer) end
   poll_ms = want
   poll_timer = timer.every(want, function() refresh() end)
+end
+
+arm_tick = function()
+  local want = screen == 2 and open_count() > 0
+  if want and not tick_timer then
+    tick_timer = timer.every(200, tick)
+  elseif not want and tick_timer then
+    timer.cancel(tick_timer)
+    tick_timer = nil
+  end
 end
 
 local function apply(data)
@@ -338,17 +453,24 @@ local function apply(data)
     end
   end
   note_finished()
+  if sys and sys.millis then snap_ms = sys.millis() end
   paint()
   set_poll()
+  arm_tick()
 end
 
 refresh = function()
   if inflight or busy or modal or not nick then return end
   inflight = true
   local amt = amount_now()
+  local ord = ""
+  local open = open_orders()
+  if open[stream_i] and open[stream_i].id then
+    ord = "&ord=" .. enc(open[stream_i].id)
+  end
   local url = string.format(
-    "%s/v1/badge?name=%s&ticket=1&side=%s&amount=%d&seconds=%d",
-    BASE, enc(nick), side, amt, DUR_S[dur_i]
+    "%s/v1/badge?name=%s&ticket=1&side=%s&amount=%d&seconds=%d%s",
+    BASE, enc(nick), side, amt, DUR_S[dur_i], ord
   )
   http.get(url, function(ok, res)
     inflight = false
