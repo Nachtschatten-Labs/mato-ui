@@ -142,11 +142,25 @@ export function formatUnits(atoms, decimals, places, { sign = false } = {}) {
   return body
 }
 
+export function priceCents(baseFlow, quoteFlow) {
+  if (baseFlow <= 0n || quoteFlow <= 0n) return null
+  return (quoteFlow * 100_000n + baseFlow / 2n) / baseFlow
+}
+
 export function formatPrice(baseFlow, quoteFlow) {
-  if (baseFlow <= 0n || quoteFlow <= 0n) return '--'
-  const cents = (quoteFlow * 100_000n + baseFlow / 2n) / baseFlow
+  const cents = priceCents(baseFlow, quoteFlow)
+  if (cents == null) return '--'
   const whole = cents / 100n
   const frac = (cents % 100n).toString().padStart(2, '0')
+  return `${whole}.${frac}`
+}
+
+export function formatCents(cents) {
+  if (cents == null) return '--'
+  const n = typeof cents === 'bigint' ? cents : BigInt(Math.round(cents))
+  if (n < 0n) return `--`
+  const whole = n / 100n
+  const frac = (n % 100n).toString().padStart(2, '0')
   return `${whole}.${frac}`
 }
 

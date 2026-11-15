@@ -17,6 +17,7 @@ import {
   durationSlots,
   executionFlows,
   fillForSlots,
+  formatCents,
   formatDuration,
   formatImpact,
   formatPrice,
@@ -25,9 +26,14 @@ import {
   markQuoteAtoms,
   netOutput,
   parseAtoms,
+  priceCents,
   scaledFlowFor,
   secondsLeft,
 } from './clearing.mjs'
+
+const CHART_POINTS = 12
+const CHART_KEEP = 48
+const CHART_GAP_MS = 5_000
 
 function cloneOrder(order) {
   return {
@@ -41,6 +47,9 @@ function cloneOrder(order) {
     scaledFlow: order.scaledFlow.toString(),
     seconds: order.seconds,
     side: order.side,
+    samples: Array.isArray(order.samples)
+      ? order.samples.slice(-CHART_KEEP)
+      : [],
     slotsLeft: order.slotsLeft,
     spent: order.spent.toString(),
     status: order.status,
@@ -48,15 +57,37 @@ function cloneOrder(order) {
 }
 
 function reviveOrder(order) {
+  const samples = Array.isArray(order.samples)
+    ? order.samples
+        .filter((sample) => sample && Number.isFinite(Number(sample.c)))
+        .slice(-CHART_KEEP)
+        .map((sample) => ({
+          c: Math.round(Number(sample.c)),
+          t: Number(sample.t) || 0,
+        }))
+    : []
   return {
     ...order,
     amountAtoms: BigInt(order.amountAtoms),
     grossOut: BigInt(order.grossOut),
     netCredited: BigInt(order.netCredited),
     remainingAtoms: BigInt(order.remainingAtoms),
+    samples,
     scaledFlow: BigInt(order.scaledFlow),
     spent: BigInt(order.spent),
   }
+}
+
+function downsample(samples, max) {
+  if (samples.length === 0) return []
+  if (samples.length <= max) return samples.map((sample) => sample.c)
+  const last = samples.length - 1
+  const points = []
+  for (let index = 0; index < max; index += 1) {
+    const at = Math.round((index * last) / (max - 1))
+    points.push(samples[at].c)
+  }
+  return points
 }
 
 export function sanitizeName(raw) {
@@ -198,6 +229,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
             slots: step,
           })
           credit(order, player, spend, gross)
+          notePx(order, flows.baseFlow, flows.quoteFlow, at)
           order.slotsLeft -= step
         }
       }
@@ -208,6 +240,24 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       processed += step
     }
     return processed
+  }
+
+  function notePx(order, baseFlow, quoteFlow, at) {
+    const cents = priceCents(baseFlow, quoteFlow)
+    if (cents == null) return
+    if (!order.samples) order.samples = []
+    const point = { c: Number(cents), t: at }
+    const last = order.samples[order.samples.length - 1]
+    if (!last) {
+      order.samples.push(point)
+      return
+    }
+    if (at - last.t < CHART_GAP_MS) {
+      last.c = point.c
+      return
+    }
+    order.samples.push(point)
+    if (order.samples.length > CHART_KEEP) order.samples.shift()
   }
 
   function burn(elapsed, at) {
@@ -327,7 +377,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return rows
   }
 
-  function orderView(order, live) {
+  function orderView(order, live, withChart) {
     const book = live
       ? aggregateFlows(
           live,
@@ -346,14 +396,30 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       order.side === 'buy'
         ? `${formatUnits(order.amountAtoms, 6, 2)} USDC`
         : `${formatUnits(order.amountAtoms, 9, 4)} SOL`
+    const spent = order.spent
+    const avgCents =
+      spent > 0n && order.netCredited > 0n
+        ? order.side === 'buy'
+          ? (spent * 100_000n) / order.netCredited
+          : (order.netCredited * 100_000n) / spent
+        : null
+    const pct =
+      order.amountAtoms > 0n ? Number((spent * 100n) / order.amountAtoms) : 0
+    const filled =
+      order.side === 'buy' ? formatUnits(spent, 6, 2) : formatUnits(spent, 9, 2)
     return {
+      avg: formatCents(avgCents),
+      filled,
       id: order.id,
+      pct,
+      px: withChart ? downsample(order.samples ?? [], CHART_POINTS) : undefined,
       right:
         order.status === 'open' && flows
           ? formatPrice(flows.baseFlow, flows.quoteFlow)
           : order.status === 'canceled'
             ? 'stop'
             : 'done',
+      side: order.side,
       status: order.status,
       sub:
         order.status === 'open'
@@ -411,6 +477,8 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     return {
       eq: equity === null ? '--' : formatUnits(equity, 6, 2),
       name: player.name,
+      freeSol: formatUnits(freeOf(player, 'sell'), 9, 4),
+      freeUsdc: formatUnits(freeOf(player, 'buy'), 6, 2),
       pnl: pnl === null ? '--' : formatUnits(pnl, 6, 2, { sign: true }),
       rank,
       sol: formatUnits(player.sol, 9, 4),
@@ -418,7 +486,40 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     }
   }
 
-  function snapshot(playerId, at = now()) {
+  function freeOf(player, side) {
+    const wallet = side === 'buy' ? player.usdc : player.sol
+    const held = reserved(player.id, side)
+    return wallet > held ? wallet - held : 0n
+  }
+
+  function quoteView(live, existing, view) {
+    const side = view?.side === 'sell' ? 'sell' : 'buy'
+    const seconds = Number(view?.seconds)
+    const duration = [600, 1800, 3600].includes(seconds) ? seconds : 600
+    const amount =
+      view?.amount == null || view.amount === ''
+        ? side === 'buy'
+          ? '1000'
+          : '10'
+        : String(view.amount)
+    const atoms = parseAtoms(amount, side === 'buy' ? 6 : 9)
+    if (!live || !atoms) return { impact: '--', px: '--' }
+    const scaled = scaledFlowFor(atoms, durationSlots(duration))
+    const book = aggregateFlows(live, existing)
+    const percent = impactPercent({
+      baseFlow: book.baseFlow,
+      quoteFlow: book.quoteFlow,
+      scaledFlow: scaled,
+      side,
+    })
+    const flows = executionFlows(side, book.baseFlow, book.quoteFlow, scaled)
+    return {
+      impact: formatImpact(side, percent),
+      px: formatPrice(flows.baseFlow, flows.quoteFlow),
+    }
+  }
+
+  function snapshot(playerId, at = now(), view = {}) {
     settle(at)
     const player = players.get(playerId)
     const live = tradable(at)
@@ -431,12 +532,12 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
                 at - order.finishedAt < DONE_VISIBLE_MS)),
         )
       : []
-    return {
+    const ticket = view?.ticket === true
+    const body = {
       feeBps,
       me: player ? meView(player, at) : null,
-      orders: mine.map((order) => orderView(order, live)),
+      orders: mine.map((order) => orderView(order, live, ticket)),
       players: players.size,
-      presets: presetViews(live, openOrders()),
       price: live ? formatPrice(live.baseFlow, live.quoteFlow) : '--',
       slot: live?.slot ?? null,
       stale: !live,
@@ -451,6 +552,9 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
               : formatUnits(row.pnl, 6, 2, { sign: true }),
         })),
     }
+    if (ticket) body.quote = quoteView(live, openOrders(), view)
+    else body.presets = presetViews(live, openOrders())
+    return body
   }
 
   function board(at = now()) {
@@ -476,7 +580,7 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
 
   return {
     board,
-    cancel(playerId, orderId, at = now()) {
+    cancel(playerId, orderId, at = now(), view = {}) {
       settle(at)
       const order = orders.find(
         (item) =>
@@ -488,16 +592,16 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       order.finishedAt = at
       order.slotsLeft = 0
       order.status = 'canceled'
-      return { ok: true, snapshot: snapshot(playerId, at) }
+      return { ok: true, snapshot: snapshot(playerId, at, view) }
     },
-    hello(id, name, at = now()) {
+    hello(id, name, at = now(), view = {}) {
       settle(at)
       const result = ensurePlayer(id, name, at)
       if (result.error) return { error: result.error, ok: false }
       captureMissing(at)
-      return { ok: true, snapshot: snapshot(id, at) }
+      return { ok: true, snapshot: snapshot(id, at, view) }
     },
-    place(playerId, input, at = now()) {
+    place(playerId, input, at = now(), view = {}) {
       settle(at)
       const player = players.get(playerId)
       if (!player) return { error: 'Join first', ok: false }
@@ -550,13 +654,18 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
         scaledFlow: scaled,
         seconds,
         side,
+        samples: [],
         slotsLeft: slots,
         spent: 0n,
         status: 'open',
       }
       nextOrder += 1
       orders.push(order)
-      return { ok: true, orderId: order.id, snapshot: snapshot(playerId, at) }
+      return {
+        ok: true,
+        orderId: order.id,
+        snapshot: snapshot(playerId, at, view),
+      }
     },
     player(id) {
       return players.get(id) ?? null

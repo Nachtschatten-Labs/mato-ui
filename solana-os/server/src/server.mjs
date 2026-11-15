@@ -140,9 +140,19 @@ export function createApp({
       }
       const payload = bodyText ? JSON.parse(bodyText) : {}
       const name = payload.name ?? url.searchParams.get('name') ?? ''
+      const view = {
+        amount: url.searchParams.get('amount') || payload.amount,
+        seconds: Number(url.searchParams.get('seconds') || payload.seconds),
+        side: url.searchParams.get('side') || payload.side,
+        ticket:
+          url.searchParams.get('ticket') === '1' ||
+          payload.ticket === 1 ||
+          payload.ticket === '1' ||
+          payload.ticket === true,
+      }
 
       if (req.method === 'GET' && url.pathname === '/v1/badge') {
-        const joined = book.hello(who.id, name, now())
+        const joined = book.hello(who.id, name, now(), view)
         if (!joined.ok) {
           send(res, 400, { error: joined.error })
           return
@@ -152,7 +162,7 @@ export function createApp({
         return
       }
       if (req.method === 'POST' && url.pathname === '/v1/badge/hello') {
-        const joined = book.hello(who.id, name, now())
+        const joined = book.hello(who.id, name, now(), view)
         if (!joined.ok) {
           send(res, 400, { error: joined.error })
           return
@@ -163,7 +173,7 @@ export function createApp({
       }
       if (req.method === 'POST' && url.pathname === '/v1/badge/orders') {
         book.hello(who.id, name, now())
-        const placed = book.place(who.id, payload, now())
+        const placed = book.place(who.id, payload, now(), view)
         if (!placed.ok) {
           send(res, 400, { error: placed.error })
           return
@@ -173,7 +183,7 @@ export function createApp({
         return
       }
       if (req.method === 'POST' && url.pathname === '/v1/badge/orders/cancel') {
-        const canceled = book.cancel(who.id, payload.id, now())
+        const canceled = book.cancel(who.id, payload.id, now(), view)
         if (!canceled.ok) {
           send(res, 400, { error: canceled.error })
           return
@@ -261,6 +271,6 @@ if (entry === import.meta.url) {
       address && typeof address === 'object'
         ? `${address.address}:${address.port}`
         : String(address)
-    console.log(`Mato paper listening on ${shown}`)
+    console.log(`Mato listening on ${shown}`)
   })
 }

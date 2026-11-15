@@ -1,9 +1,9 @@
 {
   "id": "mato-paper",
-  "name": "Mato Paper",
-  "version": "1.0.0",
+  "name": "Mato",
+  "version": "1.1.0",
   "author": "Mato",
-  "summary": "Play-money SOL streams on live Mato prices.",
+  "summary": "Play-money SOL/USDC streams.",
   "icon": "shuffle",
   "accent": "14F195",
   "category": "tools",

@@ -217,6 +217,47 @@ test('a badge snapshot stays inside the proxy body limit', () => {
   assert.ok(bytes < 3000, `snapshot is ${bytes} bytes`)
 })
 
+test('a ticket quote and stream chart stay inside one badge response', () => {
+  const time = clock()
+  const book = openBook(time)
+  book.hello('a', 'Ann', time.now())
+  const view = {
+    amount: '1000',
+    seconds: 600,
+    side: 'buy',
+    ticket: true,
+  }
+  const placed = book.place(
+    'a',
+    { amount: '1000', seconds: 60, side: 'buy' },
+    time.now(),
+    view,
+  )
+  assert.equal(placed.snapshot.presets, undefined)
+  assert.equal(typeof placed.snapshot.quote.impact, 'string')
+  assert.ok(
+    Number(placed.snapshot.me.freeUsdc) < Number(placed.snapshot.me.usdc),
+  )
+  for (let step = 0; step < 6; step += 1) {
+    time.advance(6_000)
+    book.setMarket(
+      {
+        baseFlow: BASE,
+        fetchedAt: time.now(),
+        quoteFlow: QUOTE,
+        slot: 40 + step,
+      },
+      time.now(),
+    )
+  }
+  const shot = book.snapshot('a', time.now(), view)
+  assert.ok(shot.orders[0].px.length >= 2)
+  assert.ok(shot.orders[0].px.length <= 12)
+  assert.notEqual(shot.orders[0].avg, '--')
+  const bytes = Buffer.byteLength(JSON.stringify(shot))
+  assert.ok(bytes < 3500, `ticket snapshot is ${bytes} bytes`)
+})
+
 const HIGHER_QUOTE = 1_100_000_000_000_000_000n
 
 test('each player opens at zero against the price when they join', () => {

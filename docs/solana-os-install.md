@@ -1,6 +1,6 @@
-# Install Mato Paper on a Solana OS badge
+# Install Mato on a Solana OS badge
 
-Mato Paper is a play-money version of Mato for the Solana Breakpoint 2026
+Mato on the badge is a play-money book for the Solana Breakpoint 2026
 badge. Every player starts with **10,000 USDC and 100 SOL**. Nothing is signed,
 nothing is sent to the chain, and the balances cannot be withdrawn.
 
@@ -231,13 +231,13 @@ Edit both of these to the same hostname, with no scheme and no path:
 badge will refuse any other host. Ship a new version if the hostname changes.
 
 This branch already points both files at
-`mato-ui-mainnet.up.railway.app` and ships
-`solana-os/mato-paper.zip` with `app.json`, `config.json`, and `main.lua` at
-the archive root. Rebuild it the same way if the host changes:
+`mato-ui-mainnet.up.railway.app` and ships `solana-os/mato.zip` with
+`app.json`, `config.json`, and `main.lua` at the archive root. Rebuild it
+the same way if the host changes:
 
 ```sh
 cd solana-os/app
-zip ../mato-paper.zip app.json config.json main.lua
+zip ../mato.zip app.json config.json main.lua
 ```
 
 ## Install it on a badge
@@ -255,7 +255,7 @@ still has to be tried on a device.
 3. Join Wi-Fi and claim the badge. HTTP test runs also need the owner's X
    account linked at the badge site.
 4. Open <https://solana.com/breakpoint/badge/apps/submit>, sign in, and drop
-   `mato-paper.zip` (or the `solana-os/app` folder) on the form. The manifest
+   `mato.zip` (or the `solana-os/app` folder) on the form. The manifest
    fills in from `app.json`.
 5. **Try in emulator** on that page. The emulator joins demo Wi-Fi. A signed-in
    test run lasts 12 hours and is what allows `http` before the app is public.
@@ -277,19 +277,33 @@ without publishing. Sideload compiles from source on the badge. A published
 install runs the store's compiled bytecode from flash. `lua mem` after a run
 shows the peak heap.
 
-On the badge:
+On the badge the app is named Mato. The store id stays `mato-paper`.
 
-- Up and down move the list. Select confirms. Left and right change Trade,
-  Streams, and Board. Cancel backs out of a prompt, or leaves the app when
-  nothing is open. Home always leaves.
-- Trade lists six presets (10 / 100 / 1000 USDC and 0.5 / 1 / 10 SOL, over
-  30s, 60s, or 5 minutes). The right-hand number is the signed price impact.
-- Custom asks for one line, `buy 100 60` or `sell 1 30`. Duration is 10 to
-  3600 seconds. A player can have three open streams.
-- Streams: Select stops one. The unspent input stays in the wallet.
-- Board: top eight by PnL, and Rename.
+Balances and PnL sit in large type under the live price. PnL is green when
+it is up and pink when it is down. The badge polls every 4 seconds, and every
+1.5 seconds while a stream is open (40 requests a minute, under the proxy's
+60).
 
-Minimum size is the market's own minimum: 0.1 USDC or 0.001 SOL.
+Controls:
+
+- Up and down move the highlight.
+- On the order ticket, left and right change the highlighted field: Buy/Sell,
+  the amount (100 USDC or 1 SOL), or the duration (10 min, 30 min, 1 hour).
+  Buy starts at 1000 USDC and sell starts at 10 SOL. Amounts stay above zero
+  and within the free balance. Impact for that ticket is shown under the
+  fields.
+- Select on the ticket asks you to confirm the stream. Select on the bottom
+  row opens Streams or the leaderboard (left/right chooses which).
+- Streams: up/down pick a stream, Select stops it. Each row has the average
+  fill so far and a short chart of the execution price. Left returns to the
+  ticket, right opens the board.
+- Board: up/down move, Select on Rename edits the nickname. Left returns to
+  the ticket, right opens streams.
+- Cancel returns to the ticket, or leaves the app from the ticket. Home
+  always leaves.
+
+A player can have three open streams. The server keeps a short price sample
+about every 5 seconds and sends at most 12 points per stream.
 
 ## What is not verified without a badge
 

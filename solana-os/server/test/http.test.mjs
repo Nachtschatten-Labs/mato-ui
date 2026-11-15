@@ -40,7 +40,7 @@ test('dev badges can stream and show up on the public board', async () => {
     assert.equal((await health.json()).ok, true)
     const page = await fetch(`http://127.0.0.1:${port}/`)
     const html = await page.text()
-    assert.match(html, /Mato paper/)
+    assert.match(html, /<h1>Mato<\/h1>/)
     assert.match(html, /PAPER_DEV = true/)
 
     const denied = await fetch(`http://127.0.0.1:${port}/v1/badge`)
