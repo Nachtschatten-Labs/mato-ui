@@ -37,7 +37,11 @@ local sell_amt = 10
 local dur_i = 1
 local focus = 2
 local stream_i = 1
-local board_i = 1
+local board_sel = 1
+local board_off = 0
+local board_dirty = false
+local BOARD_VIS = 6
+local BOARD_LIM = 12
 local poll_timer = nil
 local poll_ms = 0
 local tick_timer = nil
@@ -45,19 +49,38 @@ local snap_ms = 0
 local arm_tick
 
 ui.bg("bg")
+local hi = nil
+local buy_box = nil
+local sell_box = nil
+local bar_track = nil
+local bar_thumb = nil
+if ui.rect then
+  hi = ui.rect(4, 60, 156, 28, {color = "panel", radius = 4})
+  buy_box = ui.rect(8, 62, 74, 24, {color = "panel", radius = 4})
+  sell_box = ui.rect(86, 62, 74, 24, {color = "pink", radius = 4})
+  bar_track = ui.rect(310, 64, 6, 104, {color = "panel", radius = 2})
+  bar_thumb = ui.rect(310, 64, 6, 16, {color = "aqua", radius = 2})
+  hi:show(false)
+  buy_box:show(false)
+  sell_box:show(false)
+  bar_track:show(false)
+  bar_thumb:show(false)
+end
 local price = ui.label(214, 2, "--", {size = 14, w = 98, align = "right"})
 local bal = ui.label(8, 4, "10000.00 USDC  100.0000 SOL", {size = 12, w = 206})
 local pnl = ui.label(8, 22, "PnL --", {size = 32, w = 304, align = "center"})
 
 local ticket = {
-  ui.label(8, 64, "", {size = 20, w = 160}),
-  ui.label(8, 90, "", {size = 20, w = 160}),
-  ui.label(8, 116, "", {size = 20, w = 160}),
+  ui.label(8, 66, "Buy", {size = 14, w = 74, align = "center"}),
+  ui.label(8, 90, "", {size = 14, w = 164}),
+  ui.label(8, 116, "", {size = 20, w = 304}),
   ui.label(176, 64, "Price impact", {size = 12, w = 136}),
   ui.label(176, 82, "--", {size = 14, w = 136}),
   ui.label(8, 152, "", {size = 20, w = 304}),
   ui.label(8, 178, "", {size = 20, w = 304}),
 }
+local sell_label = ui.label(86, 66, "Sell", {size = 14, w = 74, align = "center"})
+sell_label:show(false)
 local charts = {}
 for i = 1, 3 do
   charts[i] = {label = ui.label(8, 0, "", {size = 14, w = 304})}
@@ -81,7 +104,7 @@ axis.t0:show(false)
 axis.t1:show(false)
 local board = {}
 for i = 1, 7 do
-  board[i] = ui.label(8, 0, "", {size = 14, w = 304})
+  board[i] = ui.label(8, 0, "", {size = 14, w = 296})
   board[i]:show(false)
 end
 
@@ -127,6 +150,12 @@ end
 
 local function hide_all()
   for i = 1, #ticket do ticket[i]:show(false) end
+  sell_label:show(false)
+  if hi then hi:show(false) end
+  if buy_box then buy_box:show(false) end
+  if sell_box then sell_box:show(false) end
+  if bar_track then bar_track:show(false) end
+  if bar_thumb then bar_thumb:show(false) end
   for i = 1, 3 do
     charts[i].label:show(false)
   end
@@ -148,15 +177,38 @@ local function paint_trade()
   clamp()
   local amt = side == "buy" and buy_amt or sell_amt
   local unit = side == "buy" and "USDC" or "SOL"
+  local step = side == "buy" and "+/-100" or "+/-1"
   local impact = "--"
   if snap and type(snap.quote) == "table" and snap.quote.impact then
     impact = snap.quote.impact
   end
-  ticket[1]:text((focus == 1 and "> " or "  ") .. (side == "buy" and "Buy" or "Sell"))
-  ticket[1]:color(tone(focus == 1))
-  ticket[2]:text((focus == 2 and "> " or "  ") .. tostring(amt) .. " " .. unit)
+  if buy_box then
+    buy_box:color(side == "buy" and "green" or "panel")
+    sell_box:color(side == "sell" and "pink" or "panel")
+    buy_box:show(true)
+    sell_box:show(true)
+    ticket[1]:text("Buy")
+    sell_label:text("Sell")
+  else
+    ticket[1]:text(side == "buy" and "[Buy]" or "Buy")
+    sell_label:text(side == "sell" and "[Sell]" or "Sell")
+  end
+  ticket[1]:pos(8, 66)
+  ticket[1]:color("text")
+  sell_label:pos(86, 66)
+  sell_label:color("text")
+  sell_label:show(true)
+  if focus == 2 then
+    ticket[2]:text("< " .. tostring(amt) .. " " .. unit .. " " .. step .. " >")
+  else
+    ticket[2]:text(tostring(amt) .. " " .. unit .. "  " .. step)
+  end
   ticket[2]:color(tone(focus == 2))
-  ticket[3]:text((focus == 3 and "> " or "  ") .. DUR[dur_i])
+  if focus == 3 then
+    ticket[3]:text("< " .. DUR[dur_i] .. " >")
+  else
+    ticket[3]:text(DUR[dur_i])
+  end
   ticket[3]:color(tone(focus == 3))
   ticket[4]:text("Price impact")
   ticket[4]:color("dim")
@@ -167,19 +219,28 @@ local function paint_trade()
   exec:text("~" .. tostring(px))
   exec:color("dim")
   exec:show(true)
-  ticket[6]:text((focus == 4 and "> " or "  ") .. "Open streams")
+  local caret = hi and "" or "> "
+  ticket[6]:text((focus == 4 and caret or (hi and "" or "  ")) .. "Open streams")
   ticket[6]:color(tone(focus == 4))
-  ticket[7]:text((focus == 5 and "> " or "  ") .. "Leaderboard")
+  ticket[7]:text((focus == 5 and caret or (hi and "" or "  ")) .. "Leaderboard")
   ticket[7]:color(tone(focus == 5))
   for i = 1, #ticket do ticket[i]:show(true) end
-  if focus == 2 then
-    set_hint(side == "buy" and "L/R 100 USDC   SEL go" or "L/R 1 SOL   SEL go")
+  if hi then
+    local y = ({60, 88, 114, 150, 176})[focus]
+    local h = focus == 1 and 28 or 26
+    local w = focus == 1 and 156 or (focus == 2 and 168 or 304)
+    hi:pos(4, y)
+    hi:size(w, h)
+    hi:show(true)
+  end
+  if focus == 1 then
+    set_hint("< > switch side   ^v move   OK go")
+  elseif focus == 2 then
+    set_hint("< > " .. step .. " " .. unit .. "   ^v move   OK go")
   elseif focus == 3 then
-    set_hint("L/R time   SEL go")
-  elseif focus == 4 or focus == 5 then
-    set_hint("SEL open")
+    set_hint("< > 10m / 30m / 1h   ^v move   OK go")
   else
-    set_hint("L/R side   SEL go")
+    set_hint("^v move   OK open")
   end
 end
 
@@ -316,29 +377,98 @@ local function paint_streams()
   set_hint("U/D order   SEL stop   CANCEL ticket")
 end
 
+local function board_page()
+  local page = snap and snap.board
+  if type(page) ~= "table" then return nil, {}, 0, 0 end
+  local rows = type(page.rows) == "table" and page.rows or {}
+  local total = type(page.total) == "number" and page.total or #rows
+  local off = type(page.offset) == "number" and page.offset or 0
+  return page, rows, total, off
+end
+
 local function paint_board()
-  local rows = (snap and snap.top) or {}
-  local shown = math.min(#rows, 6)
-  if board_i > shown + 1 then board_i = 1 end
-  if board_i < 1 then board_i = shown + 1 end
-  for i = 1, 6 do
-    local row = rows[i]
-    if i <= shown and row then
-      local mark = board_i == i and "> " or "  "
-      board[i]:text(mark .. tostring(i) .. " " .. (row.name or "?") .. "  " .. (row.pnl or "--"))
-      board[i]:pos(8, 104 + (i - 1) * 16)
-      board[i]:color(board_i == i and "aqua" or "text")
+  local _, rows, total, off = board_page()
+  if total > 0 and board_sel > total then board_sel = total end
+  if board_sel < 0 then board_sel = 0 end
+  local view = 1
+  if total > 0 then
+    local anchor = board_sel >= 1 and board_sel or total
+    view = anchor - 2
+    if view < 1 then view = 1 end
+    local max_view = total - BOARD_VIS + 1
+    if max_view < 1 then max_view = 1 end
+    if view > max_view then view = max_view end
+  end
+  for i = 1, BOARD_VIS do
+    local rank = view + i - 1
+    if total > 0 and rank <= total then
+      local row = nil
+      if rank >= off + 1 and rank <= off + #rows then
+        row = rows[rank - off]
+      end
+      local name = row and (row.name or "?") or "..."
+      local pnl = row and (row.pnl or "--") or ""
+      local you = row and row.me and " you" or ""
+      local mark = ""
+      if not hi then mark = board_sel == rank and "> " or "  " end
+      board[i]:text(mark .. tostring(rank) .. " " .. name .. you .. "  " .. pnl)
+      board[i]:pos(8, 64 + (i - 1) * 18)
+      if board_sel == rank then
+        board[i]:color("aqua")
+      elseif row and row.me then
+        board[i]:color("green")
+      else
+        board[i]:color("text")
+      end
       board[i]:show(true)
     else
       board[i]:show(false)
     end
   end
-  local mark = board_i == shown + 1 and "> " or "  "
-  board[7]:text(mark .. "Rename  " .. (nick or ""))
-  board[7]:pos(8, 104 + shown * 16)
-  board[7]:color(board_i == shown + 1 and "aqua" or "text")
+  if hi and board_sel >= 1 then
+    local slot = board_sel - view + 1
+    if slot >= 1 and slot <= BOARD_VIS then
+      hi:pos(4, 62 + (slot - 1) * 18)
+      hi:size(300, 20)
+      hi:show(true)
+    end
+  end
+  local rename_mark = ""
+  if not hi then rename_mark = board_sel == 0 and "> " or "  " end
+  board[7]:text(rename_mark .. "Rename  " .. (nick or ""))
+  board[7]:pos(8, 178)
+  board[7]:color(board_sel == 0 and "aqua" or "text")
   board[7]:show(true)
-  set_hint("U/D pick   L/R screen   CANCEL trade")
+  if hi and board_sel == 0 then
+    hi:pos(4, 176)
+    hi:size(304, 24)
+    hi:show(true)
+  end
+  if bar_track and total > BOARD_VIS then
+    local span = BOARD_VIS * 18 - 4
+    local thumb_h = math.floor(span * BOARD_VIS / total)
+    if thumb_h < 8 then thumb_h = 8 end
+    if thumb_h > span then thumb_h = span end
+    local travel = span - thumb_h
+    local max_view = total - BOARD_VIS + 1
+    local along = 0
+    if max_view > 1 then along = (view - 1) / (max_view - 1) end
+    bar_track:pos(310, 64)
+    bar_track:size(6, span)
+    bar_track:show(true)
+    bar_thumb:pos(310, 64 + math.floor(travel * along))
+    bar_thumb:size(6, thumb_h)
+    bar_thumb:show(true)
+  end
+  local shown = board_sel >= 1 and board_sel or (total > 0 and total or 0)
+  local above = view > 1 and "^" or " "
+  local below = (view + BOARD_VIS - 1 < total) and "v" or " "
+  local pos = above .. " " .. tostring(shown) .. "/" .. tostring(total) .. " " .. below
+  if board_sel == 0 then
+    set_hint(pos .. "  OK rename")
+  else
+    set_hint(pos .. "  L ticket")
+  end
 end
 
 local function paint()
@@ -462,17 +592,26 @@ local function apply(data)
 end
 
 refresh = function()
-  if inflight or busy or modal or not nick then return end
+  if inflight or busy or modal or not nick then
+    if screen == 3 then board_dirty = true end
+    return
+  end
   inflight = true
+  board_dirty = false
+  local requested = board_off
   local amt = amount_now()
   local ord = ""
   local open = open_orders()
-  if open[stream_i] and open[stream_i].id then
+  if screen ~= 3 and open[stream_i] and open[stream_i].id then
     ord = "&ord=" .. enc(open[stream_i].id)
   end
+  local page = ""
+  if screen == 3 then
+    page = string.format("&board=1&off=%d&lim=%d", board_off, BOARD_LIM)
+  end
   local url = string.format(
-    "%s/v1/badge?name=%s&ticket=1&side=%s&amount=%d&seconds=%d%s",
-    BASE, enc(nick), side, amt, DUR_S[dur_i], ord
+    "%s/v1/badge?name=%s&ticket=1&side=%s&amount=%d&seconds=%d%s%s",
+    BASE, enc(nick), side, amt, DUR_S[dur_i], ord, page
   )
   http.get(url, function(ok, res)
     inflight = false
@@ -486,6 +625,10 @@ refresh = function()
     end
     local data = json.decode(res.body)
     if type(data) == "table" then apply(data) end
+    if board_dirty or (screen == 3 and board_off ~= requested) then
+      board_dirty = false
+      refresh()
+    end
   end)
 end
 
@@ -574,8 +717,17 @@ local function trade_key(key)
   elseif key == "select" then
     if focus == 4 then
       screen = 2
+      refresh()
     elseif focus == 5 then
       screen = 3
+      local rank = 1
+      if snap and snap.me and type(snap.me.rank) == "number" and snap.me.rank > 0 then
+        rank = snap.me.rank
+      end
+      board_sel = rank
+      board_off = math.max(0, rank - 5)
+      if snap then snap.board = nil end
+      refresh()
     else
       place()
       return true
@@ -620,13 +772,39 @@ function rename()
   end)
 end
 
+local function follow_board()
+  if board_sel < 1 then return end
+  local _, rows, total, off = board_page()
+  local n = #rows
+  local next_off = board_off
+  if n == 0 or board_sel < off + 1 or board_sel > off + n then
+    next_off = math.max(0, board_sel - 6)
+  elseif board_sel <= off + 2 and off > 0 then
+    next_off = math.max(0, off - 6)
+  elseif board_sel >= off + n - 1 and off + n < total then
+    next_off = math.max(0, board_sel - 6)
+  end
+  if next_off ~= board_off then
+    board_off = next_off
+    refresh()
+  end
+end
+
 local function board_key(key)
-  local rows = (snap and snap.top) or {}
-  local shown = math.min(#rows, 6)
-  local last = shown + 1
+  local _, _, total = board_page()
   if key == "up" or key == "down" then
-    local delta = key == "down" and 1 or -1
-    board_i = (board_i - 1 + delta) % last + 1
+    if key == "down" then
+      if board_sel >= 1 and board_sel >= total then
+        board_sel = 0
+      elseif board_sel >= 1 then
+        board_sel = board_sel + 1
+      end
+    elseif board_sel == 0 then
+      board_sel = total > 0 and total or 0
+    elseif board_sel > 1 then
+      board_sel = board_sel - 1
+    end
+    follow_board()
     paint()
     return true
   end
@@ -638,9 +816,10 @@ local function board_key(key)
   if key == "right" then
     screen = 2
     paint()
+    refresh()
     return true
   end
-  if key == "select" and board_i == last then rename() end
+  if key == "select" and board_sel == 0 then rename() end
   return true
 end
 

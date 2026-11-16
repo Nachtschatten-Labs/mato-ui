@@ -526,6 +526,76 @@ test('chart history stays fixed when the price changes and after a restart', () 
   )
 })
 
+test('a leaderboard page stays under the proxy limit and marks the player', () => {
+  const time = clock()
+  const book = openBook(time)
+  for (let index = 0; index < 25; index += 1) {
+    book.hello(
+      `badge${index}`,
+      `player${String(index).padStart(2, '0')}`,
+      time.now(),
+    )
+  }
+  const whole = book.board(time.now())
+  assert.equal(whole.total, 25)
+  assert.equal(whole.offset, 0)
+  assert.equal(whole.rows.length, 20)
+  assert.equal(whole.rows[0].rank, 1)
+  const tail = book.board(time.now(), { limit: 20, offset: 20 })
+  assert.equal(tail.rows.length, 5)
+  assert.equal(tail.rows[0].rank, 21)
+  assert.equal(tail.offset, 20)
+  const past = book.board(time.now(), { limit: 20, offset: 80 })
+  assert.equal(past.rows.length, 0)
+  assert.equal(past.offset, 25)
+  assert.ok(Buffer.byteLength(JSON.stringify(whole)) < 3500)
+
+  const mine = book.snapshot('badge12', time.now())
+  const off = Math.max(0, mine.me.rank - 1)
+  const shot = book.snapshot('badge12', time.now(), {
+    board: true,
+    lim: 12,
+    off,
+    ticket: true,
+  })
+  assert.equal(shot.top, undefined)
+  assert.equal(shot.board.total, 25)
+  assert.equal(shot.board.me, mine.me.rank)
+  assert.equal(shot.board.rows[0].rank, off + 1)
+  const self = shot.board.rows.find((row) => row.me === 1)
+  assert.equal(self.rank, mine.me.rank)
+  assert.equal(self.name, 'player12')
+  assert.equal(shot.board.rows.filter((row) => row.me === 1).length, 1)
+  const next = book.snapshot('badge12', time.now(), {
+    board: true,
+    lim: 12,
+    off: off + 12,
+    ticket: true,
+  })
+  assert.equal(next.board.rows[0].rank, off + 13)
+  assert.equal(
+    next.board.rows.some((row) => row.rank === self.rank),
+    false,
+  )
+  for (let index = 0; index < 10; index += 1) {
+    book.place(
+      'badge12',
+      { amount: '100', seconds: 600, side: 'buy' },
+      time.now(),
+    )
+  }
+  const busy = book.snapshot('badge12', time.now(), {
+    board: true,
+    lim: 12,
+    off: 0,
+    ticket: true,
+  })
+  assert.equal(busy.orders.length, 10)
+  assert.equal(busy.board.rows.length, 12)
+  const bytes = Buffer.byteLength(JSON.stringify(busy))
+  assert.ok(bytes < 3500, `board snapshot is ${bytes} bytes`)
+})
+
 test('a sell chart matches the average execution price', () => {
   const time = clock()
   const book = openBook(time)

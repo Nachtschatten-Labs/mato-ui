@@ -1,7 +1,7 @@
 {
   "id": "mato-paper",
   "name": "Mato",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Mato",
   "summary": "Play-money SOL/USDC streams.",
   "icon": "shuffle",

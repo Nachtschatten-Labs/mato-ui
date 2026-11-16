@@ -639,6 +639,41 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
     }
   }
 
+  function boardRows(
+    at,
+    offset,
+    limit,
+    { cap, equity = false, playerId = null },
+  ) {
+    const rankedRows = ranked(at)
+    const total = rankedRows.length
+    let off = Number(offset)
+    if (!Number.isInteger(off) || off < 0) off = 0
+    if (off > total) off = total
+    let lim = Number(limit)
+    if (!Number.isInteger(lim) || lim < 1) lim = cap
+    if (lim > cap) lim = cap
+    return {
+      offset: off,
+      rows: rankedRows.slice(off, off + lim).map((row, index) => {
+        const item = {
+          name: row.name,
+          pnl:
+            row.pnl === null
+              ? '--'
+              : formatUnits(row.pnl, 6, 2, { sign: true }),
+          rank: off + index + 1,
+        }
+        if (equity) {
+          item.eq = row.equity === null ? '--' : formatUnits(row.equity, 6, 2)
+        }
+        if (playerId && row.player.id === playerId) item.me = 1
+        return item
+      }),
+      total,
+    }
+  }
+
   function snapshot(playerId, at = now(), view = {}) {
     settle(at)
     const player = players.get(playerId)
@@ -663,40 +698,43 @@ export function createBook({ feeBps = 2, now = Date.now, state = null } = {}) {
       price: live ? formatPrice(live.baseFlow, live.quoteFlow) : '--',
       slot: live?.slot ?? null,
       stale: !live,
-      top: ranked(at)
+    }
+    if (view?.board === true) {
+      body.board = boardRows(at, view.off, view.lim, {
+        cap: 15,
+        playerId,
+      })
+      if (body.me) body.board.me = body.me.rank
+    } else {
+      body.top = ranked(at)
         .slice(0, 8)
         .map((row) => ({
-          eq: row.equity === null ? '--' : formatUnits(row.equity, 6, 2),
           name: row.name,
           pnl:
             row.pnl === null
               ? '--'
               : formatUnits(row.pnl, 6, 2, { sign: true }),
-        })),
+        }))
     }
     if (ticket) body.quote = quoteView(live, openOrders(), view)
     else body.presets = presetViews(live, openOrders())
     return body
   }
 
-  function board(at = now()) {
+  function board(at = now(), options = {}) {
     settle(at)
     const live = tradable(at)
+    const page = boardRows(at, options.offset, options.limit ?? 20, {
+      cap: 20,
+      equity: true,
+    })
     return {
+      offset: page.offset,
       players: players.size,
       price: live ? formatPrice(live.baseFlow, live.quoteFlow) : '--',
-      rows: ranked(at)
-        .slice(0, 50)
-        .map((row, index) => ({
-          eq: row.equity === null ? '--' : formatUnits(row.equity, 6, 2),
-          name: row.name,
-          pnl:
-            row.pnl === null
-              ? '--'
-              : formatUnits(row.pnl, 6, 2, { sign: true }),
-          rank: index + 1,
-        })),
+      rows: page.rows,
       stale: !live,
+      total: page.total,
     }
   }
 

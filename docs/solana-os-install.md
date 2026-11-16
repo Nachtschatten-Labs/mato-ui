@@ -286,14 +286,21 @@ under the proxy's 60).
 
 Controls:
 
-- Up and down move the highlight.
-- On the order ticket, left and right change Buy/Sell, the amount (100 USDC
-  or 1 SOL), or the duration (10 min, 30 min, 1 hour). Buy starts at 1000
-  USDC and sell starts at 10 SOL. Amounts stay above zero and within the free
-  balance. Price impact, to 4 decimal places, sits to the right of those
-  fields.
-- Select on Buy, the amount, or the duration asks you to confirm the stream.
-  Open streams and Leaderboard are separate rows. Select opens that screen.
+- Up and down move the highlight. The highlighted ticket row has a bar
+  behind it.
+- Buy and Sell are both on screen. The active side is filled, green for Buy
+  and pink for Sell. Left and right on that row switch side.
+- Left and right on the amount row step by 100 USDC or 1 SOL. The row shows
+  `<` and `>` while it is highlighted, and the step (`+/-100` or `+/-1`)
+  beside the amount. Left and right on the duration row choose 10 min, 30
+  min, or 1 hour, with the same arrows. The hint at the bottom names what
+  left and right will do. Buy starts at 1000 USDC and sell starts at 10 SOL.
+  Amounts stay above zero and within the free balance. Price impact, to 4
+  decimal places, sits to the right of those fields, with the execution
+  price under it.
+- Select on Buy/Sell, the amount, or the duration asks you to confirm the
+  stream. Open streams and Leaderboard are separate rows. Select opens that
+  screen.
 - Streams shows one order at a time, with `1/10` when there are several. Up,
   down, left, and right move between orders. The row shows what was spent and
   what was received, the average price, and the fill percent to 2 decimals.
@@ -302,8 +309,14 @@ Controls:
   whole duration, with start and end labels and a padded price scale, so the
   line only covers the fraction that has elapsed. Select stops the stream
   that is showing. Cancel returns to the ticket.
-- Board: up/down move, Select on Rename edits the nickname. Left returns to
-  the ticket, right opens streams.
+- Board scrolls through every player. Up and down move the highlight and keep
+  it on screen. The list opens on your own row, which stays green. A thin bar
+  on the right and an `n/N` count (with `^` or `v` when more rows sit above
+  or below) show where you are. The badge loads one page at a time
+  (`board`, `off`, `lim` on `/v1/badge`, and `offset` / `limit` on
+  `/v1/board`) so the answer stays under the proxy's 3.5 KB, and it asks for
+  the next page as the highlight nears the end of the loaded rows. Select on
+  Rename edits the nickname. Left returns to the ticket, right opens streams.
 - Cancel returns to the ticket, or leaves the app from the ticket. Home
   always leaves.
 

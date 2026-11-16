@@ -128,7 +128,15 @@ export function createApp({
         return
       }
       if (req.method === 'GET' && url.pathname === '/v1/board') {
-        send(res, 200, book.board(now()))
+        const limit = url.searchParams.get('limit')
+        send(
+          res,
+          200,
+          book.board(now(), {
+            limit: limit == null ? undefined : Number(limit),
+            offset: Number(url.searchParams.get('offset')),
+          }),
+        )
         return
       }
 
@@ -142,8 +150,15 @@ export function createApp({
       const name = payload.name ?? url.searchParams.get('name') ?? ''
       const view = {
         amount: url.searchParams.get('amount') || payload.amount,
-        seconds: Number(url.searchParams.get('seconds') || payload.seconds),
+        board:
+          url.searchParams.get('board') === '1' ||
+          payload.board === 1 ||
+          payload.board === '1' ||
+          payload.board === true,
+        lim: Number(url.searchParams.get('lim') ?? payload.lim),
+        off: Number(url.searchParams.get('off') ?? payload.off),
         ord: url.searchParams.get('ord') || payload.ord,
+        seconds: Number(url.searchParams.get('seconds') || payload.seconds),
         side: url.searchParams.get('side') || payload.side,
         ticket:
           url.searchParams.get('ticket') === '1' ||

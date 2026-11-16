@@ -163,8 +163,23 @@
       }
 
       async function loadBoard() {
-        const response = await fetch('/v1/board', { cache: 'no-store' })
-        const body = await response.json()
+        const rows = []
+        let offset = 0
+        let total = 0
+        let page = []
+        let body = { players: 0, price: '--', rows: [], stale: false }
+        do {
+          const response = await fetch(
+            '/v1/board?offset=' + offset + '&limit=20',
+            { cache: 'no-store' },
+          )
+          body = await response.json()
+          total = body.total || 0
+          page = body.rows || []
+          rows.push(...page)
+          offset += page.length
+        } while (offset < total && page.length > 0 && rows.length < 400)
+        body.rows = rows
         document.querySelector('#price').textContent = body.stale
           ? body.price + ' (stale)'
           : body.price + ' USDC'
