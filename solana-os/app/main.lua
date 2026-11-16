@@ -49,18 +49,23 @@ local snap_ms = 0
 local arm_tick
 
 ui.bg("bg")
-local hi = nil
+local edge = nil
 local buy_box = nil
 local sell_box = nil
 local bar_track = nil
 local bar_thumb = nil
 if ui.rect then
-  hi = ui.rect(4, 60, 156, 28, {color = "panel", radius = 4})
-  buy_box = ui.rect(8, 62, 74, 24, {color = "panel", radius = 4})
-  sell_box = ui.rect(86, 62, 74, 24, {color = "pink", radius = 4})
+  edge = {
+    ui.rect(0, 0, 8, 2, {color = "aqua"}),
+    ui.rect(0, 0, 8, 2, {color = "aqua"}),
+    ui.rect(0, 0, 2, 8, {color = "aqua"}),
+    ui.rect(0, 0, 2, 8, {color = "aqua"}),
+  }
+  for i = 1, 4 do edge[i]:show(false) end
+  buy_box = ui.rect(56, 58, 108, 20, {color = "panel", radius = 4})
+  sell_box = ui.rect(172, 58, 108, 20, {color = "pink", radius = 4})
   bar_track = ui.rect(310, 64, 6, 104, {color = "panel", radius = 2})
   bar_thumb = ui.rect(310, 64, 6, 16, {color = "aqua", radius = 2})
-  hi:show(false)
   buy_box:show(false)
   sell_box:show(false)
   bar_track:show(false)
@@ -69,17 +74,23 @@ end
 local price = ui.label(214, 2, "--", {size = 14, w = 98, align = "right"})
 local bal = ui.label(8, 4, "10000.00 USDC  100.0000 SOL", {size = 12, w = 206})
 local pnl = ui.label(8, 22, "PnL --", {size = 32, w = 304, align = "center"})
+local cursor = ui.label(2, 56, ">", {size = 20, w = 16, color = "aqua"})
+local tog_l = ui.label(34, 56, "<", {size = 20, w = 16, color = "aqua"})
+local tog_r = ui.label(286, 56, ">", {size = 20, w = 16, color = "aqua"})
+cursor:show(false)
+tog_l:show(false)
+tog_r:show(false)
 
 local ticket = {
-  ui.label(8, 66, "Buy", {size = 14, w = 74, align = "center"}),
-  ui.label(8, 90, "", {size = 14, w = 164}),
-  ui.label(8, 116, "", {size = 20, w = 304}),
-  ui.label(176, 64, "Price impact", {size = 12, w = 136}),
-  ui.label(176, 82, "--", {size = 14, w = 136}),
-  ui.label(8, 152, "", {size = 20, w = 304}),
-  ui.label(8, 178, "", {size = 20, w = 304}),
+  ui.label(56, 56, "Buy", {size = 20, w = 108, align = "center"}),
+  ui.label(22, 80, "", {size = 20, w = 290}),
+  ui.label(22, 104, "", {size = 20, w = 290}),
+  ui.label(22, 132, "", {size = 14, w = 290}),
+  ui.label(0, 0, "", {size = 14, w = 8}),
+  ui.label(22, 152, "", {size = 20, w = 290}),
+  ui.label(22, 176, "", {size = 20, w = 290}),
 }
-local sell_label = ui.label(86, 66, "Sell", {size = 14, w = 74, align = "center"})
+local sell_label = ui.label(172, 56, "Sell", {size = 20, w = 108, align = "center"})
 sell_label:show(false)
 local charts = {}
 for i = 1, 3 do
@@ -104,7 +115,7 @@ axis.t0:show(false)
 axis.t1:show(false)
 local board = {}
 for i = 1, 7 do
-  board[i] = ui.label(8, 0, "", {size = 14, w = 296})
+  board[i] = ui.label(20, 0, "", {size = 14, w = 284})
   board[i]:show(false)
 end
 
@@ -148,10 +159,31 @@ local function amount_now()
   return sell_amt
 end
 
+local function hide_edge()
+  if not edge then return end
+  for i = 1, 4 do edge[i]:show(false) end
+end
+
+local function show_edge(x, y, w, h)
+  if not edge or w < 4 or h < 4 then return end
+  edge[1]:pos(x, y)
+  edge[1]:size(w, 2)
+  edge[2]:pos(x, y + h - 2)
+  edge[2]:size(w, 2)
+  edge[3]:pos(x, y)
+  edge[3]:size(2, h)
+  edge[4]:pos(x + w - 2, y)
+  edge[4]:size(2, h)
+  for i = 1, 4 do edge[i]:show(true) end
+end
+
 local function hide_all()
   for i = 1, #ticket do ticket[i]:show(false) end
   sell_label:show(false)
-  if hi then hi:show(false) end
+  cursor:show(false)
+  tog_l:show(false)
+  tog_r:show(false)
+  hide_edge()
   if buy_box then buy_box:show(false) end
   if sell_box then sell_box:show(false) end
   if bar_track then bar_track:show(false) end
@@ -182,9 +214,14 @@ local function paint_trade()
   if snap and type(snap.quote) == "table" and snap.quote.impact then
     impact = snap.quote.impact
   end
+  local px = "--"
+  if snap and type(snap.quote) == "table" and snap.quote.px then px = snap.quote.px end
+  local row = {56, 80, 104, 152, 176}
   if buy_box then
     buy_box:color(side == "buy" and "green" or "panel")
     sell_box:color(side == "sell" and "pink" or "panel")
+    buy_box:pos(56, 58)
+    sell_box:pos(172, 58)
     buy_box:show(true)
     sell_box:show(true)
     ticket[1]:text("Buy")
@@ -193,46 +230,50 @@ local function paint_trade()
     ticket[1]:text(side == "buy" and "[Buy]" or "Buy")
     sell_label:text(side == "sell" and "[Sell]" or "Sell")
   end
-  ticket[1]:pos(8, 66)
+  ticket[1]:pos(56, 56)
   ticket[1]:color("text")
-  sell_label:pos(86, 66)
+  sell_label:pos(172, 56)
   sell_label:color("text")
   sell_label:show(true)
+  if focus == 1 then
+    tog_l:pos(34, 56)
+    tog_r:pos(286, 56)
+    tog_l:show(true)
+    tog_r:show(true)
+    show_edge(30, 54, 276, 26)
+  end
   if focus == 2 then
     ticket[2]:text("< " .. tostring(amt) .. " " .. unit .. " " .. step .. " >")
   else
     ticket[2]:text(tostring(amt) .. " " .. unit .. "  " .. step)
   end
+  ticket[2]:pos(22, 80)
   ticket[2]:color(tone(focus == 2))
   if focus == 3 then
     ticket[3]:text("< " .. DUR[dur_i] .. " >")
   else
     ticket[3]:text(DUR[dur_i])
   end
+  ticket[3]:pos(22, 104)
   ticket[3]:color(tone(focus == 3))
-  ticket[4]:text("Price impact")
-  ticket[4]:color("dim")
-  ticket[5]:text(tostring(impact))
-  ticket[5]:color("text")
-  local px = "--"
-  if snap and type(snap.quote) == "table" and snap.quote.px then px = snap.quote.px end
-  exec:text("~" .. tostring(px))
-  exec:color("dim")
-  exec:show(true)
-  local caret = hi and "" or "> "
-  ticket[6]:text((focus == 4 and caret or (hi and "" or "  ")) .. "Open streams")
+  ticket[4]:text("Price impact  " .. tostring(impact) .. "    ~" .. tostring(px))
+  ticket[4]:pos(22, 128)
+  ticket[4]:color("text")
+  ticket[5]:show(false)
+  ticket[6]:text("Open streams")
+  ticket[6]:pos(22, 152)
   ticket[6]:color(tone(focus == 4))
-  ticket[7]:text((focus == 5 and caret or (hi and "" or "  ")) .. "Leaderboard")
+  ticket[7]:text("Leaderboard")
+  ticket[7]:pos(22, 176)
   ticket[7]:color(tone(focus == 5))
-  for i = 1, #ticket do ticket[i]:show(true) end
-  if hi then
-    local y = ({60, 88, 114, 150, 176})[focus]
-    local h = focus == 1 and 28 or 26
-    local w = focus == 1 and 156 or (focus == 2 and 168 or 304)
-    hi:pos(4, y)
-    hi:size(w, h)
-    hi:show(true)
+  for i = 1, #ticket do
+    if i ~= 5 then ticket[i]:show(true) end
   end
+  if focus ~= 1 then
+    show_edge(18, row[focus] - 2, 296, 24)
+  end
+  cursor:pos(2, row[focus])
+  cursor:show(true)
   if focus == 1 then
     set_hint("< > switch side   ^v move   OK go")
   elseif focus == 2 then
@@ -409,10 +450,8 @@ local function paint_board()
       local name = row and (row.name or "?") or "..."
       local pnl = row and (row.pnl or "--") or ""
       local you = row and row.me and " you" or ""
-      local mark = ""
-      if not hi then mark = board_sel == rank and "> " or "  " end
-      board[i]:text(mark .. tostring(rank) .. " " .. name .. you .. "  " .. pnl)
-      board[i]:pos(8, 64 + (i - 1) * 18)
+      board[i]:text(tostring(rank) .. " " .. name .. you .. "  " .. pnl)
+      board[i]:pos(20, 64 + (i - 1) * 18)
       if board_sel == rank then
         board[i]:color("aqua")
       elseif row and row.me then
@@ -425,24 +464,23 @@ local function paint_board()
       board[i]:show(false)
     end
   end
-  if hi and board_sel >= 1 then
+  if board_sel >= 1 then
     local slot = board_sel - view + 1
     if slot >= 1 and slot <= BOARD_VIS then
-      hi:pos(4, 62 + (slot - 1) * 18)
-      hi:size(300, 20)
-      hi:show(true)
+      local y = 64 + (slot - 1) * 18
+      show_edge(16, y - 1, 288, 18)
+      cursor:pos(2, y)
+      cursor:show(true)
     end
   end
-  local rename_mark = ""
-  if not hi then rename_mark = board_sel == 0 and "> " or "  " end
-  board[7]:text(rename_mark .. "Rename  " .. (nick or ""))
-  board[7]:pos(8, 178)
+  board[7]:text("Rename  " .. (nick or ""))
+  board[7]:pos(20, 178)
   board[7]:color(board_sel == 0 and "aqua" or "text")
   board[7]:show(true)
-  if hi and board_sel == 0 then
-    hi:pos(4, 176)
-    hi:size(304, 24)
-    hi:show(true)
+  if board_sel == 0 then
+    show_edge(16, 176, 288, 22)
+    cursor:pos(2, 178)
+    cursor:show(true)
   end
   if bar_track and total > BOARD_VIS then
     local span = BOARD_VIS * 18 - 4
@@ -465,9 +503,9 @@ local function paint_board()
   local below = (view + BOARD_VIS - 1 < total) and "v" or " "
   local pos = above .. " " .. tostring(shown) .. "/" .. tostring(total) .. " " .. below
   if board_sel == 0 then
-    set_hint(pos .. "  OK rename")
+    set_hint(pos .. "  OK rename  CANCEL ticket")
   else
-    set_hint(pos .. "  L ticket")
+    set_hint(pos .. "  CANCEL ticket")
   end
 end
 
@@ -808,17 +846,7 @@ local function board_key(key)
     paint()
     return true
   end
-  if key == "left" then
-    screen = 1
-    paint()
-    return true
-  end
-  if key == "right" then
-    screen = 2
-    paint()
-    refresh()
-    return true
-  end
+  if key == "left" or key == "right" then return true end
   if key == "select" and board_sel == 0 then rename() end
   return true
 end

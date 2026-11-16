@@ -286,18 +286,20 @@ under the proxy's 60).
 
 Controls:
 
-- Up and down move the highlight. The highlighted ticket row has a bar
-  behind it.
-- Buy and Sell are both on screen. The active side is filled, green for Buy
-  and pink for Sell. Left and right on that row switch side.
-- Left and right on the amount row step by 100 USDC or 1 SOL. The row shows
-  `<` and `>` while it is highlighted, and the step (`+/-100` or `+/-1`)
-  beside the amount. Left and right on the duration row choose 10 min, 30
-  min, or 1 hour, with the same arrows. The hint at the bottom names what
-  left and right will do. Buy starts at 1000 USDC and sell starts at 10 SOL.
-  Amounts stay above zero and within the free balance. Price impact, to 4
-  decimal places, sits to the right of those fields, with the execution
-  price under it.
+- Up and down move the highlight. Every highlighted row has a `>` at the
+  left and an aqua frame around it. Buy/Sell, the amount, and the duration
+  also show `<` and `>` on that row.
+- The ticket is an even stack: side, amount, duration, price impact with the
+  execution price, Open streams, Leaderboard. Buy and Sell are both on
+  screen, at the same size as the amount. The active side is filled, green
+  for Buy and pink for Sell. Left and right on that row switch side. The
+  frame sits around the whole toggle, not behind the filled side.
+- Left and right on the amount row step by 100 USDC or 1 SOL. The step
+  (`+/-100` or `+/-1`) sits on that row. Left and right on the duration row
+  choose 10 min, 30 min, or 1 hour. The hint at the bottom names what left
+  and right will do. Buy starts at 1000 USDC and sell starts at 10 SOL.
+  Amounts stay above zero and within the free balance. Left and right on
+  Open streams or Leaderboard do not change screens.
 - Select on Buy/Sell, the amount, or the duration asks you to confirm the
   stream. Open streams and Leaderboard are separate rows. Select opens that
   screen.
@@ -316,7 +318,8 @@ Controls:
   (`board`, `off`, `lim` on `/v1/badge`, and `offset` / `limit` on
   `/v1/board`) so the answer stays under the proxy's 3.5 KB, and it asks for
   the next page as the highlight nears the end of the loaded rows. Select on
-  Rename edits the nickname. Left returns to the ticket, right opens streams.
+  Rename edits the nickname. Left and right do nothing on this screen.
+  Cancel returns to the ticket.
 - Cancel returns to the ticket, or leaves the app from the ticket. Home
   always leaves.
 
