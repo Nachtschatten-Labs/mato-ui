@@ -1161,9 +1161,13 @@
   );
   border-right: 1px solid var(--line);
 }
-.explorer-plot:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 8px;
+.explorer-plot:focus {
+  outline: none;
+}
+.explorer-plot:focus-visible .explorer-marker > span {
+  background: var(--btn);
+  color: var(--btn-ink);
+  border-color: var(--focus);
 }
 .explorer-price-plot {
   display: block;
