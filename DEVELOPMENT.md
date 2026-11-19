@@ -75,6 +75,11 @@ creates it with an idempotent instruction before submitting the order. The mint'
 token program determines the account address; receiving native SOL skips this
 setup. Existing SOL deposit wrapping remains part of the order transaction.
 
+Wallet token balances refresh immediately after UI transactions, every five
+seconds while the page is visible, and when the tab regains focus. This lets
+balances recover from a stale post-confirmation read and reflect keeper-initiated
+settlement. Native SOL also updates through the client's account subscription.
+
 ## Production preview
 
 Prepare `.env.production.local` using the example, then:

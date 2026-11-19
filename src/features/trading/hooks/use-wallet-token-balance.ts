@@ -3,6 +3,14 @@ import { WRAPPED_SOL_MINT } from '@solana/client'
 import { getSpendableNativeAtoms, getSpendableTokenAtoms } from '../lib/amounts'
 import { useWalletSolBalance } from './use-wallet-sol-balance'
 
+// A post-confirmation read can lag, and keepers can settle positions without a
+// UI action. Keep cached balances current after either path.
+const BALANCE_QUERY_OPTIONS = {
+  commitment: 'confirmed',
+  revalidateOnFocus: true,
+  swr: { refreshInterval: 5_000 },
+} as const
+
 export function useWalletTokenBalance(
   mintAddress: string | null | undefined,
   decimals: number,
@@ -10,8 +18,12 @@ export function useWalletTokenBalance(
   const session = useWalletSession()
   const owner = session?.account.address ?? null
   const nativeBalance = useWalletSolBalance()
-  const wrappedSol = useWrapSol({ owner: owner ?? undefined })
+  const wrappedSol = useWrapSol({
+    ...BALANCE_QUERY_OPTIONS,
+    owner: owner ?? undefined,
+  })
   const splToken = useSplToken(mintAddress ?? WRAPPED_SOL_MINT, {
+    ...BALANCE_QUERY_OPTIONS,
     owner: owner ?? undefined,
     config: {
       decimals,
