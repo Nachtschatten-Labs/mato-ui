@@ -65,7 +65,7 @@ try {
   }
 
   for (const [path, content] of [
-    ['/', 'The DCA that prices'],
+    ['/', null],
     ['/trade?market=1', 'Trade SOL/USDC'],
     ['/rent', 'Rent accounts'],
     ['/terms', 'Terms of Service'],
@@ -76,11 +76,22 @@ try {
     assert.match(response.headers.get('content-type') ?? '', /text\/html/)
     const html = await response.text()
     const text = html.replace(/<[^>]*>/g, '')
-    assert.ok(text.includes(content), `${path} must contain its page content`)
+    if (content !== null) {
+      assert.ok(text.includes(content), `${path} must contain its page content`)
+    }
     assert.ok(html.includes('</html>'), `${path} must finish rendering`)
     if (path === '/') {
       const document = new JSDOM(html).window.document
       assert.equal(document.querySelectorAll('h1').length, 1)
+      // Check rendered content without coupling deployment to marketing copy.
+      assert.ok(
+        document.querySelector('main h1#hero-title')?.textContent.trim(),
+        '/ must render a non-empty hero heading',
+      )
+      assert.ok(
+        document.querySelector('#how-it-works .explorer-plot[role="slider"]'),
+        '/ must render the interactive stream explorer',
+      )
       const meta = (selector) => {
         const elements = document.querySelectorAll(selector)
         assert.equal(elements.length, 1, `${selector} must not be duplicated`)
