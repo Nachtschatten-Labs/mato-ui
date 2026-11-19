@@ -1,6 +1,6 @@
 import type { Address } from '@solana/kit'
 
-const SUPPORTED_MARKET_IDS = [1] as const
+const SUPPORTED_MARKET_IDS = [1, 0] as const
 
 export type MarketId = (typeof SUPPORTED_MARKET_IDS)[number]
 export type MarketCategory = 'crypto' | 'equities'
@@ -38,6 +38,20 @@ export const MARKET_DEFINITIONS = [
     minimumQuoteDepositAtoms: 100_000n,
     // Hide the initial permissionless market-maker history from the main chart.
     chartHistoryStartMs: Date.parse('2026-11-11T08:35:03Z'),
+  },
+  {
+    id: 0,
+    address: 'H16ZeZee8yGw94kGVx4aEHmC8PwWjwuLuqsW2g8MK2Pz' as Address,
+    name: 'Anthropic',
+    category: 'equities',
+    baseSymbol: 'ANT',
+    quoteSymbol: 'USDC',
+    baseMint: 'ANTBTZQ1EUuTxUs3tfeampxdqTWPHmwyJmcWj4xoAyNe' as Address,
+    quoteMint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' as Address,
+    baseDecimals: 6,
+    quoteDecimals: 6,
+    minimumBaseDepositAtoms: 1_000n,
+    minimumQuoteDepositAtoms: 100_000n,
   },
 ] as const satisfies ReadonlyArray<MarketDefinition>
 

@@ -8,9 +8,11 @@
 | Observed program deployment slot | `452075425`                                        |
 | ProgramConfig                    | `BKgwxz23KWsrp9BSgAuCngfUCrpQm6jprgYUbwmyNd2X`     |
 | SOL/USDC market (ID 1)           | `FUDH6hiwDNjdQKbH7fveFFPoEE3mXk9i1g2WbgnSqob3`     |
+| ANT/USDC market (ID 0)           | `H16ZeZee8yGw94kGVx4aEHmC8PwWjwuLuqsW2g8MK2Pz`     |
 | SOL mint / decimals              | `So11111111111111111111111111111111111111112` / 9  |
+| ANT mint / decimals              | `ANTBTZQ1EUuTxUs3tfeampxdqTWPHmwyJmcWj4xoAyNe` / 6 |
 | USDC mint / decimals             | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` / 6 |
-| Minimum deposits                 | 0.001 SOL / 0.1 USDC                               |
+| Minimum deposits                 | 0.001 SOL or ANT / 0.1 USDC                        |
 | Market layout                    | 488 bytes, embedded bookkeeping                    |
 | Interval layout                  | 1176 bytes, 16 entries × 11 slots                  |
 | Position layout                  | 312 bytes                                          |
@@ -30,9 +32,27 @@ The release verifier now requires the open-liquidity kind and reports its curren
 fee and whether both flows are active. Quoting requires ordinary liquidity
 positions with active flows; a historical read-API price alone is insufficient.
 
-The UI only lists this verified market. Wallets use `solana:mainnet-beta`; charts,
+The UI lists the verified SOL/USDC and ANT/USDC markets. Wallets use `solana:mainnet-beta`; charts,
 prices, history, and SSE use the market address. Query keys include the cluster,
 program, and market address. Devnet selections and favorites are discarded.
+
+## ANT/USDC addition — 19 November 2026
+
+ANT (Anthropic) appears under Equities and opens at `/trade?market=0`, including
+redirects from `/?market=0`. SOL/USDC remains the default. ANT uses Token-2022;
+USDC uses the legacy token program. The existing wallet balance and transaction
+builders detect each mint's token program independently.
+
+The launch configuration comes from the program repository's
+`runbooks/ant-usdc/README.md` and finalized `chain-verification.json`.
+The display name and mint match [Backpack's asset directory](https://backpack.exchange/tokenized-stocks/assets).
+The shared token display uses its [ANT logo](https://stock-logos.madlads.com/stocks/logos/ANT/48.webp),
+stored locally at `public/tokens/ant.webp`.
+The release verifier now checks both markets, deriving each vault with its mint's
+token program and validating the on-chain identity, decimals, minimums, and API
+configuration. Read-only verification passed at slots `471457777` (SOL) and
+`471457779` (ANT). ANT's vaults and flows were zero at that observation; the UI
+uses its existing empty-price and unavailable-duration states until quoting starts.
 
 ## Validation on 2026-11-10
 

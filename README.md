@@ -1,6 +1,6 @@
 # Mato UI
 
-Mainnet SOL/USDC streaming trades for program
+Mainnet SOL/USDC and ANT/USDC streaming trades for program
 `TwobwMYkKbT8uMWqgPrEPXTPoyYsKAPmaWun6T2WT4A`, including order book, positions,
 pause/resume, withdrawals, closed history, and interval rent reclamation.
 
@@ -8,6 +8,7 @@ The DCA landing page is at `/`, with interactive illustrations of spending
 pace and continuous clearing. Its examples are illustrative, not live quotes.
 The trading app is at `/trade`. Existing `/?market=1` links redirect to the trading
 app, and `/welcome` redirects to the homepage.
+ANT/USDC (Anthropic) is listed under Equities and opens at `/trade?market=0`.
 
 ```sh
 nvm use

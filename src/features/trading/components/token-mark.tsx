@@ -23,7 +23,15 @@ export function TokenMark({
         className,
       )}
     >
-      {isSol ? (
+      {symbol === 'ANT' ? (
+        <img
+          src="/tokens/ant.webp"
+          alt=""
+          width={48}
+          height={48}
+          className="size-full rounded-full object-cover"
+        />
+      ) : isSol ? (
         <svg viewBox="0 0 24 24" fill="none" className="size-[68%]">
           <path d="m6 5 14 0-3 3H3l3-3Z" fill="#9ce0c4" />
           <path d="M3 10.5h14l3 3H6l-3-3Z" fill="#b3accf" />

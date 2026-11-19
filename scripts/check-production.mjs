@@ -67,6 +67,7 @@ try {
   for (const [path, content] of [
     ['/', null],
     ['/trade?market=1', 'Trade SOL/USDC'],
+    ['/trade?market=0', 'Trade ANT/USDC'],
     ['/rent', 'Rent accounts'],
     ['/terms', 'Terms of Service'],
     ['/privacy', 'Privacy Notice'],
@@ -173,6 +174,7 @@ try {
   for (const [path, status, destination] of [
     ['/welcome', 301, '/'],
     ['/?market=1', 307, '/trade?market=1'],
+    ['/?market=0', 307, '/trade?market=0'],
   ]) {
     const response = await request(path)
     assert.equal(response.status, status, `${path} must redirect`)
