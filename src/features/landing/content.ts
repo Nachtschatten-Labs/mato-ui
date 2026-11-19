@@ -1,41 +1,43 @@
 export const MATO_X_URL = 'https://x.com/MatoMarkets'
 export const MATO_TELEGRAM_URL = 'https://t.me/+MIhTBMAU_q1lZmNi'
 export const MATO_GITHUB_URL = 'https://github.com/Nachtschatten-Labs/mato-ui'
+export const MATO_EXPLAINER_URL =
+  'https://x.com/MatoMarkets/status/2121914380585422848'
 
 export const faqs = [
   {
-    question: 'Is DCA better than buying all at once?',
+    question: 'How is Mato different from a regular DCA?',
     answer:
-      'Mato does not tell you when to buy or sell, and DCA does not guarantee a better price. It changes how you execute a trade. If you have decided to buy or sell over time, a stream does it in one order, at one shared clearing price every 200ms.',
+      'A regular DCA splits your order into separate swaps and sends them to an exchange on a schedule. Mato uses the whole interval you choose: your order becomes a continuous stream that trades with overlapping streams on the other side. Those streams clear together in Mato’s own market.',
   },
   {
-    question: 'How is this different from a regular DCA?',
+    question: 'Who am I trading with?',
     answer:
-      'Scheduled DCA tools send separate swaps to other venues at set times. Each slice has its own execution price and can carry service, routing, venue, and network fees, depending on the provider. A Mato stream trades directly in one continuous clearing auction, with a shared price every 200ms. Mato charges a platform fee of 0.02% to 0.1%, depending on the asset, without an additional destination-venue fee. Network fees and account rent can still apply.',
+      'Other buyers, sellers, and market makers in Mato’s market. Your stream meets their overlapping trading interest. Everyone trading at the same moment gets the same price before fees, reducing the advantage of racing ahead of someone else’s trade.',
   },
   {
-    question: 'Does no spread mean no trading costs?',
+    question: 'How is the price determined?',
     answer:
-      'No. Buyers and sellers share the same clearing price before fees, so there is no separate bid–ask spread. The platform fee is 0.02% to 0.1%, depending on the asset, with no additional destination-venue fee. Network fees and account rent can still apply. Your stream also changes market flow and can affect the clearing price. Check the app for the current fee and estimated price impact.',
+      'Mato adds up the active buy and sell flows. For SOL/USDC, the USDC entering per slot divided by the SOL entering per slot sets the price. Buyers and sellers exchange at that same price, with no bid–ask spread. The price changes as streams start and finish; it is not fixed when you submit yours.',
   },
   {
-    question: 'Why use a longer duration?',
+    question: 'What if liquidity is low?',
     answer:
-      'For the same total amount, a longer duration means less input entering the market per moment. With otherwise unchanged liquidity, that reduces your stream’s price impact. The market clears every 200ms, so a longer stream spreads execution across more clearing prices. A longer stream does not guarantee a better final price, and the market can move against you.',
+      'Your stream has more price impact when there is less liquidity. Choosing a longer duration spreads the same amount more thinly over time, reducing that impact for the same liquidity. Prices can still move while you trade. If there is no opposing flow at all, no exchange takes place for that period and the unspent input remains refundable.',
   },
   {
-    question: 'Can I pause or stop my stream?',
+    question: 'What does it cost?',
     answer:
-      'Yes. You can pause an active stream, resume it, send available output to your wallet, or close it to receive the available output and refundable input. These actions are wallet transactions and require network fees.',
+      'Mato charges a platform fee of 0.02% to 0.1%, depending on the asset. Your trade happens in Mato, so there is no additional destination-exchange fee. Solana network fees and account rent can also apply. The app shows the fee and estimated price impact before you start.',
   },
   {
-    question: 'Is the price fixed when I start?',
+    question: 'Where are my funds while a stream runs?',
     answer:
-      'No. The estimate reflects liquidity now. A new clearing price is set every 200ms from the market’s aggregate flows while your stream runs. If there is no opposing flow, trading does not accrue for those slots and the unused input remains refundable.',
+      'When you submit a stream, the funds move from your wallet into the protocol’s Solana program. The exchanged tokens accumulate there as it runs. When the stream ends, close it to withdraw those tokens and any refundable unspent input to your wallet. You can also withdraw available exchanged tokens while it runs.',
   },
   {
-    question: 'What should I know before starting?',
+    question: 'Can I stop early?',
     answer:
-      'Mato is an experimental protocol. Liquidity is limited, and the smart contracts have not been fully audited. An audit with Neodyme is scheduled for December 2026; it is not yet a completed audit. Trading involves market and smart-contract risk, including loss of funds. Review the fee, duration, estimated price impact, and risk notice in the app before you start.',
+      'Yes. Pause your stream to stop trading and resume it later. Close it to receive the tokens already exchanged and any refundable unspent input. Pausing, resuming, withdrawing, and closing require wallet transactions and network fees.',
   },
 ]

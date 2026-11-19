@@ -4,14 +4,14 @@ import { LandingPage } from '@/features/landing/landing-page'
 import { faqs, MATO_X_URL, MATO_TELEGRAM_URL } from '@/features/landing/content'
 import landingCss from '@/features/landing/landing.css?url'
 
-const title = 'Mato: Continuous DCA and TWAP on Solana'
+const title = 'Mato: Better execution through continuous streams'
 const description =
-  'Stream SOL and USDC with a shared clearing price every 200ms. Continuous DCA and TWAP on Solana, from 5 seconds to months, with a 0.02%–0.1% platform fee.'
+  'Put your trading interval to work. Mato clears overlapping buy and sell streams together at one shared price. Continuous DCA and TWAP for SOL/USDC on Solana.'
 const siteUrl =
   import.meta.env.VITE_SITE_URL?.replace(/\/$/, '') ?? 'https://mato.markets'
 const imageUrl = `${siteUrl}/mato-social-card.png`
 const imageAlt =
-  'Mato — The DCA that prices every 200ms. Continuous DCA on Solana.'
+  'Mato: Better execution. One continuous stream. Overlapping buy and sell streams on Solana.'
 
 export const Route = createFileRoute('/')({
   beforeLoad: ({ location }) => {

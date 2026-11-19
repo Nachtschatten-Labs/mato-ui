@@ -12,18 +12,21 @@
 <path fill-rule="evenodd" clip-rule="evenodd" d="M153.94 15.5778C165.635 15.5778 174 23.967 174 35.7715C174 47.6505 165.635 56.0404 153.94 56.0404C142.17 56.0403 133.88 47.6504 133.88 35.7715C133.88 23.967 142.17 15.5779 153.94 15.5778ZM153.94 21.1455C145.797 21.1456 140.024 27.308 140.024 35.7715C140.024 44.3094 145.797 50.4718 153.94 50.4719C162.008 50.4719 167.856 44.3095 167.856 35.7715C167.856 27.3079 162.008 21.1455 153.94 21.1455Z" fill="#D7EDC5"/>
 </g></g>
 <g font-family="IBM Plex Sans, sans-serif" font-weight="400">
-  <text x="64" y="166" font-size="16" letter-spacing="3" fill="#A2BB9C">CONTINUOUS DCA ON SOLANA</text>
-  <text x="60" y="268" font-size="74" letter-spacing="-3.2" fill="#EFF4EC">The DCA that prices</text>
-  <text x="60" y="355" font-size="84" letter-spacing="-3.6" fill="#D7EDC5">every 200ms.</text>
+  <text x="64" y="166" font-size="16" letter-spacing="3" fill="#A2BB9C">BETTER EXECUTION ON SOLANA</text>
+  <text x="60" y="268" font-size="74" letter-spacing="-3.2" fill="#EFF4EC">Better execution.</text>
+  <text x="60" y="355" font-size="62" letter-spacing="-2.4" fill="#D7EDC5">One continuous stream.</text>
   <text x="64" y="417" font-size="23" fill="#A7B9AB">Your amount. Your duration. One shared price.</text>
   <line x1="64" y1="493" x2="1136" y2="493" stroke="#D7EDC5" stroke-opacity=".18"/>
   <text x="64" y="550" font-size="24" fill="#D7EDC5">0.02%–0.1% platform fee</text>
-  <text x="64" y="581" font-size="17" fill="#A7B9AB">Depending on the asset · No additional destination-venue fee</text>
+  <text x="64" y="581" font-size="17" fill="#A7B9AB">Depending on the asset · No additional exchange fee</text>
   <text x="1136" y="558" text-anchor="end" font-size="24" fill="#EFF4EC">mato.markets</text>
   <rect x="812" y="195" width="324" height="253" rx="20" fill="#111F1A" stroke="#496052" stroke-opacity=".65"/>
-  <text x="838" y="239" font-size="15" fill="#A7B9AB">ONE CONTINUOUS STREAM</text>
+  <text x="838" y="239" font-size="15" fill="#A7B9AB">OVERLAPPING STREAMS</text>
   <text x="838" y="286" font-size="25" fill="#D7EDC5">SOL / USDC</text>
   <path d="M838 319H1110M838 369H1110M838 419H1110" stroke="#496052" stroke-dasharray="2 6"/>
-  <rect x="838" y="338" width="5" height="81" rx="2.5" fill="url(#bar)"/><rect x="853" y="334" width="5" height="85" rx="2.5" fill="url(#bar)"/><rect x="868" y="330" width="5" height="89" rx="2.5" fill="url(#bar)"/><rect x="883" y="326" width="5" height="93" rx="2.5" fill="url(#bar)"/><rect x="898" y="338" width="5" height="81" rx="2.5" fill="url(#bar)"/><rect x="913" y="334" width="5" height="85" rx="2.5" fill="url(#bar)"/><rect x="928" y="330" width="5" height="89" rx="2.5" fill="url(#bar)"/><rect x="943" y="326" width="5" height="93" rx="2.5" fill="url(#bar)"/><rect x="958" y="338" width="5" height="81" rx="2.5" fill="url(#bar)"/><rect x="973" y="334" width="5" height="85" rx="2.5" fill="url(#bar)"/><rect x="988" y="330" width="5" height="89" rx="2.5" fill="url(#bar)"/><rect x="1003" y="326" width="5" height="93" rx="2.5" fill="url(#bar)"/><rect x="1018" y="338" width="5" height="81" rx="2.5" fill="url(#bar)"/><rect x="1033" y="334" width="5" height="85" rx="2.5" fill="url(#bar)"/><rect x="1048" y="330" width="5" height="89" rx="2.5" fill="url(#bar)"/><rect x="1063" y="326" width="5" height="93" rx="2.5" fill="url(#bar)"/><rect x="1078" y="338" width="5" height="81" rx="2.5" fill="url(#bar)"/><rect x="1093" y="334" width="5" height="85" rx="2.5" fill="url(#bar)"/>
+  <path d="M838 329H1034M862 353H1080M910 377H1110M958 401H1110" stroke="#D7EDC5" stroke-width="7" stroke-linecap="round"/>
+  <path d="M862 353H1080M958 401H1110" stroke="#A2BB9C" stroke-width="7" stroke-linecap="round"/>
+  <path d="M1004 305V425" stroke="#EFF4EC" stroke-width="1.5"/>
+  <g fill="#EFF4EC"><circle cx="1004" cy="329" r="5"/><circle cx="1004" cy="353" r="5"/><circle cx="1004" cy="377" r="5"/><circle cx="1004" cy="401" r="5"/></g>
 </g>
 </svg>

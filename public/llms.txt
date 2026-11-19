@@ -13,7 +13,7 @@
 - Active streams can be paused, resumed, or closed. Available output can be withdrawn. These actions require wallet transactions and network fees.
 - If there is no opposing flow, execution does not accrue for those slots; unused input remains refundable.
 - Clearing prices can be recomputed from on-chain flow data.
-- Mato is experimental, has limited liquidity, and has not been fully audited. An audit with Neodyme is scheduled for December 2026, as of November 6, 2026. This is a planned audit, not a completed audit or security endorsement.
+- Mato is experimental, has limited liquidity, and has not been fully audited.
 - Mato does not recommend when to buy or sell. Trading involves market and smart-contract risk, including loss of funds.
 
 ## Links
