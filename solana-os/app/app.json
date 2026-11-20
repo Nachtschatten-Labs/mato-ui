@@ -1,0 +1,12 @@
+{
+  "id": "mato-paper",
+  "name": "Mato",
+  "version": "1.3.0",
+  "author": "Mato",
+  "summary": "Play-money SOL/USDC streams.",
+  "icon": "shuffle",
+  "accent": "14F195",
+  "category": "tools",
+  "permissions": ["http"],
+  "hosts": ["mato-ui-mainnet.up.railway.app"]
+}
